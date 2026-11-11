@@ -157,7 +157,7 @@
   - pnpm art:gen은 ~/.config/delta-field/baze.env(저장소 밖)에서 키를 읽는다. `--dry-run`은 보낼 내용만 보인다(키 없이 된다).
   - 받은 그림은 art/raw/<이름>/<시각>-<번호>.png, 같은 이름의 .json에 프롬프트와 설정(키 없음)을 남긴다.
 - 프롬프트(scripts/art/prompts/): style.txt(공통: 도트 규칙, 외곽선, 빛, 마젠타 배경, 글자·워터마크 없음, 기존 작품 따라 하지 않음)를 앞에 붙이고
-  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-walk.txt(걷기 시트 4×3), floor.txt(바닥·벽 윗면 타일), wall.txt(벽·울타리 앞면 타일), object.txt(사물, {{size}})를 쓴다.
+  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-side-back.txt(참고 앞모습으로 왼쪽 옆·뒷모습 두 개), character-walk.txt(걷기 시트 4×3), floor.txt(바닥·벽 윗면 타일), wall.txt(벽·울타리 앞면 타일), object.txt(사물, {{size}})를 쓴다.
 - 캐릭터를 만드는 순서(제안)
   1. 앞모습을 캐릭터마다 여러 장 받아 교사가 고른다.
   2. 고른 그림을 참고 그림(--ref)으로 네 방향 서기를 받는다.
@@ -179,6 +179,10 @@
    - 실제 생성 그림(2.6-sunburst)은 "도트" 크기가 고르지 않아 격자 찾기가 잘 맞지 않았다. 그래서 --frame을 주면(--full 아닐 때) 기본으로 `--px frame`이 되어 가장 큰 그림의 높이를 프레임 높이(또는 `--height`)로 나눠 옮긴다.
    - 8명 앞모습(2.6-sunburst medium, 2026-11-11)은 프롬프트에 20×40을 적어도 도트 한 칸이 받은 그림의 15~17픽셀, 크기는 약 28~34×47~67도트로 그려졌다(`--px auto`로 잼). 20×40으로 줄이면 얼굴·안경·작은 소품이 뭉개져, 교사가 캐릭터를 30×60으로 정했다. 같은 8장을 30×60으로 다시 다듬었다(새로 받지 않음).
      구석의 "AI" 표시처럼 멀리 떨어진 작은 조각은 지운다.
+   - `--bg '#ff00ff'`이면 배경과 맞닿은 번짐(마젠타에 어두운 색이 섞인 점)도 지우고, 오른쪽 아래 구석(`--badge 0.08x0.06`, AI 표시 자리)을 지운다.
+     옆·뒷모습 시험(char-01)에서 AI 표시가 뒷모습에 붙어 키가 커졌던 것을 이렇게 막았다.
+   - 옆·뒷모습 시험(2026-11-11, char-01): 받은 앞모습 원본을 `--ref`로 넣고 character-side-back.txt로 한 장(1024×1024)에 두 개를 받았다. 53.51크레딧(참고 그림 때문에 앞모습보다 약 8.5 많음), 32초.
+     옷·머리·색·도트 크기가 앞모습과 잘 맞았다. 다듬기: `pnpm art:fit <받은 그림> --grid 1x2 --frame 30x60 --bg '#ff00ff' --out art/work/side-back-char-01.png`.
    - 여러 그림을 한 장으로 늘어놓아 비교하려면 `pnpm art:board --out <판.png> --cols 4 --height 240 [--label "1 LAB|45.01 CR" ...] <그림> ...`. --label은 그림 순서대로 칸 위에 적는 글자(영문 대문자·숫자, '|'는 줄바꿈, 3×5 도트 글꼴이라 한글 글꼴이 필요 없다).
 2. 도트 시트 → 글자판: `pnpm art:grid to-txt art/work/char-01.png art/src/characters/char-01.txt --frame 30x60 --names down-a,down,down-b`
 3. 글자판을 고친다: 걸음 프레임 만들기, 어긋난 도트 고치기, 팔레트 맞추기, 겹 이름 달기.

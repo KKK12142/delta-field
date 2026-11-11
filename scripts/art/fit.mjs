@@ -11,6 +11,7 @@
 //                      --frame이 있으면(--full 아닐 때) 기본은 frame이다. frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
 //   --bg auto          배경: auto, alpha(투명 배경), #ff00ff(이 색을 모두 지운다)
 //   --tol 48           배경색으로 볼 색 차이(0~255)
+//   --badge 0.08x0.06  오른쪽 아래 구석(그림 너비·높이의 비율)을 지운다. 생성 그림의 "AI" 표시 자리. 0이면 지우지 않는다(--full일 때도)
 //   --merge 16         차이가 이 값(0~255) 이하인 색을 하나로 묶는다(생성 그림의 잡음 없애기)
 //   --colors 0         시트 전체의 색 수를 이만큼으로 줄인다(0이면 --merge만 한다)
 //   --cols 3           시트의 칸 수(기본: --grid의 칸 수)
@@ -35,6 +36,7 @@ const { values: opt, positionals } = parseArgs({
     px: { type: 'string' },
     bg: { type: 'string', default: 'auto' },
     tol: { type: 'string', default: '48' },
+    badge: { type: 'string', default: '0.08x0.06' },
     height: { type: 'string' },
     merge: { type: 'string', default: '16' },
     colors: { type: 'string', default: '0' },
@@ -103,6 +105,37 @@ const mask = new Uint8Array(W * H).fill(1);
       if (y < H - 1) push(x, y + 1);
     }
     if (everywhere) for (let p = 0; p < W * H; p++) if (dist(p * 4, ...key) <= tol) mask[p] = 0;
+    if (everywhere) {
+      // 가장자리 번짐: 배경색에 어두운 색이 섞인 점(배경색 × t에 가까운 색)이 배경과 맞닿아 있으면 지운다. 두 번 되풀이한다.
+      const bb = key[0] ** 2 + key[1] ** 2 + key[2] ** 2;
+      let fringe = 0;
+      for (let pass = 0; pass < 2; pass++) {
+        const drop = [];
+        for (let p = 0; p < W * H; p++) {
+          if (!mask[p]) continue;
+          const x = p % W;
+          const y = (p / W) | 0;
+          const touch = (x > 0 && !mask[p - 1]) || (x < W - 1 && !mask[p + 1]) || (y > 0 && !mask[p - W]) || (y < H - 1 && !mask[p + W]);
+          if (!touch) continue;
+          const c = [data[p * 4], data[p * 4 + 1], data[p * 4 + 2]];
+          const t = (c[0] * key[0] + c[1] * key[1] + c[2] * key[2]) / bb;
+          if (t < 0.3) continue;
+          const r = Math.hypot(c[0] - t * key[0], c[1] - t * key[1], c[2] - t * key[2]);
+          if (r <= tol) drop.push(p);
+        }
+        for (const p of drop) mask[p] = 0;
+        fringe += drop.length;
+      }
+      if (fringe) report.push(`  가장자리 번짐 ${fringe}픽셀을 지웠습니다.`);
+    }
+    // 생성 그림 오른쪽 아래 구석의 "AI" 표시 자리를 지운다(--badge 0이면 하지 않는다)
+    if (opt.badge !== '0' && !opt.full) {
+      const [bw, bh] = pair(opt.badge, '--badge');
+      let n = 0;
+      for (let y = Math.floor(H * (1 - bh)); y < H; y++)
+        for (let x = Math.floor(W * (1 - bw)); x < W; x++) if (mask[y * W + x]) (mask[y * W + x] = 0), n++;
+      if (n) report.push(`  오른쪽 아래 구석(AI 표시 자리) ${n}픽셀을 지웠습니다(--badge ${opt.badge}).`);
+    }
     const hex = '#' + key.map((v) => v.toString(16).padStart(2, '0')).join('');
     report.push(`배경: ${hex} 둘레 ${tol}을 지웠습니다(${everywhere ? '그림 안쪽까지' : '가장자리에서 이어진 곳만'}).`);
   }

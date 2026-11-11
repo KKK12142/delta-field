@@ -1,0 +1,6 @@
+The reference image shows one character from the front. Draw the SAME character (same outfit, hair, colors, proportions, pixel size and outline style) two more times, side by side in one row with a wide gap between them:
+left sprite: side view facing left (profile, looking to the left), standing still;
+right sprite: back view (facing away from the viewer), standing still.
+Both sprites are the same height as the reference character, full body, feet on the same baseline near the bottom.
+Each sprite is about 30 game pixels wide and exactly 60 game pixels tall, chibi proportions (2 to 2.5 heads tall).
+Character: {{desc}}
