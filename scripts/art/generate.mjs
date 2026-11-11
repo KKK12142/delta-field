@@ -8,10 +8,10 @@
 //   --thing desk       scripts/art/things.json의 desc·size를 {{desc}}·{{size}}에 넣는다
 //   --var key=값       {{key}}에 넣는다(여러 번 쓸 수 있다)
 //   --ref <그림.png>   참고 그림(같은 캐릭터의 다른 방향 등). 여러 번 쓸 수 있다(GPT는 10장까지). 주면 "고치기"가 된다
-//   --model <이름>     설정의 model 대신(gpt-image-2, gpt-image-2.5-sunburst, gpt-image-2.5-flare)
+//   --model <이름>     설정의 model(gpt-image-2.6-sunburst) 대신 다른 모델
 //   --n 1              한 번에 받을 장 수(number_of_images)
 //   --size 1024x1536   설정의 size 대신
-//   --quality medium   GPT 품질(low, medium, high). 없으면 BAZE 기본값
+//   --quality medium   GPT 품질(low, medium, high). 없으면 설정의 quality, 그것도 없으면 BAZE 기본값
 //   --no-style         prompts/style.txt를 앞에 붙이지 않는다
 //   --dry-run          보낼 내용만 보인다(참고 그림은 크기만)
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -85,7 +85,8 @@ const size = opt.size ?? config.size;
 const n = Number(opt.n);
 const model = opt.model ?? config.model;
 const body = { model, prompt, number_of_images: n, size, ...config.body };
-if (opt.quality) body.quality = opt.quality;
+const quality = opt.quality ?? config.quality;
+if (quality) body.quality = quality;
 if (opt.ref.length) {
   if (opt.ref.length > 10) throw new Error('참고 그림은 10장까지 보낼 수 있습니다(GPT).');
   // 접두어 없는 base64는 400이 난다
@@ -189,7 +190,7 @@ for (const [i, item] of items.entries()) {
     ref: opt.ref,
     model: json.model ?? model,
     size,
-    quality: opt.quality ?? null,
+    quality: quality ?? null,
     body: config.body,
     id: json.id ?? null,
     creditsCharged: json.credits_charged ?? null,

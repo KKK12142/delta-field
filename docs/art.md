@@ -143,7 +143,8 @@
   실제로 쓴 값(1024×1024 한 장, 2026-11-11): 2.6-sunburst high 54.17, 2.6-flare high 54.23, 2.6-sunburst medium 44.96, 2.6-flare medium 44.96크레딧.
   걸린 시간은 sunburst 35~43초, flare 8~10초. 교사가 정한 한도는 하루 5,000크레딧.
 - 미리 값을 보는 /estimate는 주소를 찾지 못했다(images/generate/estimate/는 405·404).
-- 설정은 scripts/art/baze.json(url, model, userAgent, size, body). model은 비워 두었고, 모델이 정해지지 않으면(설정 또는 --model) 부르지 않는다.
+- **쓰는 모델(2026-11-11 교사 결정): gpt-image-2.6-sunburst, 품질 medium.** 1024×1024 한 장 44.96크레딧, 약 35초. 비교에서 high(54.17)와 그림 차이가 작았다.
+- 설정은 scripts/art/baze.json(url, model, quality, userAgent, size, body). model·quality 기본값은 위 결정이고 --model·--quality로 바꾼다. 모델이 비면(설정과 --model 모두) 부르지 않는다.
 - 받을 때마다 쓴 크레딧을 화면에 보이고 art/raw/credits.log에 한 줄씩 남긴다(시각, 이름, 모델, 장 수, 크레딧, id).
 - API 키는 환경 변수 BAZE_API_KEY로만 읽는다. 화면·로그·파일에 쓰지 않고, 응답이나 오류에 키가 섞여 오면 ***로 가린다.
 - 명령: `pnpm art:gen <프롬프트 파일> --out <이름> [--char char-01 | --thing desk] [--var key=값] [--ref 참고.png] [--model 이름] [--n 4] [--size 1024x1536] [--quality medium] [--dry-run]`
@@ -170,8 +171,9 @@
    - 색 묶기: 차이가 16 이하인 색을 하나로 묶는다(`--merge`). 비슷한 어두운 색 둘(외곽선과 신발 등)이 묶이면 `--merge 8`로 줄인다. `--colors 12`로 색 수를 정할 수도 있다.
    - 바닥 타일은 `--full --frame 16x16`(그림 전체를 한 칸으로 보고 16×16으로 나눈다).
    - 실제 생성 그림(2.6-sunburst)은 "도트" 크기가 고르지 않아 격자 찾기가 잘 맞지 않았다. 그래서 --frame을 주면(--full 아닐 때) 기본으로 `--px frame`이 되어 가장 큰 그림의 높이를 프레임 높이(또는 `--height`)로 나눠 옮긴다.
+   - 8명 앞모습(2.6-sunburst medium, 2026-11-11)은 프롬프트에 20×40을 적어도 도트 한 칸이 받은 그림의 15~17픽셀, 크기는 약 28~34×47~67도트로 그려졌다(`--px auto`로 잼). 20×40으로 줄이면 얼굴·안경·작은 소품이 뭉개져 손으로 다듬어야 한다.
      구석의 "AI" 표시처럼 멀리 떨어진 작은 조각은 지운다.
-   - 여러 그림을 한 장으로 늘어놓아 비교하려면 `pnpm art:board --out <판.png> --cols 4 --height 240 <그림> ...`.
+   - 여러 그림을 한 장으로 늘어놓아 비교하려면 `pnpm art:board --out <판.png> --cols 4 --height 240 [--label "1 LAB|45.01 CR" ...] <그림> ...`. --label은 그림 순서대로 칸 위에 적는 글자(영문 대문자·숫자, '|'는 줄바꿈, 3×5 도트 글꼴이라 한글 글꼴이 필요 없다).
 2. 도트 시트 → 글자판: `pnpm art:grid to-txt art/work/char-01.png art/src/characters/char-01.txt --frame 20x40 --names down-a,down,down-b`
 3. 글자판을 고친다: 걸음 프레임 만들기, 어긋난 도트 고치기, 팔레트 맞추기, 겹 이름 달기.
 4. 글자판 → 게임 그림: `pnpm art:grid to-png art/src/characters/char-01.txt public/assets/characters/char-01.png`
@@ -201,6 +203,6 @@ frame down            프레임 이름. 다음 줄부터 40줄, 한 줄 20글자
 - 진짜 생성 그림으로는 아직 해 보지 않았다. 도트 크기가 고르지 않거나 격자가 비뚤면 --px로 정하거나 글자판에서 손으로 고친다.
 
 ## 정하지 않은 것
-- BAZE: 쓸 모델, 품질, 몇 장까지 만들지(예산)
+- BAZE: 몇 장까지 만들지(예산). 모델·품질은 정했다(2.6-sunburst medium).
 - 캐릭터 8가지 구상, 화면에 보일 이름, 피부색
 - 공용 팔레트(첫 생성 뒤)

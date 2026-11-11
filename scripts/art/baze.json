@@ -1,7 +1,9 @@
 {
   "_설명": "BAZE 게이트웨이 그림 생성 설정(docs/art.md, 문서 docs.factchat.kr). 키는 여기 적지 않고 환경 변수 BAZE_API_KEY로만 준다(~/.config/delta-field/baze.env). model이 비어 있으면 부르지 않는다. --model로 정할 수도 있다.",
   "url": "https://api.baze.co/v1/gateway/images/generate/",
-  "model": "",
+  "model": "gpt-image-2.6-sunburst",
+  "quality": "medium",
+  "_decided": "2026-11-11 교사 결정: gpt-image-2.6-sunburst medium(1024×1024 한 장 44.96크레딧, 약 35초). --model·--quality로 바꿀 수 있다.",
   "_models": "GPT 그림 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst 10크레딧, gpt-image-2.5-flare 10크레딧(2026-11-11 문서 기준)",
   "userAgent": "delta-field-art/0.1",
   "size": "1024x1024",
