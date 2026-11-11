@@ -56,18 +56,66 @@ const seenByTeacher = await teacher.js(`__df.others().map((o) => o.nickname).sor
 check('선생님이 두 학생을 봄', seenByTeacher === '가람,나래', seenByTeacher);
 check('학생 A가 선생님과 학생 B를 봄', (await a.js(`__df.others().map((o) => o.nickname).sort().join(',')`)) === '나래,선생님');
 
-// ---- 학생 B가 조이스틱으로 움직이면 다른 화면에 보임 ----
-const box = await b.js(`(() => { const r = document.querySelector('.df-joystick').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; })()`);
+// ---- 학생 B(태블릿): 화면 왼쪽 절반 아무 데나 누르면 그 자리에 조이스틱이 나타나고, 끌면 움직인다 ----
+const joy = () => b.js(`(() => {
+  const z = document.querySelector('.df-joystick-zone');
+  const j = document.querySelector('.df-joystick');
+  const zr = z.getBoundingClientRect();
+  const r = j.getBoundingClientRect();
+  return {
+    zone: !z.hidden && zr.left === 0 && zr.top === 0 && Math.abs(zr.width - innerWidth / 2) < 1 && Math.abs(zr.height - innerHeight) < 1,
+    shown: !j.hidden, x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2, left: r.left, bottom: r.bottom,
+  };
+})()`);
+const [vw, vh] = await b.js(`[innerWidth, innerHeight]`);
+let j = await joy();
+check('조이스틱: 영역은 화면 왼쪽 절반(높이 전체), 손대지 않으면 보이지 않음', j.zone && !j.shown);
+const at = { x: Math.round(vw * 0.3), y: Math.round(vh * 0.45) };
 const bBefore = await b.js(`__df.pos()`);
-await b.touch('touchStart', [{ x: box.x, y: box.y }]);
-await b.touch('touchMove', [{ x: box.x + box.r, y: box.y }]);
-await wait(500);
+await b.touch('touchStart', [{ x: at.x, y: at.y }]);
+await wait(100);
+j = await joy();
+check('조이스틱: 왼쪽 절반을 누른 자리를 가운데로 나타남', j.shown && Math.abs(j.x - at.x) < 1 && Math.abs(j.y - at.y) < 1,
+  `누른 곳 ${at.x}, ${at.y} / 가운데 ${j.x.toFixed(0)}, ${j.y.toFixed(0)}`);
+await b.touch('touchMove', [{ x: at.x + j.r, y: at.y }]);
+await wait(100);
+await b.shot('joystick');
+await wait(400);
 await b.touch('touchEnd', []);
-await wait(500);
+await wait(300);
+check('조이스틱: 떼면 사라짐', !(await joy()).shown);
 const bAfter = await b.js(`__df.pos()`);
-check('학생 B가 조이스틱으로 오른쪽으로 감', bAfter.col - bBefore.col > 1, `col ${bBefore.col.toFixed(2)} → ${bAfter.col.toFixed(2)}`);
+check('학생 B가 조이스틱으로 오른쪽으로 감', bAfter.col - bBefore.col > 1 && Math.abs(bAfter.row - bBefore.row) < 0.05,
+  `col ${bBefore.col.toFixed(2)} → ${bAfter.col.toFixed(2)}, row ${bBefore.row.toFixed(2)} → ${bAfter.row.toFixed(2)}`);
 const bOnTeacher = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
 check('선생님 화면의 학생 B 위치가 따라옴', Math.abs(bOnTeacher.col - bAfter.col) < 0.05, `서버 ${bOnTeacher.col.toFixed(2)}, B ${bAfter.col.toFixed(2)}`);
+
+await b.touch('touchStart', [{ x: 2, y: vh - 2 }]);
+await wait(100);
+j = await joy();
+check('조이스틱: 화면 끝을 눌러도 바탕이 화면 안에 들어옴', j.shown && j.left >= 0 && j.bottom <= vh, `왼쪽 ${j.left.toFixed(0)}, 아래 ${j.bottom.toFixed(0)}`);
+await b.touch('touchEnd', []);
+await wait(200);
+
+// 한 손가락으로 조이스틱을 쥔 채 다른 손가락으로 살펴보기 단추를 누른다(칠판 앞).
+await b.js(`__df.teleport(5, 1.5)`);
+await wait(300);
+const act = await b.js(`(() => { const r = document.querySelector('.df-action').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+const f1 = { x: at.x, y: at.y, id: 0 };
+await b.touch('touchStart', [f1]);
+await wait(100);
+await b.touch('touchStart', [f1, { x: act.x, y: act.y, id: 1 }]);
+await wait(100);
+await b.touch('touchMove', [f1]);
+await wait(300);
+check('조이스틱을 쥔 채 다른 손가락으로 살펴보기 단추를 누름', /칠판에 글이/.test((await b.dialogText()) ?? ''), fmt(await b.dialogText()));
+await b.touch('touchEnd', []);
+await wait(200);
+const okAt = await b.js(`(() => { const r = document.querySelector('.df-dialog .df-button').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+await b.touch('touchStart', [{ x: okAt.x, y: okAt.y }]);
+await b.touch('touchEnd', []);
+await wait(300);
+check('대화상자의 확인 단추를 터치로 눌러 닫음', (await b.dialogText()) === null);
 const drawn = await teacher.js(`__df.drawn()`);
 check('선생님 화면에 다른 사람 아바타 2개가 그려짐', drawn.length === 2);
 await teacher.shot('sees-students');
@@ -347,9 +395,22 @@ await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
 check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 1명 접속'));
 
 // ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
-const teacher2 = await openPage('teacher2', baseUrl);
+const teacher2 = await openPage('teacher2', baseUrl + '?touch=1', { touch: true });
 await teacher2.enter({ teacher: true, nickname: '선생님2', code, pw: password });
 check('선생님이 방 코드로 기존 방에 다시 들어감', (await teacher2.js(`window.__df?.role()`)) === 'teacher' && (await teacher2.js(`__df.code()`)) === code);
+
+// ---- 태블릿 선생님: CCTV 모드에서는 조이스틱 영역이 감춰져 지도 위 학생을 누를 수 있다 ----
+await clickText(teacher2, '.df-hud button', 'CCTV 보기');
+await wait(400);
+const aAt = await teacher2.js(`__df.screenOf('가람')`);
+check('태블릿 선생님: CCTV 모드에서는 조이스틱 영역이 감춰짐',
+  (await teacher2.js(`document.querySelector('.df-joystick-zone').hidden && document.elementFromPoint(${vw * 0.25}, ${vh / 2})?.tagName === 'CANVAS'`)) === true);
+await teacher2.touch('touchStart', [{ x: aAt.x, y: aAt.y }]);
+await teacher2.touch('touchEnd', []);
+await wait(500);
+check('태블릿 선생님: 지도에서 누른 학생(가람)을 따라감', (await teacher2.js(`__df.cctv()`))?.following === '가람', `누른 곳 ${aAt.x.toFixed(0)}, ${aAt.y.toFixed(0)}`);
+await clickText(teacher2, '.df-cctv button', 'CCTV 끄기');
+check('태블릿 선생님: CCTV를 끄면 조이스틱 영역이 돌아옴', (await teacher2.js(`!document.querySelector('.df-joystick-zone').hidden`)) === true);
 
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));

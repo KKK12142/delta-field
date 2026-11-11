@@ -56,7 +56,7 @@ export class RoomScene extends MapScene {
     this.hud.setRoomCode(this.net.code);
     // 골든벨에 다녀왔으면 가진 물건이 그대로 있다.
     this.hud.setItems([...this.state.items].map((id) => this.room.items[id]));
-    this.hud.action.addEventListener('click', this.onActionButton);
+    this.hud.onAction(this.onActionButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
     this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
     if (teacher) {

@@ -117,6 +117,7 @@ export const uiSize = {
   radius: '12px',
   panelWidth: '520px',
   buttonPad: '10px 18px',
+  joystickZone: '50%', // 조이스틱 영역: 화면 왼쪽에서 이 너비(높이는 전체)
   joystick: '132px',
   joystickKnob: '56px',
   actionButton: '96px',

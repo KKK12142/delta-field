@@ -213,18 +213,25 @@
   touch-action: none;
 }
 
-/* 조이스틱(왼쪽 아래) */
+/* 조이스틱: 화면 왼쪽 절반(높이 전체)의 어디든 누르면 그 자리에 바탕과 손잡이가 나타난다. */
+.df-joystick-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--df-joystick-zone);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
 .df-joystick {
   position: absolute;
-  left: var(--df-margin);
-  bottom: calc(var(--df-margin) + env(safe-area-inset-bottom, 0px));
   width: var(--df-joystick);
   height: var(--df-joystick);
   border-radius: 50%;
   background: var(--df-joystick-base);
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
+  pointer-events: none;
 }
 .df-joystick-knob {
   position: absolute;
