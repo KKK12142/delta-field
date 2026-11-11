@@ -3,6 +3,6 @@ Strict pixel art: every game pixel is a crisp, solid square on one uniform grid,
 No anti-aliasing, no gradients, no blur, no glow, no soft shadows, no noise, no dithering.
 Small limited palette (about 16 colors), flat colors with 2-3 shades per material, light coming from the top-left.
 1-pixel outline in a dark warm navy (not pure black) around characters and objects.
-Background: fully transparent. If transparency is impossible, use one flat solid magenta (#FF00FF) background with no texture.
+Background: one flat solid magenta (#FF00FF) color with no texture, no shadow, and no floor (it is removed later).
 No text, no letters, no numbers, no labels, no grid lines, no borders, no watermark, no signature.
 Do not imitate any existing game, franchise, studio style, or real person.

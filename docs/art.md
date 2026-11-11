@@ -132,20 +132,25 @@
 - 벽에 걸린 사물(칠판, 게시판)과 문은 벽 앞면 칸(16도트 높이) 안에 그린다. 위로 솟는 높이를 둘지는 맵에 놓아 본 뒤 정한다.
 
 ## 그림 생성(BAZE)
-- 설정은 scripts/art/baze.json: url(그림 만들기), editUrl(참고 그림으로 만들기), model, format, authHeader, authPrefix, size, body(그 밖의 값. 예: 투명 배경, 품질).
-  지금은 비어 있고, 비어 있으면 부르지 않는다. 요청 형식은 OpenAI 이미지 API 모양(openai-images)만 만들어 두었다.
+- BAZE 그림 생성 API(문서 docs.factchat.kr): `POST https://api.baze.co/v1/gateway/images/generate/`. 만들기와 참고 그림으로 고치기가 같은 주소이고, input_images(data URL)를 주면 고치기다.
+  본문: model, prompt, number_of_images, size, quality(low·medium·high), background(auto·opaque, 투명 없음), input_images(GPT 10장까지, 요청 25MB까지).
+  응답: data[].url(임시 https 주소 또는 data URL, 바로 받아 둔다), credits_charged. Fal 모델은 operation_id를 주고 `GET …/generate/{operation_id}/?model=`로 기다린다.
+  인증 Authorization: Bearer, User-Agent가 비면 403이라 delta-field-art/0.1을 넣는다.
+- GPT 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst·gpt-image-2.5-flare 10크레딧(2026-11-11).
+- 설정은 scripts/art/baze.json(url, model, userAgent, size, body). model은 비워 두었고, 모델이 정해지지 않으면(설정 또는 --model) 부르지 않는다.
+- 받을 때마다 쓴 크레딧을 화면에 보이고 art/raw/credits.log에 한 줄씩 남긴다(시각, 이름, 모델, 장 수, 크레딧, id).
 - API 키는 환경 변수 BAZE_API_KEY로만 읽는다. 화면·로그·파일에 쓰지 않고, 응답이나 오류에 키가 섞여 오면 ***로 가린다.
-- 명령: `pnpm art:gen <프롬프트 파일> --out <이름> [--char char-01] [--var key=값] [--ref 참고.png] [--n 4] [--size 1024x1536] [--dry-run]`
-  - pnpm art:gen은 저장소 맨 위 .env를 읽는다. `--dry-run`은 보낼 내용만 보인다(키 없이 된다).
+- 명령: `pnpm art:gen <프롬프트 파일> --out <이름> [--char char-01 | --thing desk] [--var key=값] [--ref 참고.png] [--model 이름] [--n 4] [--size 1024x1536] [--quality medium] [--dry-run]`
+  - pnpm art:gen은 ~/.config/delta-field/baze.env(저장소 밖)에서 키를 읽는다. `--dry-run`은 보낼 내용만 보인다(키 없이 된다).
   - 받은 그림은 art/raw/<이름>/<시각>-<번호>.png, 같은 이름의 .json에 프롬프트와 설정(키 없음)을 남긴다.
-- 프롬프트(scripts/art/prompts/): style.txt(공통: 도트 규칙, 외곽선, 빛, 투명 또는 마젠타 배경, 글자·워터마크 없음, 기존 작품 따라 하지 않음)를 앞에 붙이고
+- 프롬프트(scripts/art/prompts/): style.txt(공통: 도트 규칙, 외곽선, 빛, 마젠타 배경, 글자·워터마크 없음, 기존 작품 따라 하지 않음)를 앞에 붙이고
   character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-walk.txt(걷기 시트 4×3), floor.txt(바닥·벽 윗면 타일), wall.txt(벽·울타리 앞면 타일), object.txt(사물, {{size}})를 쓴다.
 - 캐릭터를 만드는 순서(제안)
   1. 앞모습을 캐릭터마다 여러 장 받아 교사가 고른다.
   2. 고른 그림을 참고 그림(--ref)으로 네 방향 서기를 받는다.
   3. 다듬어 글자판으로 바꾼다. 걸음 A·B는 서기에서 다리·팔 몇 도트만 다르므로 글자판에서 만든다.
   - 까닭: 그림 생성은 정확한 도트 수와 여러 프레임 사이의 일관성을 잘 지키지 못한다. 걷기 시트(character-walk)를 한 번에 받아 보고, 프레임끼리 어긋나면 이 순서로 한다.
-- 투명 배경을 고를 수 있으면 body에 넣는다. 안 되면 프롬프트대로 마젠타 배경을 받아 다듬을 때 `--bg '#ff00ff'`로 지운다.
+- BAZE의 GPT는 투명 배경을 고를 수 없어, 프롬프트로 마젠타 단색 배경을 받아 다듬을 때 `--bg '#ff00ff'`로 지운다.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.
@@ -187,7 +192,7 @@ frame down            프레임 이름. 다음 줄부터 24줄, 한 줄 16글자
 - 진짜 생성 그림으로는 아직 해 보지 않았다. 도트 크기가 고르지 않거나 격자가 비뚤면 --px로 정하거나 글자판에서 손으로 고친다.
 
 ## 정하지 않은 것
-- BAZE: 주소(만들기, 참고 그림으로 만들기), 모델 이름, 요청·응답 형식, 인증 헤더 모양, 투명 배경·크기·품질 선택지, 한 장 값과 쓸 수 있는 양, (키는 ~/.config/delta-field/baze.env에 둔다: 대장 결정)
+- BAZE: 쓸 모델, 품질, 몇 장까지 만들지(예산)
 - 캐릭터 8가지 구상, 화면에 보일 이름, 피부색
 - 캐릭터 크기 16×24(화면 48×72px, 지금 아바타 26×34px보다 크다)가 35명이 모일 때 괜찮은지
 - 공용 팔레트(첫 생성 뒤)
