@@ -8,7 +8,7 @@
 //
 // 사용:
 //   node scripts/art/grid.mjs to-txt <시트.png> <글자판.txt> --frame 30x60 [--names a,b,c]
-//   node scripts/art/grid.mjs to-png <글자판.txt> <시트.png> [--layer hair,top] [--scale 3]
+//   node scripts/art/grid.mjs to-png <글자판.txt> <시트.png> [--layer hair,top] [--scale 3] [--fill 12]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { createImage, readPng, scaleNearest, writePng } from './png.mjs';
@@ -27,6 +27,7 @@ const { values: opt, positionals } = parseArgs({
     names: { type: 'string' },
     layer: { type: 'string' },
     scale: { type: 'string', default: '1' },
+    fill: { type: 'string' },
   },
 });
 const [command, from, to] = positionals;
@@ -34,7 +35,7 @@ const [command, from, to] = positionals;
 if (command === 'to-txt' && from && to && opt.frame) toTxt();
 else if (command === 'to-png' && from && to) toPng();
 else {
-  console.error('사용: grid.mjs to-txt <시트.png> <글자판.txt> --frame 30x60 | grid.mjs to-png <글자판.txt> <시트.png> [--layer 겹,...] [--scale N]');
+  console.error('사용: grid.mjs to-txt <시트.png> <글자판.txt> --frame 30x60 | grid.mjs to-png <글자판.txt> <시트.png> [--layer 겹,...] [--scale N] [--fill 12]');
   process.exit(2);
 }
 
@@ -72,7 +73,9 @@ function toTxt() {
 }
 
 function toPng() {
-  const { fw, fh, cols, palette, frames } = parseTxt(readFileSync(from, 'utf8'));
+  const { fw, fh, cols, palette, frames: own } = parseTxt(readFileSync(from, 'utf8'));
+  // --fill N: 프레임이 N개보다 적으면 처음부터 되풀이해 N칸을 채운다(앞모습만 있을 때의 임시 시트)
+  const frames = opt.fill ? Array.from({ length: Number(opt.fill) }, (_, i) => own[i % own.length]) : own;
   const layers = opt.layer?.split(',');
   const rows = Math.ceil(frames.length / cols);
   const sheet = createImage(cols * fw, rows * fh);
