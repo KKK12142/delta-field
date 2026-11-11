@@ -14,7 +14,7 @@
 - `pnpm dev` 화면 개발 서버. 윈도우 크롬에서 `http://localhost:5173`으로 연다.
 - `pnpm dev:server` 게임 서버(포트 2567). 화면 개발 서버가 `/colyseus`로 넘겨 준다.
 - `pnpm start` 수업용. 빌드한 뒤 게임 서버가 화면까지 한 주소(포트 2567)로 내어 주고, 학생 접속 주소를 보여 준다.
-- `pnpm check` 타입 검사.
+- `pnpm check` 화면과 서버 코드 타입 검사.
 - `pnpm build` 타입 검사 뒤 `dist/`로 빌드.
 - `pnpm preview` 빌드 결과 보기.
 - `pnpm playtest` 화면·게임 서버를 켠 채로(`DF_TEACHER_PASSWORD`를 넘겨) 헤드리스 크롬에서 선생님 1명, 학생 2명으로 한 판을 자동으로 해 본다.

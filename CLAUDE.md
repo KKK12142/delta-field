@@ -11,7 +11,8 @@
   src/ui/(첫 화면·대화상자·안내·조이스틱, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
   server/(Colyseus 게임 서버: main.ts, ClassRoom.ts), shared/(서버와 화면이 함께 쓰는 약속·상태)
 - 서버 코드는 Node가 TypeScript를 그대로 실행한다(타입 지우기). 상대 경로 import에 .ts를 붙이고, 타입만 가져올 때는 import type을 쓰고, enum·namespace는 쓰지 않는다.
-- 명령: pnpm dev(화면 개발 서버), pnpm dev:server(게임 서버, 2567), pnpm check(타입 검사), pnpm build(타입 검사 뒤 빌드),
+  서버 타입 검사 설정은 server/tsconfig.json. express는 타입 정의를 내려받지 않고 server/express.d.ts에 쓰는 부분만 적어 두었다.
+- 명령: pnpm dev(화면 개발 서버), pnpm dev:server(게임 서버, 2567), pnpm check(화면과 서버 타입 검사), pnpm build(타입 검사 뒤 빌드),
   pnpm start(수업용: 빌드한 뒤 게임 서버가 화면까지 한 주소로 내어 줌. 교사의 맥에서 쓴다),
   pnpm playtest(화면·게임 서버를 켠 채로 DF_TEACHER_PASSWORD를 넘겨, 헤드리스 크롬에서 선생님 1명·학생 2명으로 한 판을 자동으로 해 본다.
   방 데이터를 바꾸면 scripts/playtest.mjs도 맞춘다. 확인용 게임 서버는 확인용 비밀번호로 따로 켜고, 끝나면 끈다)

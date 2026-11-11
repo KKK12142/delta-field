@@ -9,8 +9,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "check": "tsc",
-    "build": "tsc && vite build",
+    "check": "tsc && tsc -p server",
+    "build": "tsc && tsc -p server && vite build",
     "preview": "vite preview",
     "share": "bash scripts/share.sh on",
     "share:off": "bash scripts/share.sh off",
@@ -28,6 +28,7 @@
     "phaser": "4.2.1"
   },
   "devDependencies": {
+    "@types/node": "26.6.6",
     "typescript": "7.0.2",
     "vite": "8.3.7"
   }
