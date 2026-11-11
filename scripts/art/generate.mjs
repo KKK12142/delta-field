@@ -2,7 +2,7 @@
 // 설정은 scripts/art/baze.json. API 키는 환경 변수 BAZE_API_KEY로만 읽고, 화면·로그·파일 어디에도 쓰지 않는다.
 // 설정의 url·model이 비어 있으면 부르지 않는다. --dry-run은 보낼 내용만 보이고 부르지 않는다(키 없이 된다).
 //
-// 사용: node --env-file-if-exists=.env scripts/art/generate.mjs <프롬프트 파일> --out <이름> [옵션]
+// 사용: pnpm art:gen(키는 ~/.config/delta-field/baze.env에서 읽는다) 또는 node --env-file-if-exists=<키 파일> scripts/art/generate.mjs <프롬프트 파일> --out <이름> [옵션]
 //   --char char-01     scripts/art/characters.json의 desc를 {{desc}}에 넣는다
 //   --var key=값       {{key}}에 넣는다(여러 번 쓸 수 있다)
 //   --ref <그림.png>   참고 그림(같은 캐릭터의 다른 방향 등). 설정의 editUrl로 보낸다
@@ -90,7 +90,7 @@ if (config.format !== 'openai-images') {
   process.exit(1);
 }
 if (!key) {
-  console.error('환경 변수 BAZE_API_KEY가 없습니다. 저장소 맨 위 .env에 넣고 node --env-file-if-exists=.env로 실행하십시오.');
+  console.error('환경 변수 BAZE_API_KEY가 없습니다. 교사가 ~/.config/delta-field/baze.env(chmod 600, 저장소 밖)에 BAZE_API_KEY=... 한 줄을 넣고, pnpm art:gen으로 실행합니다.');
   process.exit(1);
 }
 

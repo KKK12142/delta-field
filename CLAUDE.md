@@ -11,7 +11,8 @@
   src/data/(맵 데이터 JSON과 형식: classroom.json, goldenbell.json), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
   src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창·골든벨 안내, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
   server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기), shared/(서버와 화면이 함께 쓰는 약속·상태·골든벨 규칙),
-  goldenbell/(골든벨 문제 YAML. 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다)
+  goldenbell/(골든벨 문제 YAML. 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다),
+  docs/art.md(그림 규격과 만드는 과정), scripts/art/(그림 생성 받기·다듬기, pnpm art:gen·art:fit·art:grid)
 - 서버 코드는 Node가 TypeScript를 그대로 실행한다(타입 지우기). 상대 경로 import에 .ts를 붙이고, 타입만 가져올 때는 import type을 쓰고, enum·namespace는 쓰지 않는다.
   서버 타입 검사 설정은 server/tsconfig.json. express는 타입 정의를 내려받지 않고 server/express.d.ts에 쓰는 부분만 적어 두었다.
 - 명령: pnpm dev(화면 개발 서버), pnpm dev:server(게임 서버, 2567), pnpm check(화면과 서버 타입 검사), pnpm build(타입 검사 뒤 빌드),
@@ -21,6 +22,7 @@
   공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(README)),
   pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
+- 그림 생성 키: ~/.config/delta-field/baze.env의 BAZE_API_KEY(저장소 밖, chmod 600). 교사가 직접 넣는다. pnpm art:gen만 읽고 내용을 출력하지 않는다.
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 화면·게임 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 서버 기록은 .run/.
 - 기획: docs/design.md에 정한 내용을 적는다. 새로 정한 것이 있으면 고쳐 둔다.
