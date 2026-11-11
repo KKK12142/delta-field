@@ -14,7 +14,7 @@
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 개발 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 개발 서버 기록은 .run/.
 - 기획: docs/design.md에 정한 내용을 적는다. 새로 정한 것이 있으면 고쳐 둔다.
-- 동시 접속 서버는 교사가 나중에 정한다. 먼저 만들지 않는다.
+- 동시 접속 서버: Colyseus, 실제 수업 때는 교사의 맥에서 돌린다(docs/design.md의 2단계 결정).
 
 ## 일하는 방식
 - 교사에게는 한국어 "~습니다"체로, 15줄 안팎으로 보고한다. 고친 파일, 돌린 확인과 결과, 확인하지 못한 것을 적는다.
