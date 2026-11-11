@@ -1,5 +1,6 @@
-// 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 교실 방탈출을 해 보고, 선생님은 CCTV 모드로 지켜본다.
+// 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 교실 방탈출을 해 보고, 선생님은 CCTV 모드로 지켜본 뒤 골든벨을 한다.
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버의 선생님 비밀번호를 DF_TEACHER_PASSWORD로 넘긴다.
+// 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell로 켠다(제한 시간이 짧은 확인용 문제 파일).
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 개발 모드에서만 있는 window.__df로 위치를 옮기고 상태를 읽는다.
 // 퀴즈 답 번호와 사물 위치는 src/data/classroom.json에 맞춰 두었다. 방 데이터를 바꾸면 함께 고친다.
@@ -311,12 +312,112 @@ const tPos3 = await teacher.js(`__df.pos()`);
 await teacher.press('ArrowRight', 400);
 check('CCTV를 끄면 선생님이 다시 움직임', (await teacher.js(`__df.pos().col`)) - tPos3.col > 0.5);
 
-// ---- 학생 B가 창을 닫으면 CCTV에 연결 끊김, 다시 붙기 시간(20초)이 지난 뒤 사라짐 ----
+// ---- 골든벨 ----
+// 학생 A는 교실에서 칠판을 본 뒤(진행 1/4) 골든벨에 갔다가 같은 자리, 같은 진행으로 돌아와야 한다.
+await a.js(`__df.teleport(5, 1.5)`);
+await a.press('Space');
+await a.press('Space');
+await wait(300);
+const aBefore = await a.js(`__df.pos()`);
+
+await clickText(teacher, '.df-hud button', '골든벨 시작');
+await wait(800);
+const pick = (await teacher.dialogText()) ?? '';
+check('골든벨: 문제 파일 목록(틀린 파일은 까닭과 함께 막힘)',
+  /확인용 골든벨 \(7문제\)/.test(pick) && /broken\.yaml/.test(pick) && /1번 문제: OX 문제의 answer는 O 또는 X로 씁니다/.test(pick) &&
+  (await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('broken')).disabled`)) === true,
+  fmt(pick));
+await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 골든벨')).click()`);
+await wait(1200);
+const maps = async () => [await teacher.js(`__df.map()`), await a.js(`__df.map()`), await b.js(`__df.map()`)].join(',');
+check('골든벨: 모두 골든벨 맵으로 옮겨 감', (await maps()) === 'goldenbell,goldenbell,goldenbell', await maps());
+const gbCard = (pg) => pg.js(`document.querySelector('.df-gb')?.innerText ?? null`);
+const gbPanel = () => teacher.js(`document.querySelector('.df-gb-panel')?.innerText ?? null`);
+check('골든벨: 시작 안내와 목숨 3개', /선생님이 첫 문제를 내면/.test((await gbCard(a)) ?? '') && /목숨 ♥♥♥/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+check('골든벨: 선생님 창에 학생 2명, 첫 문제 단추', /학생 2명/.test((await gbPanel()) ?? '') && /첫 문제/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+await teacher.shot('gb-ready');
+
+const ZONE = { O: [4.5, 3.5], X: [14.5, 3.5], 1: [4.5, 3.5], 2: [14.5, 3.5], 3: [4.5, 9.5], 4: [14.5, 9.5], 밖: [9.5, 3.5] };
+const nextButton = () => teacher.js(`document.querySelector('.df-gb-panel .df-row > .df-button:not(.df-button-small)').click()`);
+/** 선생님이 문제를 내고 A, B를 구역에 세운다. during은 푸는 중에, 시간이 끝나면 정답 공개까지 기다린다. */
+async function gbRound(aZone, bZone, during) {
+  await nextButton();
+  await wait(300);
+  await a.js(`__df.teleport(${ZONE[aZone]})`);
+  await b.js(`__df.teleport(${ZONE[bZone]})`);
+  await wait(500);
+  if (during) await during();
+  await wait(3300);
+}
+const gbOf = async (nick) => teacher.js(`__df.others().find((o) => o.nickname === ${JSON.stringify(nick)})`);
+
+await gbRound('O', '밖', async () => {
+  check('골든벨 1번: 문제와 남은 시간', /1\/7번 문제 · OX · 남은 시간 \d초/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+  check('골든벨 1번: 내가 서 있는 곳', /서 있는 곳: O/.test((await gbCard(a)) ?? '') && /서 있는 곳: 구역 밖/.test((await gbCard(b)) ?? ''));
+  check('골든벨 1번: 선생님 창에 구역별 인원', /O 1명 · X 0명 · 구역 밖 1명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+  await teacher.shot('gb-question');
+});
+check('골든벨 1번: 맞힌 학생 A', /정답: O/.test((await gbCard(a)) ?? '') && /맞았습니다. 점수가 1점 올랐습니다/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+check('골든벨 1번: 구역 밖이면 틀림, 목숨 2개', /구역 밖에 있어 틀린 것으로 셉니다. 틀렸습니다. 목숨이 2개 남았습니다/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
+check('골든벨 1번: 선생님 창에 맞힌 수', /맞힌 학생 1명 · 틀린 학생 1명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+await b.shot('gb-wrong');
+
+await gbRound(3, 1, async () => {
+  check('골든벨 2번: 객관식 구역별 인원', /1 1명 · 2 0명 · 3 1명 · 4 0명 · 구역 밖 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+  await a.shot('gb-choice');
+});
+check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.test((await gbCard(a)) ?? '') && /목숨이 1개 남았습니다/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
+
+await gbRound('X', 'O');
+check('골든벨 3번: 목숨을 다 잃으면 탈락', /탈락했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === true, fmt(await gbCard(b)));
+
+await gbRound('O', 'O');
+check('골든벨 4번: 탈락 중 맞히면 부활까지 남은 수, 점수는 그대로',
+  /2문제를 더 맞히면 다시 살아납니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbScore === 0, fmt(await gbCard(b)));
+
+await gbRound(2, 2, async () => {
+  check('골든벨 5번: 보기가 3개면 구역도 3개', /1 0명 · 2 2명 · 3 0명 · 구역 밖 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+});
+check('골든벨 5번: 부활까지 1문제', /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
+
+await gbRound('X', 'X');
+check('골든벨 6번: 3문제를 맞혀 목숨 1개로 다시 살아남',
+  /목숨 1개로 다시 살아났습니다/.test((await gbCard(b)) ?? '') && /목숨 ♥♡♡/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === false,
+  fmt(await gbCard(b)));
+
+await gbRound('O', 'O');
+check('골든벨 7번: 부활 뒤 맞힌 문제는 점수에 들어감', (await gbOf('나래')).gbScore === 1 && (await gbOf('가람')).gbScore === 7,
+  `가람 ${(await gbOf('가람')).gbScore}점, 나래 ${(await gbOf('나래')).gbScore}점`);
+check('골든벨 7번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
+await nextButton();
+await wait(500);
+check('골든벨 결과: 선생님 창에 순위', /1위 가람 7점/.test((await gbPanel()) ?? '') && /2위 나래 1점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+check('골든벨 결과: 학생 화면에 내 점수와 순위', /내 점수 7점/.test((await gbCard(a)) ?? '') && /1위 가람 7점/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+await teacher.shot('gb-end');
+
+// 골든벨 중에 들어온 학생은 골든벨 맵에서 시작한다.
+const c = await openPage('student-c', baseUrl);
+await c.enter({ nickname: '다온', code });
+await wait(500);
+check('골든벨 중에 들어온 학생 C는 골든벨 맵에서 시작', (await c.js(`__df?.map()`)) === 'goldenbell' && /골든벨이 끝났습니다/.test((await gbCard(c)) ?? ''),
+  `${await c.js(`__df?.map()`)}`);
+
+await clickText(teacher, '.df-gb-panel button', '골든벨 끝내기');
+await wait(1200);
+check('골든벨 끝: 모두 교실로 돌아옴', (await maps()) === 'classroom,classroom,classroom' && (await c.js(`__df.map()`)) === 'classroom', await maps());
+const aAfter = await a.js(`__df.pos()`);
+check('골든벨 끝: 학생 A가 떠나기 전 자리로 돌아옴', Math.abs(aAfter.col - aBefore.col) < 0.01 && Math.abs(aAfter.row - aBefore.row) < 0.01,
+  `${aBefore.col.toFixed(2)}, ${aBefore.row.toFixed(2)} → ${aAfter.col.toFixed(2)}, ${aAfter.row.toFixed(2)}`);
+await wait(300);
+check('골든벨 끝: 방탈출 진행이 그대로(칠판)', (await gbOf('가람')).done.includes('blackboard'), JSON.stringify((await gbOf('가람')).done));
+
+// ---- 학생 B, C가 창을 닫으면 CCTV에 연결 끊김, 다시 붙기 시간(20초)이 지난 뒤 사라짐 ----
 await clickText(teacher, '.df-hud button', 'CCTV 보기');
 await wait(300);
 await b.close();
+await c.close();
 await wait(1000);
-check('창을 닫은 직후에는 다시 붙기를 기다림(남아 있음)', (await teacher.js(`__df.others().length`)) === 2);
+check('창을 닫은 직후에는 다시 붙기를 기다림(남아 있음)', (await teacher.js(`__df.others().length`)) === 3);
 check('CCTV: 연결 끊김 표시', /연결 끊김/.test((await rowText('나래')) ?? ''), fmt(await rowText('나래')));
 await wait(21000);
 check('20초 뒤 선생님 화면에서 사라짐', (await teacher.js(`__df.others().map((o) => o.nickname).join(',')`)) === '가람');

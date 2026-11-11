@@ -12,6 +12,10 @@ export const MOVE_INTERVAL_MS = 66;
 
 export type Role = 'student' | 'teacher';
 
+/** 맵 id. 방 데이터 JSON(src/data/)의 id와 같다. */
+export type MapId = 'classroom' | 'goldenbell';
+export const MAP_IDS: MapId[] = ['classroom', 'goldenbell'];
+
 export interface JoinOptions {
   nickname: string;
   /** 선생님만 넣는다. */
@@ -21,6 +25,8 @@ export interface JoinOptions {
 export interface MoveMessage {
   col: number;
   row: number;
+  /** 어느 맵에서의 위치인지. 서버가 아는 맵과 다르면(맵을 옮기는 중) 버린다. */
+  map: MapId;
 }
 
 /** 학생이 지금 하는 일. ''은 돌아다니는 중, 'look'은 사물을 살펴보는 중, 'quiz'는 퀴즈를 푸는 중 */
@@ -36,6 +42,20 @@ export interface StatusMessage {
   /** 마친 사물 id */
   done: string[];
   escaped: boolean;
+}
+
+/** 선생님이 고를 수 있는 골든벨 문제 파일(서버의 goldenbell/ 폴더) */
+export interface GbFileInfo {
+  file: string;
+  title: string;
+  count: number;
+  /** 형식이 틀렸으면 그 까닭 */
+  error: string | null;
+}
+
+/** 골든벨 요청(gbStart, gbNext, gbEnd)의 답. 할 수 없으면 error에 까닭을 적는다. */
+export interface GbReply {
+  error: string | null;
 }
 
 /** 서버가 들어오기를 거절할 때 쓰는 번호. 방 만들기 오류는 HTTP 응답 번호로도 쓰이므로 200~599 안에서 고르고, Colyseus의 번호(520~526)와 겹치지 않게 했다. */

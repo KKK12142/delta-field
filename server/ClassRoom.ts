@@ -1,23 +1,35 @@
 // 수업 하나 = 방 하나. 선생님이 비밀번호로 만들고, 학생은 방 코드로 들어온다.
+// 교실(방탈출)과 골든벨 맵이 있고, 골든벨을 시작하면 모두 골든벨 맵으로 옮긴다.
 import { Room, ServerError, matchMaker, type Client } from '@colyseus/core';
 import classroom from '../src/data/classroom.json' with { type: 'json' };
+import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
+import { GB_LIVES, activeZones, judge, zoneAt, type Zones } from '../shared/goldenbell.ts';
 import {
   CODE_LENGTH,
   MAX_CLIENTS,
   RECONNECT_SECONDS,
   RejectCode,
   cleanNickname,
+  type GbFileInfo,
+  type GbReply,
   type JoinOptions,
   type MoveMessage,
   type StatusMessage,
 } from '../shared/protocol.ts';
 import { ClassState, Player } from '../shared/schema.ts';
+import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './questions.ts';
 
-const ROWS = classroom.layout.length;
-const COLS = classroom.layout[0].length;
+/** 맵 id → 크기(칸) */
+const MAP_SIZES: Record<string, { rows: number; cols: number }> = {
+  classroom: { rows: classroom.layout.length, cols: classroom.layout[0].length },
+  goldenbell: { rows: goldenbellMap.layout.length, cols: goldenbellMap.layout[0].length },
+};
 const ITEM_IDS = new Set(Object.keys(classroom.items));
 /** 살펴볼 수 있는(action이 있는) 사물 id */
 const ACTION_IDS = new Set(classroom.objects.filter((o) => 'action' in o).map((o) => o.id));
+const GB_ZONES: Zones = goldenbellMap.zones;
+/** 골든벨 맵에서 학생의 발밑을 처음 세우는 곳(방 데이터에서 벽과 구역에 닿지 않게 띄워 둔 네모) */
+const GB_SPAWN = goldenbellMap.spawn;
 
 function checkTeacher(password: unknown) {
   const expected = process.env.DF_TEACHER_PASSWORD;
@@ -54,9 +66,15 @@ function replaceAll(list: string[] & { clear(): void }, values: string[]) {
   list.push(...values);
 }
 
+const ok: GbReply = { error: null };
+const refuse = (error: string): GbReply => ({ error });
+
 export class ClassRoom extends Room<{ state: ClassState }> {
   maxClients = MAX_CLIENTS;
   state = new ClassState();
+  /** 골든벨 문제(정답 포함). 서버에만 둔다. */
+  private questions: QuestionSet | null = null;
+  private timer: { clear(): void } | null = null;
 
   onCreate(options: Partial<JoinOptions>) {
     checkTeacher(options?.password);
@@ -66,8 +84,12 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('move', (client: Client, message: MoveMessage) => {
       const player = this.state.players.get(client.sessionId);
       if (!player || !message || !isFiniteNumber(message.col) || !isFiniteNumber(message.row)) return;
-      player.col = Math.min(COLS, Math.max(0, message.col));
-      player.row = Math.min(ROWS, Math.max(0, message.row));
+      // 맵을 옮기는 사이에 온, 앞 맵의 위치는 버린다.
+      if (message.map !== player.map) return;
+      const size = MAP_SIZES[player.map];
+      if (!size) return;
+      player.col = Math.min(size.cols, Math.max(0, message.col));
+      player.row = Math.min(size.rows, Math.max(0, message.row));
     });
 
     // 학생의 방탈출 진행 상태. 선생님의 CCTV 모드에 보인다.
@@ -82,6 +104,13 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       replaceAll(player.done, knownIds(message.done, ACTION_IDS));
       player.escaped = message.escaped === true;
     });
+
+    // 골든벨(선생님만). 화면은 room.request()로 보내고 돌려준 값을 답으로 받는다.
+    this.onMessage('gbFiles', (client: Client): GbFileInfo[] => (this.isTeacher(client) ? listQuestionFiles() : []));
+    this.onMessage('gbStart', (client: Client, message: { file?: unknown }) => this.gbStart(client, message));
+    this.onMessage('gbNext', (client: Client) => this.gbNext(client));
+    this.onMessage('gbEnd', (client: Client) => this.gbEnd(client));
+
     console.log(`방 ${this.roomId}을 만들었습니다.`);
   }
 
@@ -98,6 +127,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     player.role = teacher ? 'teacher' : 'student';
     player.col = classroom.start.col;
     player.row = classroom.start.row;
+    // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.
+    if (this.state.goldenbell.phase !== '') this.enterGoldenBell(player);
     this.state.players.set(client.sessionId, player);
   }
 
@@ -121,5 +152,125 @@ export class ClassRoom extends Room<{ state: ClassState }> {
 
   onDispose() {
     console.log(`방 ${this.roomId}을 닫았습니다.`);
+  }
+
+  // ---- 골든벨 ----
+
+  private isTeacher(client: Client) {
+    return this.state.players.get(client.sessionId)?.role === 'teacher';
+  }
+
+  /** 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 교실 자리는 화면이 기억한다. */
+  private enterGoldenBell(p: Player) {
+    p.map = 'goldenbell';
+    p.col = GB_SPAWN.col + Math.random() * GB_SPAWN.w;
+    p.row = GB_SPAWN.row + Math.random() * GB_SPAWN.h;
+    p.gbLives = GB_LIVES;
+    p.gbScore = 0;
+    p.gbOut = false;
+    p.gbRevive = 0;
+    p.gbResult = '';
+    p.gbAnswer = '';
+  }
+
+  private gbStart(client: Client, message: { file?: unknown }): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 골든벨을 시작할 수 있습니다.');
+    if (this.state.goldenbell.phase !== '') return refuse('이미 골든벨을 하고 있습니다.');
+    let set: QuestionSet;
+    try {
+      set = loadQuestionSet(typeof message?.file === 'string' ? message.file : '');
+    } catch (e) {
+      return refuse((e as Error).message);
+    }
+    this.questions = set;
+    const gb = this.state.goldenbell;
+    gb.title = set.title;
+    gb.total = set.questions.length;
+    gb.index = -1;
+    this.clearQuestion();
+    gb.phase = 'ready';
+    for (const p of this.state.players.values()) this.enterGoldenBell(p);
+    console.log(`방 ${this.roomId}: 골든벨 "${set.title}"(${set.questions.length}문제)을 시작했습니다.`);
+    return ok;
+  }
+
+  /** 첫 문제 또는 다음 문제를 낸다. 마지막 문제의 정답을 공개한 뒤에는 결과(end)로 넘어간다. */
+  private gbNext(client: Client): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 문제를 넘길 수 있습니다.');
+    const gb = this.state.goldenbell;
+    if (gb.phase !== 'ready' && gb.phase !== 'reveal') return refuse('지금은 다음 문제로 넘어갈 수 없습니다.');
+    const questions = this.questions?.questions ?? [];
+    const next = gb.index + 1;
+    if (next >= questions.length) {
+      this.clearQuestion();
+      gb.phase = 'end';
+      return ok;
+    }
+    const q = questions[next];
+    gb.index = next;
+    gb.type = q.type;
+    gb.question = q.question;
+    replaceAll(gb.choices, q.choices);
+    gb.answer = '';
+    gb.timeLeft = q.seconds;
+    for (const p of this.state.players.values()) {
+      p.gbResult = '';
+      p.gbAnswer = '';
+    }
+    gb.phase = 'question';
+    this.timer?.clear();
+    this.timer = this.clock.setInterval(() => this.tick(), 1000);
+    return ok;
+  }
+
+  private tick() {
+    const gb = this.state.goldenbell;
+    gb.timeLeft = Math.max(0, gb.timeLeft - 1);
+    if (gb.timeLeft > 0) return;
+    this.timer?.clear();
+    this.timer = null;
+    this.reveal();
+  }
+
+  /** 시간이 끝나면 학생마다 서 있는 구역으로 채점하고 정답을 공개한다. 구역 밖은 틀린 것으로 센다. */
+  private reveal() {
+    const gb = this.state.goldenbell;
+    const q = this.questions?.questions[gb.index];
+    if (!q) return;
+    const zones = activeZones(GB_ZONES, q.type, q.choices.length);
+    for (const p of this.state.players.values()) {
+      if (p.role !== 'student' || p.map !== 'goldenbell') continue;
+      p.gbAnswer = zoneAt(zones, p.col, p.row);
+      judge(p, p.gbAnswer === q.answer);
+    }
+    gb.answer = q.answer;
+    gb.phase = 'reveal';
+  }
+
+  /** 골든벨을 끝내고 모두 교실로 돌려보낸다(교실의 자리는 화면이 기억해 둔 곳). */
+  private gbEnd(client: Client): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 골든벨을 끝낼 수 있습니다.');
+    const gb = this.state.goldenbell;
+    if (gb.phase === '') return refuse('골든벨을 하고 있지 않습니다.');
+    this.timer?.clear();
+    this.timer = null;
+    this.questions = null;
+    this.clearQuestion();
+    gb.phase = '';
+    gb.title = '';
+    gb.total = 0;
+    gb.index = -1;
+    for (const p of this.state.players.values()) p.map = 'classroom';
+    console.log(`방 ${this.roomId}: 골든벨을 끝냈습니다.`);
+    return ok;
+  }
+
+  private clearQuestion() {
+    const gb = this.state.goldenbell;
+    gb.type = '';
+    gb.question = '';
+    replaceAll(gb.choices, []);
+    gb.timeLeft = 0;
+    gb.answer = '';
   }
 }

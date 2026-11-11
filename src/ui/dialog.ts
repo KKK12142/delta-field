@@ -1,7 +1,15 @@
 import type { Quiz } from '../data/room';
 import { el, uiRoot } from './dom';
 
-/** 단서, 퀴즈, 끝 화면을 띄우는 대화상자. 한 번에 하나만 띄운다. */
+export interface ChoiceOption {
+  label: string;
+  /** 아래에 작게 적는 글 */
+  detail?: string;
+  /** 고를 수 없으면 true(detail에 까닭을 적는다) */
+  disabled?: boolean;
+}
+
+/** 단서, 퀴즈, 끝 화면, 고르기를 띄우는 대화상자. 한 번에 하나만 띄운다. */
 export class Dialog {
   private current: { node: HTMLElement; onKey: (e: KeyboardEvent) => void } | null = null;
   /** 닫힌 시각. 닫을 때 누른 키가 곧바로 다시 살펴보기로 이어지지 않게 쓴다. */
@@ -76,6 +84,40 @@ export class Dialog {
         if (Number.isInteger(n) && n >= 1) pick(n - 1);
       });
     });
+  }
+
+  /** 여러 가지 가운데 하나를 고른다. 고른 번호를 돌려주고, 닫으면 null */
+  choose(title: string, text: string, options: ChoiceOption[], closeText = '닫기'): Promise<number | null> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      panel.append(el('p', 'df-text', text));
+      const list = el('div', 'df-choices');
+      const finish = (picked: number | null) => {
+        this.close();
+        resolve(picked);
+      };
+      options.forEach((o, i) => {
+        const b = el('button', 'df-choice');
+        b.append(el('span', '', o.label));
+        if (o.detail) b.append(el('span', o.disabled ? 'df-choice-detail is-wrong' : 'df-choice-detail', o.detail));
+        b.disabled = !!o.disabled;
+        b.addEventListener('click', () => finish(i));
+        list.append(b);
+      });
+      const row = el('div', 'df-row');
+      const close = el('button', 'df-button', closeText);
+      close.addEventListener('click', () => finish(null));
+      row.append(close);
+      panel.append(list, row);
+      this.open(panel, (e) => {
+        if (e.key === 'Escape') finish(null);
+      });
+    });
+  }
+
+  /** 떠 있는 대화상자를 거둔다. 기다리던 쪽에는 아무 답도 돌려주지 않는다(맵을 옮길 때 그 맵의 일을 멈추려고). */
+  abandon() {
+    this.close();
   }
 
   private panel(title: string) {

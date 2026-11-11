@@ -145,6 +145,19 @@
 .df-choice:hover:not(:disabled) {
   background: var(--df-choice-hover);
 }
+.df-choice:disabled {
+  cursor: default;
+  color: var(--df-text-muted);
+}
+.df-choice-detail {
+  display: block;
+  font-size: var(--df-font-small);
+  color: var(--df-text-muted);
+  white-space: pre-wrap;
+}
+.df-choice-detail.is-wrong {
+  color: var(--df-wrong);
+}
 .df-choice.is-wrong {
   border-color: var(--df-wrong);
   color: var(--df-wrong);
@@ -174,8 +187,8 @@
 .df-hud .df-button-small {
   margin-top: var(--df-hud-gap);
 }
-/* CCTV 모드에서는 오른쪽을 CCTV 창이 쓴다. */
-.df-hud.is-cctv {
+/* CCTV 모드와 선생님 골든벨에서는 오른쪽을 창이 쓴다. */
+.df-hud.has-panel {
   right: calc(min(var(--df-cctv-width), 100vw - 2 * var(--df-margin)) + 2 * var(--df-margin));
 }
 .df-hud-box {
@@ -298,4 +311,28 @@
 }
 .df-cctv-back {
   align-self: flex-start;
+}
+
+/* 골든벨 */
+.df-gb-card {
+  flex: 1;
+  min-width: 0;
+}
+.df-gb-question {
+  font-size: var(--df-gb-question-font);
+  line-height: var(--df-line-height);
+}
+.df-gb-result.is-good {
+  color: var(--df-correct);
+}
+.df-gb-result.is-bad {
+  color: var(--df-wrong);
+}
+.df-gb-ranking {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
 }

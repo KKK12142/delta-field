@@ -22,6 +22,16 @@ export const color = {
   // CCTV 모드에서 아바타 위에 띄우는 지금 하는 일
   tagText: '#ffffff',
   tagBackground: 'rgba(46, 42, 38, 0.78)',
+  // 골든벨 답 구역
+  zone: {
+    O: 0x3b6ea8,
+    X: 0xc0603a,
+    '1': 0x4f8a5b,
+    '2': 0x8a6bb0,
+    '3': 0xc79a3d,
+    '4': 0x3d8f99,
+  },
+  zoneLabel: '#2e2a26',
   // 사물 종류별 색(단순 도형 단계)
   object: {
     blackboard: 0x2f5d4a,
@@ -85,6 +95,11 @@ export const size = {
   followZoomMax: 2.5,
   followLerp: 0.15, // 화면이 따라가는 학생을 쫓는 빠르기(0~1, 클수록 바로)
   pickRadius: 30, // 학생을 누를 때 아바타 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다
+  // 골든벨
+  reserveGap: 12, // 문제 카드와 지도 사이(픽셀)
+  zoneLabelFont: '56px',
+  zoneTextFont: '20px',
+  zoneTextPad: 10,
 } as const;
 
 /** 대화상자·안내 크기(CSS) */
@@ -109,6 +124,7 @@ export const uiSize = {
   buttonPadSmall: '6px 12px',
   cctvWidth: '300px',
   cctvRowPad: '8px 10px',
+  gbQuestionFont: '20px',
 } as const;
 
 /** 글꼴(게임 화면과 HTML에 함께 쓴다) */
@@ -118,6 +134,10 @@ export const fontFamily =
 export const alpha = {
   floorLine: 0.6,
   avatarShadow: 0.18,
+  zone: 0.3, // 골든벨 답 구역
+  zoneCorrect: 0.6, // 정답 공개: 정답 구역
+  zoneDim: 0.08, // 정답 공개: 나머지 구역
+  outAvatar: 0.4, // 골든벨에서 탈락한 학생
 } as const;
 
 /** 움직임 */

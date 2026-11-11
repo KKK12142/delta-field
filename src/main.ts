@@ -1,9 +1,13 @@
 import { AUTO, Game, Scale } from 'phaser';
+import type { MapId } from '../shared/protocol.ts';
 import classroom from './data/classroom.json';
+import goldenbell from './data/goldenbell.json';
 import { loadRoom } from './data/room';
 import { RunState } from './game/state';
 import { connect, joinErrorText } from './net/connection';
-import { RoomScene, type RoomSceneData } from './scenes/RoomScene';
+import { GoldenBellScene } from './scenes/GoldenBellScene';
+import type { MapContext } from './scenes/MapScene';
+import { RoomScene } from './scenes/RoomScene';
 import { applyCssTheme, color } from './theme';
 import { Dialog } from './ui/dialog';
 import { isTouchDevice } from './ui/dom';
@@ -12,7 +16,10 @@ import './ui/ui.css';
 
 applyCssTheme();
 
-const room = loadRoom(classroom);
+const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
+  classroom: loadRoom(classroom),
+  goldenbell: loadRoom(goldenbell),
+};
 const net = await askEntry(connect, joinErrorText);
 const dialog = new Dialog();
 
@@ -24,12 +31,13 @@ net.onStatus((status) => {
     .then(() => location.reload());
 });
 
-const data: RoomSceneData = {
-  room,
+const ctx: MapContext = {
+  rooms,
   state: new RunState(net.nickname),
   dialog,
   touch: isTouchDevice(),
   net,
+  classroomPos: null,
 };
 
 const game = new Game({
@@ -38,4 +46,7 @@ const game = new Game({
   backgroundColor: color.background,
   scale: { mode: Scale.RESIZE, width: '100%', height: '100%' },
 });
-game.scene.add('room', RoomScene, true, data);
+// 골든벨을 하는 중에 들어왔으면 골든벨 맵에서 시작한다.
+const first: MapId = net.me()?.map === 'goldenbell' ? 'goldenbell' : 'classroom';
+game.scene.add('classroom', RoomScene, first === 'classroom', ctx);
+game.scene.add('goldenbell', GoldenBellScene, first === 'goldenbell', ctx);

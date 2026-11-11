@@ -7,16 +7,18 @@
 ## 환경
 - 집 데스크탑 WSL2 Ubuntu의 ~/projects/delta-field. 교사는 맥의 Orca 앱으로 원격 접속하고, 이 컴퓨터를 원격으로 켜고 끈다.
 - Phaser 4.2.1, Vite 8.3.7, TypeScript 7.0.2(엄격 모드), pnpm 10.26.0, Node 24(nvm, .nvmrc)
-- 구조: src/main.ts(시작), src/scenes/RoomScene.ts(방·움직임·살펴보기·CCTV 모드), src/data/(방 데이터 JSON과 형식),
-  src/game/(state.ts 한 판의 상태, cctv.ts CCTV에 보일 글), src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
-  server/(Colyseus 게임 서버: main.ts, ClassRoom.ts), shared/(서버와 화면이 함께 쓰는 약속·상태)
+- 구조: src/main.ts(시작), src/scenes/(MapScene.ts 맵·움직임 바탕, RoomScene.ts 교실·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨),
+  src/data/(맵 데이터 JSON과 형식: classroom.json, goldenbell.json), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
+  src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창·골든벨 안내, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
+  server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기), shared/(서버와 화면이 함께 쓰는 약속·상태·골든벨 규칙),
+  goldenbell/(골든벨 문제 YAML. 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다)
 - 서버 코드는 Node가 TypeScript를 그대로 실행한다(타입 지우기). 상대 경로 import에 .ts를 붙이고, 타입만 가져올 때는 import type을 쓰고, enum·namespace는 쓰지 않는다.
   서버 타입 검사 설정은 server/tsconfig.json. express는 타입 정의를 내려받지 않고 server/express.d.ts에 쓰는 부분만 적어 두었다.
 - 명령: pnpm dev(화면 개발 서버), pnpm dev:server(게임 서버, 2567), pnpm check(화면과 서버 타입 검사), pnpm build(타입 검사 뒤 빌드),
   pnpm start(수업용: 빌드한 뒤 게임 서버가 화면까지 한 주소로 내어 줌. 교사의 맥에서 쓴다),
   pnpm playtest(화면·게임 서버를 켠 채로 DF_TEACHER_PASSWORD를 넘겨, 헤드리스 크롬에서 선생님 1명·학생 2명으로 한 판을 자동으로 해 본다.
   방 데이터를 바꾸면 scripts/playtest.mjs도 맞춘다. 확인용 게임 서버는 확인용 비밀번호로 따로 켜고, 끝나면 끈다.
-  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다(README))
+  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(README))
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 화면·게임 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 서버 기록은 .run/.

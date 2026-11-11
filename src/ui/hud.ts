@@ -12,6 +12,7 @@ export class Hud {
   readonly action = el('button', 'df-button df-action', '살펴보기');
   /** 선생님 화면에만 보인다. */
   readonly cctv = el('button', 'df-button df-button-small', 'CCTV 보기');
+  readonly goldenbell = el('button', 'df-button df-button-small', '골든벨 시작');
   private readonly touch: boolean;
 
   constructor(roomName: string, goal: string, touch: boolean, teacher: boolean) {
@@ -20,8 +21,16 @@ export class Hud {
     left.append(el('strong', '', roomName), el('span', 'df-text', goal), this.help);
     this.people.hidden = true;
     this.status.hidden = true;
-    this.cctv.hidden = !teacher;
-    this.right.append(this.room, this.people, this.status, el('span', 'df-muted', '가진 물건'), this.items, this.cctv);
+    this.cctv.hidden = this.goldenbell.hidden = !teacher;
+    this.right.append(
+      this.room,
+      this.people,
+      this.status,
+      el('span', 'df-muted', '가진 물건'),
+      this.items,
+      this.cctv,
+      this.goldenbell,
+    );
     this.top.append(left, this.right);
     this.action.disabled = true;
     uiRoot().append(this.top, this.action);
@@ -56,7 +65,7 @@ export class Hud {
 
   /** CCTV 모드에서는 오른쪽 안내와 살펴보기 단추를 감추고(오른쪽은 CCTV 창이 쓴다) 조작 안내를 바꾼다. */
   setCctv(on: boolean) {
-    this.top.classList.toggle('is-cctv', on);
+    this.top.classList.toggle('has-panel', on);
     this.right.hidden = on;
     this.action.hidden = on;
     this.help.textContent = on

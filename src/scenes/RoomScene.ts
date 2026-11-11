@@ -1,31 +1,13 @@
-import { Input, Scene } from 'phaser';
+import { Input } from 'phaser';
 import type { ActivityKind } from '../../shared/protocol.ts';
-import type { Room, RoomObject } from '../data/room';
+import type { RoomObject } from '../data/room';
 import { byNickname, describeStudent } from '../game/cctv';
 import { formatDuration, RunState } from '../game/state';
-import type { Net } from '../net/connection';
 import { CctvPanel } from '../ui/cctv';
-import type { Dialog } from '../ui/dialog';
 import { objectParticle } from '../ui/dom';
 import { Hud } from '../ui/hud';
-import { Joystick } from '../ui/joystick';
-import { alpha, color, fontFamily, motion, size } from '../theme';
-
-export interface RoomSceneData {
-  room: Room;
-  state: RunState;
-  dialog: Dialog;
-  touch: boolean;
-  net: Net;
-}
-
-/** 다른 접속자의 아바타. 서버가 알려 준 위치(target)로 부드럽게 따라간다. */
-interface Remote {
-  avatar: Phaser.GameObjects.Container;
-  target: { x: number; y: number };
-  /** CCTV 모드에서 지금 하는 일을 띄우는 글(선생님 화면의 학생만) */
-  tag: Phaser.GameObjects.Text | null;
-}
+import { color, size } from '../theme';
+import { MapScene, type MapContext, type Reserved } from './MapScene';
 
 /** 선생님의 CCTV 모드 */
 interface Cctv {
@@ -37,322 +19,97 @@ interface Cctv {
 /** 닫은 키가 곧바로 다시 살펴보기로 이어지지 않게 두는 틈(ms) */
 const REOPEN_GUARD = 250;
 
-/** 방 하나를 돌아다니며 사물을 살펴보는 장면 */
-export class RoomScene extends Scene {
-  private room!: Room;
-  private state!: RunState;
-  private dialog!: Dialog;
-  private touch = false;
+/** 교실: 돌아다니며 사물을 살펴보는 방탈출. 선생님은 CCTV 모드로 학생을 지켜보고 골든벨을 시작한다. */
+export class RoomScene extends MapScene {
+  readonly mapId = 'classroom';
   private hud!: Hud;
-  private joystick: Joystick | null = null;
-  private net!: Net;
-  private readonly remotes = new Map<string, Remote>();
+  private highlight!: Phaser.GameObjects.Graphics;
+  private target: RoomObject | null = null;
+  private busy = false;
   private studentCount = -1;
   private cctv: Cctv | null = null;
 
-  /** 발밑 위치(칸 단위). 칸 (c, r)은 [c, c+1) × [r, r+1)을 차지한다. */
-  private pos = { col: 0, row: 0 };
-  private avatar!: Phaser.GameObjects.Container;
-  private highlight!: Phaser.GameObjects.Graphics;
-  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
-  private target: RoomObject | null = null;
-  private busy = false;
-
   constructor() {
-    super('room');
+    super('classroom');
   }
 
-  init(data: RoomSceneData) {
-    this.room = data.room;
-    this.state = data.state;
-    this.dialog = data.dialog;
-    this.touch = data.touch;
-    this.net = data.net;
-    this.remotes.clear();
-    this.studentCount = -1;
-    this.cctv = null;
-    this.pos = { ...this.room.start };
+  private get state(): RunState {
+    return this.ctx.state;
+  }
+
+  init(ctx: MapContext) {
+    super.init(ctx);
     this.target = null;
     this.busy = false;
+    this.studentCount = -1;
+    this.cctv = null;
+    // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
+    ctx.state.activity = { kind: '', object: '' };
   }
 
   create() {
-    this.drawRoom();
-
-    this.avatar = this.makeAvatar(this.state.nickname, color.avatar, color.nickname).avatar;
+    super.create();
     this.highlight = this.add.graphics().setDepth(Number.MAX_SAFE_INTEGER);
-
-    const keyboard = this.input.keyboard;
-    if (!keyboard) throw new Error('키보드 입력을 쓸 수 없습니다.');
-    this.keys = keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,SPACE,E,ESC') as Record<string, Phaser.Input.Keyboard.Key>;
 
     const teacher = this.net.role === 'teacher';
     this.hud = new Hud(this.room.name, this.room.goal, this.touch, teacher);
     this.hud.setRoomCode(this.net.code);
+    // 골든벨에 다녀왔으면 가진 물건이 그대로 있다.
+    this.hud.setItems([...this.state.items].map((id) => this.room.items[id]));
     this.hud.action.addEventListener('click', this.onActionButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
-    if (this.touch) this.joystick = new Joystick();
-    const offStatus = this.net.onStatus((s) =>
-      this.hud.setStatus(s === 'reconnecting' ? '연결이 끊겨 다시 연결하는 중입니다.' : null),
-    );
+    this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
     if (teacher) {
       this.input.on('pointerdown', this.onPointerDown, this);
       this.input.on('pointermove', this.onPointerMove, this);
     }
     this.events.once('shutdown', () => {
-      offStatus();
       this.cctv?.panel.destroy();
       this.cctv = null;
+      this.game.canvas.style.cursor = '';
       this.input.off('pointerdown', this.onPointerDown, this);
       this.input.off('pointermove', this.onPointerMove, this);
       this.hud.destroy();
-      this.joystick?.destroy();
-      this.joystick = null;
     });
-
     this.fitCamera();
-    this.scale.on('resize', this.fitCamera, this);
-    this.events.once('shutdown', () => this.scale.off('resize', this.fitCamera, this));
-    this.pos = this.spawnPoint();
-    this.placeAvatar();
-    // 처음 위치(다시 하기 뒤에도)를 서버에 알린다.
-    this.net.sendMove(this.pos.col, this.pos.row, true);
 
-    if (import.meta.env.DEV) {
-      // 개발 중 자동 확인용(헤드리스 크롬). 빌드에는 들어가지 않는다.
-      Object.assign(window, {
-        __df: {
-          pos: () => ({ ...this.pos }),
-          items: () => [...this.state.items],
-          target: () => this.target?.id ?? null,
-          escaped: () => this.state.escapedAt !== null,
-          code: () => this.net.code,
-          role: () => this.net.role,
-          others: () =>
-            this.net.others().map(([, p]) => ({
-              nickname: p.nickname,
-              role: p.role,
-              col: p.col,
-              row: p.row,
-              online: p.online,
-              activity: p.activity,
-              activityObject: p.activityObject,
-              items: [...p.items],
-              done: [...p.done],
-              escaped: p.escaped,
-            })),
-          drawn: () => [...this.remotes.values()].map((r) => ({ x: r.avatar.x, y: r.avatar.y })),
-          teleport: (col: number, row: number) => {
-            this.pos = { col, row };
-            this.placeAvatar();
-          },
-          cctv: () => {
-            if (!this.cctv) return null;
-            const cam = this.cameras.main;
-            const following = this.cctv.following ? this.net.room.state.players.get(this.cctv.following) : undefined;
-            return {
-              following: following?.nickname ?? null,
-              zoom: cam.zoom,
-              center: { col: cam.midPoint.x / size.tile, row: cam.midPoint.y / size.tile },
-              tags: [...this.remotes.values()].filter((r) => r.tag?.visible).map((r) => r.tag!.text),
-            };
-          },
-          /** 다른 접속자 아바타 몸통 가운데의 화면 좌표 */
-          screenOf: (nickname: string) => {
-            const id = this.net.others().find(([, p]) => p.nickname === nickname)?.[0];
-            const r = id ? this.remotes.get(id) : undefined;
-            if (!r) return null;
-            const cam = this.cameras.main;
-            return {
-              x: cam.x + (r.avatar.x - cam.worldView.x) * cam.zoom,
-              y: cam.y + (r.avatar.y - size.avatarHeight / 2 - cam.worldView.y) * cam.zoom,
-            };
-          },
-        },
-      });
-    }
+    this.exposeDevHooks({
+      items: () => [...this.state.items],
+      target: () => this.target?.id ?? null,
+      escaped: () => this.state.escapedAt !== null,
+      cctv: () => {
+        if (!this.cctv) return null;
+        const cam = this.cameras.main;
+        const following = this.cctv.following ? this.net.room.state.players.get(this.cctv.following) : undefined;
+        return {
+          following: following?.nickname ?? null,
+          zoom: cam.zoom,
+          center: { col: cam.midPoint.x / size.tile, row: cam.midPoint.y / size.tile },
+          tags: [...this.remotes.values()].filter((r) => r.tag?.visible).map((r) => r.tag!.text),
+        };
+      },
+    });
   }
 
-  update(_time: number, delta: number) {
-    // 대화상자가 떠 있어도 다른 사람은 계속 움직여 보인다.
-    this.syncRemotes(delta);
+  /** 골든벨에서 돌아왔으면 떠날 때 서 있던 자리에, 아니면 시작 위치 둘레에 선다. */
+  protected startPoint() {
+    const back = this.ctx.classroomPos;
+    this.ctx.classroomPos = null;
+    if (back && this.free(back.col, back.row)) return back;
+    return this.spawnPoint();
+  }
+
+  protected beforeLeave() {
+    this.ctx.classroomPos = { ...this.pos };
+  }
+
+  protected setConnectionText(text: string | null) {
+    this.hud.setStatus(text);
+  }
+
+  protected tick(delta: number) {
     // 진행 상태가 바뀌었으면 서버로 보낸다(바뀌지 않았으면 보내지 않는다).
     if (this.net.role === 'student') this.net.sendStatus(this.state.toStatus());
-    if (this.cctv) {
-      this.updateCctv();
-      return;
-    }
-    if (this.dialog.isOpen() || this.busy) return;
-
-    const k = this.keys;
-    let dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
-    let dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.W.isDown ? 1 : 0);
-    if (dx !== 0 || dy !== 0) {
-      // 대각선으로 갈 때도 같은 빠르기가 되게 한다.
-      const len = Math.hypot(dx, dy);
-      dx /= len;
-      dy /= len;
-    } else if (this.joystick) {
-      dx = this.joystick.vector.x;
-      dy = this.joystick.vector.y;
-    }
-    if (dx !== 0 || dy !== 0) this.move(dx, dy, (motion.speed * delta) / 1000);
-    this.net.sendMove(this.pos.col, this.pos.row);
-
-    this.updateTarget();
-
-    // 두 키의 눌림 표시를 함께 지운다.
-    const space = Input.Keyboard.JustDown(k.SPACE);
-    const e = Input.Keyboard.JustDown(k.E);
-    const pressed = space || e;
-    if (pressed && this.target && performance.now() - this.dialog.lastClosedAt > REOPEN_GUARD) {
-      void this.interact(this.target);
-    }
-  }
-
-  // ---- 그리기 ----
-
-  private drawRoom() {
-    const t = size.tile;
-    const g = this.add.graphics();
-    const layout = this.room.layout;
-    layout.forEach((line, row) => {
-      [...line].forEach((ch, col) => {
-        const x = col * t;
-        const y = row * t;
-        if (ch === '#') {
-          g.fillStyle(color.wallTop, 1).fillRect(x, y, t, t);
-          // 아래가 바닥이면 벽 앞면을 그려 위에서 비스듬히 본 느낌을 준다.
-          if (layout[row + 1]?.[col] === '.') {
-            g.fillStyle(color.wall, 1).fillRect(x, y + t - size.wallFace, t, size.wallFace);
-          }
-        } else {
-          g.fillStyle((col + row) % 2 === 0 ? color.floor : color.floorAlt, 1).fillRect(x, y, t, t);
-          g.lineStyle(size.floorLine, color.floorLine, alpha.floorLine).strokeRect(x, y, t, t);
-        }
-      });
-    });
-
-    for (const o of this.room.objects) {
-      const x = o.col * t;
-      const y = o.row * t;
-      const bottom = (o.row + o.h) * t;
-      this.add
-        .rectangle(x, y, o.w * t, o.h * t, color.object[o.kind])
-        .setOrigin(0, 0)
-        .setDepth(bottom);
-      if (o.action) {
-        this.add
-          .text(x + (o.w * t) / 2, y + (o.h * t) / 2, o.name, {
-            fontFamily,
-            fontSize: size.labelFont,
-            color: o.kind === 'desk' ? color.label : color.labelOnDark,
-            resolution: size.textResolution,
-          })
-          .setOrigin(0.5)
-          .setDepth(bottom + 1);
-      }
-    }
-  }
-
-  /** 방 전체를 화면에 맞춘다. CCTV 모드에서 학생을 따라갈 때는 그 학생을 크게 보며 따라간다. */
-  private fitCamera() {
-    const cam = this.cameras.main;
-    const roomW = this.room.layout[0].length * size.tile;
-    const roomH = this.room.layout.length * size.tile;
-    // 위쪽 안내, (터치 기기의) 아래쪽 조이스틱, (CCTV 모드의) 오른쪽 창이 방을 가리지 않게 그만큼 비워 둔다.
-    const top = size.reserveTop;
-    const bottom = this.touch && !this.cctv ? size.reserveBottomTouch : 0;
-    const right = this.cctv ? Math.max(0, cam.width - this.cctv.panel.left) : 0;
-    const zoom = Math.min(
-      size.zoomMax,
-      Math.max(size.zoomMin, Math.min((cam.width - right) / roomW, (cam.height - top - bottom) / roomH) * size.viewMargin),
-    );
-    const following = this.cctv?.following ? this.remotes.get(this.cctv.following) : undefined;
-    if (following) {
-      const followZoom = Math.min(size.followZoomMax, zoom * size.followZoomScale);
-      cam.setZoom(followZoom);
-      // 따라가는 학생의 몸통이 가리는 것 없는 자리의 가운데에 오게 한다(카메라 가운데 = 대상 - offset).
-      cam.startFollow(
-        following.avatar,
-        false,
-        size.followLerp,
-        size.followLerp,
-        -right / 2 / followZoom,
-        size.avatarHeight / 2 + top / 2 / followZoom,
-      );
-      return;
-    }
-    cam.stopFollow();
-    cam.setZoom(zoom);
-    cam.centerOn(roomW / 2 + right / 2 / zoom, roomH / 2 - (top - bottom) / 2 / zoom);
-  }
-
-  /** 아바타 하나. withTag면 닉네임 위에 CCTV 모드용 글을 (감춰 둔 채로) 붙인다. */
-  private makeAvatar(nickname: string, bodyColor: number, nameColor: string, withTag = false) {
-    const shadow = this.add.ellipse(0, 0, size.avatarShadowWidth, size.avatarShadowHeight, color.avatarShadow, alpha.avatarShadow);
-    const body = this.add.ellipse(0, -size.avatarHeight / 2, size.avatarWidth, size.avatarHeight, bodyColor);
-    const name = this.add
-      .text(0, -size.avatarHeight - size.nicknameGap, nickname, {
-        fontFamily,
-        fontSize: size.nicknameFont,
-        color: nameColor,
-        resolution: size.textResolution,
-      })
-      .setOrigin(0.5, 1);
-    const parts: Phaser.GameObjects.GameObject[] = [shadow, body, name];
-    let tag: Phaser.GameObjects.Text | null = null;
-    if (withTag) {
-      tag = this.add
-        .text(0, name.y - name.height - size.tagGap, '', {
-          fontFamily,
-          fontSize: size.tagFont,
-          color: color.tagText,
-          backgroundColor: color.tagBackground,
-          padding: { x: size.tagPadX, y: size.tagPadY },
-          resolution: size.textResolution,
-        })
-        .setOrigin(0.5, 1)
-        .setVisible(false);
-      parts.push(tag);
-    }
-    return { avatar: this.add.container(0, 0, parts), tag };
-  }
-
-  // ---- 다른 접속자 ----
-
-  private syncRemotes(delta: number) {
-    const seen = new Set<string>();
-    // 프레임 빠르기와 상관없이 같은 정도로 따라가게 한다.
-    const k = 1 - Math.exp(-delta / motion.remoteSmoothing);
-    for (const [id, p] of this.net.others()) {
-      seen.add(id);
-      const x = p.col * size.tile;
-      const y = p.row * size.tile;
-      let r = this.remotes.get(id);
-      if (!r) {
-        const teacher = p.role === 'teacher';
-        const { avatar, tag } = this.makeAvatar(
-          p.nickname,
-          teacher ? color.teacherAvatar : color.remoteAvatar,
-          teacher ? color.teacherNickname : color.remoteNickname,
-          !teacher && this.net.role === 'teacher',
-        );
-        avatar.setPosition(x, y);
-        r = { avatar, target: { x, y }, tag };
-        this.remotes.set(id, r);
-      }
-      r.target.x = x;
-      r.target.y = y;
-      r.avatar.x += (x - r.avatar.x) * k;
-      r.avatar.y += (y - r.avatar.y) * k;
-      r.avatar.setDepth(r.avatar.y);
-    }
-    for (const [id, r] of this.remotes) {
-      if (seen.has(id)) continue;
-      r.avatar.destroy();
-      this.remotes.delete(id);
-    }
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {
@@ -360,14 +117,84 @@ export class RoomScene extends Scene {
         this.hud.setStudentCount(n);
       }
     }
+    if (this.cctv) {
+      this.updateCctv();
+      return;
+    }
+    if (this.dialog.isOpen() || this.busy) return;
+
+    this.moveByInput(delta);
+    this.updateTarget();
+
+    // 두 키의 눌림 표시를 함께 지운다.
+    const space = Input.Keyboard.JustDown(this.keys.SPACE);
+    const e = Input.Keyboard.JustDown(this.keys.E);
+    if ((space || e) && this.target && performance.now() - this.dialog.lastClosedAt > REOPEN_GUARD) {
+      void this.interact(this.target);
+    }
   }
 
-  private placeAvatar() {
-    const x = this.pos.col * size.tile;
-    const y = this.pos.row * size.tile;
-    this.avatar.setPosition(x, y);
-    // 아래쪽에 있는 것이 앞에 보이게 한다.
-    this.avatar.setDepth(y);
+  // ---- 화면 맞추기 ----
+
+  /** CCTV 모드에서는 아래쪽 조이스틱이 감춰지고 오른쪽을 CCTV 창이 쓴다. */
+  protected reserved(): Reserved {
+    const cam = this.cameras.main;
+    return {
+      top: size.reserveTop,
+      bottom: this.touch && !this.cctv ? size.reserveBottomTouch : 0,
+      right: this.cctv ? Math.max(0, cam.width - this.cctv.panel.left) : 0,
+    };
+  }
+
+  /** CCTV 모드에서 학생을 따라갈 때는 그 학생을 크게 보며 따라간다. */
+  protected fitCamera() {
+    const following = this.cctv?.following ? this.remotes.get(this.cctv.following) : undefined;
+    if (!following) {
+      super.fitCamera();
+      return;
+    }
+    const cam = this.cameras.main;
+    const r = this.reserved();
+    const zoom = Math.min(size.followZoomMax, this.fitZoom(r) * size.followZoomScale);
+    cam.setZoom(zoom);
+    // 따라가는 학생의 몸통이 가리는 것 없는 자리의 가운데에 오게 한다(카메라 가운데 = 대상 - offset).
+    cam.startFollow(following.avatar, false, size.followLerp, size.followLerp, -r.right / 2 / zoom, size.avatarHeight / 2 + r.top / 2 / zoom);
+  }
+
+  // ---- 골든벨 시작(선생님) ----
+
+  private onGoldenBellButton = () => {
+    this.hud.goldenbell.blur();
+    void this.startGoldenBell();
+  };
+
+  /** 문제 파일을 고르면 서버가 모두를 골든벨 맵으로 옮긴다(장면은 update()에서 바뀐다). */
+  private async startGoldenBell() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const files = await this.net.gbFiles();
+      if (!files.length) {
+        await this.dialog.message('골든벨', '문제 파일이 없습니다. 서버의 goldenbell 폴더에 .yaml 파일을 넣습니다.');
+        return;
+      }
+      const picked = await this.dialog.choose(
+        '골든벨 시작',
+        '문제 파일을 고릅니다. 고르면 모든 학생이 골든벨 맵으로 옮겨 갑니다.',
+        files.map((f) => ({
+          label: f.error ? f.file : `${f.title} (${f.count}문제)`,
+          detail: f.error ?? f.file,
+          disabled: f.error !== null,
+        })),
+      );
+      if (picked === null) return;
+      const reply = await this.net.gbStart(files[picked].file);
+      if (reply.error) await this.dialog.message('골든벨', reply.error);
+    } catch {
+      await this.dialog.message('골든벨', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
   }
 
   // ---- CCTV 모드(선생님) ----
@@ -432,7 +259,7 @@ export class RoomScene extends Scene {
       return;
     }
     const students = this.net
-      .students()
+      .students(this.mapId)
       .map(([id, p]) => describeStudent(this.room, id, p))
       .sort(byNickname);
     for (const s of students) {
@@ -458,7 +285,7 @@ export class RoomScene extends Scene {
     const p = cam.getWorldPoint(screenX, screenY);
     let best: string | null = null;
     let bestDist = size.pickRadius / cam.zoom;
-    for (const [id] of this.net.students()) {
+    for (const [id] of this.net.students(this.mapId)) {
       const r = this.remotes.get(id);
       if (!r) continue;
       const d = Math.hypot(p.x - r.avatar.x, p.y - (r.avatar.y - size.avatarHeight / 2));
@@ -479,46 +306,6 @@ export class RoomScene extends Scene {
   private onPointerMove(pointer: Phaser.Input.Pointer) {
     if (!this.cctv) return;
     this.game.canvas.style.cursor = this.pickStudent(pointer.x, pointer.y) ? 'pointer' : '';
-  }
-
-  // ---- 움직임 ----
-
-  /** 여럿이 한 점에 겹쳐 나타나지 않게 시작 위치 둘레의 빈 곳을 고른다. */
-  private spawnPoint() {
-    const { col, row } = this.room.start;
-    for (let i = 0; i < 30; i++) {
-      const c = col + (Math.random() * 2 - 1) * size.spawnSpread;
-      const r = row + (Math.random() * 2 - 1) * size.spawnSpread;
-      if (this.free(c, r)) return { col: c, row: r };
-    }
-    return { col, row };
-  }
-
-  /** 가로, 세로를 따로 옮겨 벽에 닿으면 벽을 따라 미끄러지게 한다. */
-  private move(dx: number, dy: number, step: number) {
-    const nextCol = this.pos.col + dx * step;
-    if (this.free(nextCol, this.pos.row)) this.pos.col = nextCol;
-    const nextRow = this.pos.row + dy * step;
-    if (this.free(this.pos.col, nextRow)) this.pos.row = nextRow;
-    this.placeAvatar();
-  }
-
-  /** 발밑 네모(반경 avatarFeet)가 벽과 사물에 닿지 않는지 */
-  private free(col: number, row: number) {
-    const r = size.avatarFeet;
-    const corners = [
-      [col - r, row - r],
-      [col + r, row - r],
-      [col - r, row + r],
-      [col + r, row + r],
-    ];
-    return corners.every(([c, w]) => !this.blocked(c, w));
-  }
-
-  private blocked(col: number, row: number) {
-    const ch = this.room.layout[Math.floor(row)]?.[Math.floor(col)];
-    if (ch !== '.') return true;
-    return this.room.objects.some((o) => col >= o.col && col < o.col + o.w && row >= o.row && row < o.row + o.h);
   }
 
   // ---- 살펴보기 ----
@@ -604,7 +391,7 @@ export class RoomScene extends Scene {
     return a.type === 'quiz' || (a.type === 'exit' && a.quiz !== undefined);
   }
 
-  /** 지금 하는 일. 서버로는 update()에서 보낸다. */
+  /** 지금 하는 일. 서버로는 tick()에서 보낸다. */
   private setActivity(kind: ActivityKind, object: string) {
     this.state.activity = { kind, object };
   }
@@ -625,13 +412,8 @@ export class RoomScene extends Scene {
       `${this.state.nickname}님이 ${this.room.name}${objectParticle(this.room.name)} 탈출했습니다.\n걸린 시간: ${time}`,
       '다시 하기',
     );
-    const data: RoomSceneData = {
-      room: this.room,
-      state: new RunState(this.state.nickname),
-      dialog: this.dialog,
-      touch: this.touch,
-      net: this.net,
-    };
-    this.scene.restart(data);
+    this.ctx.state = new RunState(this.state.nickname);
+    this.ctx.classroomPos = null;
+    this.scene.restart(this.ctx);
   }
 }

@@ -1,0 +1,5 @@
+# pnpm playtest 확인용: 형식이 틀린 파일(고르는 목록에 까닭이 보이는지 확인한다)
+title: 틀린 파일
+questions:
+  - { type: ox, question: 답이 틀림, answer: 0, seconds: 10 }
+  - { type: choice, question: 보기가 하나, choices: [가], answer: 1, seconds: 1 }
