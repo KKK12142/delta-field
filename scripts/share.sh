@@ -7,6 +7,8 @@ cd "$(dirname "$0")/.."
 
 TS="/mnt/c/Program Files/Tailscale/tailscale.exe"
 PORT=5173
+# 윈도우의 80번 포트는 IIS가 쓰고 있어 8080으로 내어 준다.
+SHARE_PORT=8080
 RUN_DIR=.run
 PID_FILE="$RUN_DIR/dev-server.pid"
 LOG_FILE="$RUN_DIR/dev-server.log"
@@ -15,7 +17,7 @@ port_open() { (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; }
 our_pid() { [[ -f $PID_FILE ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null && cat "$PID_FILE"; }
 serve_on() { "$TS" serve status 2>/dev/null | grep -q "127.0.0.1:$PORT"; }
 share_url() {
-  "$TS" status --json | python3 -c 'import json,sys; print("https://" + json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))'
+  "$TS" status --json | python3 -c 'import json,sys; print("http://" + json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' | sed "s/\$/:$SHARE_PORT/"
 }
 
 start_dev() {
@@ -54,8 +56,9 @@ stop_dev() {
 case "${1:-status}" in
   on)
     start_dev
-    # Tailscale에서 serve가 허용되지 않았으면 허용 링크를 띄우고 기다리므로 시간을 제한한다.
-    if ! out=$(timeout 20 "$TS" serve --bg "$PORT" 2>&1); then
+    # HTTP로 내어 준다(HTTPS는 Tailscale 계정에서 인증서를 허용해야 해서 쓰지 않는다).
+    # Tailscale 망 안의 연결은 Tailscale이 암호화한다. 멈추는 경우에 대비해 시간을 제한한다.
+    if ! out=$(timeout 20 "$TS" serve --bg --http="$SHARE_PORT" "$PORT" 2>&1); then
       echo "공유를 켜지 못했습니다. Tailscale의 안내는 다음과 같습니다." >&2
       echo "$out" >&2
       exit 1
@@ -64,7 +67,7 @@ case "${1:-status}" in
     ;;
   off)
     if serve_on; then
-      "$TS" serve --https=443 off >/dev/null
+      "$TS" serve --http="$SHARE_PORT" off >/dev/null
       echo "공유를 껐습니다."
     else
       echo "공유는 이미 꺼져 있습니다."
