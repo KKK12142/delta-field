@@ -421,7 +421,7 @@ await clickText(teacher, '.df-hud button', '골든벨 시작');
 await wait(800);
 const pick = (await teacher.dialogText()) ?? '';
 check('골든벨: 문제 파일 목록(틀린 파일은 까닭과 함께 막힘)',
-  /확인용 골든벨 \(7문제\)/.test(pick) && /broken\.yaml/.test(pick) && /1번 문제: OX 문제의 answer는 O 또는 X로 씁니다/.test(pick) &&
+  /확인용 골든벨 \(9문제\)/.test(pick) && /broken\.yaml/.test(pick) && /1번 문제: OX 문제의 answer는 O 또는 X로 씁니다/.test(pick) &&
   (await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('broken')).disabled`)) === true,
   fmt(pick));
 await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 골든벨')).click()`);
@@ -456,7 +456,7 @@ async function gbRound(aZone, bZone, during) {
 const gbOf = async (nick) => teacher.js(`__df.others().find((o) => o.nickname === ${JSON.stringify(nick)})`);
 
 await gbRound('O', '밖', async () => {
-  check('골든벨 1번: 문제와 남은 시간', /1\/7번 문제 · OX · 남은 시간 \d초/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+  check('골든벨 1번: 문제와 남은 시간', /1\/9번 문제 · OX · 남은 시간 \d초/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
   check('골든벨 1번: 내가 서 있는 곳', /서 있는 곳: O/.test((await gbCard(a)) ?? '') && /서 있는 곳: 구역 밖/.test((await gbCard(b)) ?? ''));
   check('골든벨 1번: 선생님 창에 구역별 인원', /O 1명 · X 0명 · 구역 밖 1명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
   await teacher.shot('gb-question');
@@ -508,11 +508,75 @@ check('골든벨 6번: 3문제를 맞혀 목숨 1개로 다시 살아남',
 await gbRound('O', 'O');
 check('골든벨 7번: 부활 뒤 맞힌 문제는 점수에 들어감', (await gbOf('나래')).gbScore === 1 && (await gbOf('가람')).gbScore === 7,
   `가람 ${(await gbOf('가람')).gbScore}점, 나래 ${(await gbOf('나래')).gbScore}점`);
-check('골든벨 7번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
+// ---- 골든벨 단답형(8·9번) ----
+const answerBox = (pg) => pg.js(`(() => { const i = document.querySelector('.df-gb-answer-input'); return i && !i.closest('form').hidden; })()`);
+const submitShort = (pg, text) => pg.js(`(() => { const i = document.querySelector('.df-gb-answer-input'); i.value = ${JSON.stringify(text)}; i.form.requestSubmit(); })()`);
+const gbPhase = () => teacher.js(`__df.gb().phase`);
+async function waitReveal() {
+  for (let i = 0; i < 40 && (await gbPhase()) !== 'reveal'; i++) await wait(250);
+  await wait(300);
+}
+const answersPanel = () => teacher.js(`document.querySelector('.df-gb-answers')?.innerText ?? null`);
+const clickPanel = async (label) => {
+  await clickText(teacher, '.df-gb-answers button', label);
+  await wait(500);
+};
+
 await nextButton();
 await wait(500);
-check('골든벨 결과: 선생님 창에 순위', /1위 가람 7점/.test((await gbPanel()) ?? '') && /2위 나래 1점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
-check('골든벨 결과: 학생 화면에 내 점수와 순위', /내 점수 7점/.test((await gbCard(a)) ?? '') && /1위 가람 7점/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+check('골든벨 8번: 단답형은 학생에게 답 칸, 선생님에게는 없음',
+  (await answerBox(a)) === true && (await answerBox(b)) === true && (await answerBox(teacher)) === false && /단답형/.test((await gbCard(a)) ?? ''),
+  fmt(await gbCard(a)));
+check('골든벨 8번: 키보드 기기는 답 칸에 바로 쓸 수 있고, 터치 기기는 아님',
+  (await a.js(`document.activeElement?.classList.contains('df-gb-answer-input')`)) === true &&
+    (await b.js(`document.activeElement?.classList.contains('df-gb-answer-input')`)) === false);
+await submitShort(a, '10');
+await wait(400);
+check('골든벨 8번: 낸 답이 보이고 선생님 창에 낸 학생 수', /낸 답: 10/.test((await gbCard(a)) ?? '') && /답을 낸 학생 1명 · 내지 않은 학생 1명/.test((await gbPanel()) ?? ''),
+  `${fmt(await gbCard(a))} | ${fmt(await gbPanel())}`);
+check('골든벨 8번: 정답 공개 전에는 낸 답이 다른 사람에게 가지 않음',
+  (await gbOf('가람')).gbAnswer === '' && (await b.js(`__df.others().find((o) => o.nickname === '가람').gbAnswer`)) === '' && (await teacher.js(`__df.gb().answer`)) === '');
+const aWalk0 = await a.js(`__df.pos().col`);
+await a.press('ArrowRight', 300);
+check('골든벨 8번: 답을 낸 뒤에도 걸을 수 있음', (await a.js(`__df.pos().col`)) > aWalk0 + 0.1);
+await submitShort(a, '10 m/s');
+await submitShort(b, '십');
+await wait(400);
+check('골든벨 8번: 고쳐 내도 낸 학생 수는 그대로(2명)', /답을 낸 학생 2명/.test((await gbPanel()) ?? '') && /낸 답: 10 m\/s/.test((await gbCard(a)) ?? ''), fmt(await gbPanel()));
+await a.shot('gb-short');
+await waitReveal();
+check('골든벨 8번: 마지막에 낸 답으로 채점, 해설이 보임',
+  /정답: 10 m\/s/.test((await gbCard(a)) ?? '') && /내 답: 10 m\/s · 맞았습니다/.test((await gbCard(a)) ?? '') && /해설: 해설 8/.test((await gbCard(b)) ?? ''),
+  fmt(await gbCard(a)));
+check('골든벨 8번: 다른 답은 틀림(목숨을 잃어 탈락)', /내 답: 십 · 틀렸습니다\. 목숨을 모두 잃어 탈락/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === true,
+  fmt(await gbCard(b)));
+check('골든벨 8번: 선생님 창에 낸 답 묶음과 인정 단추',
+  /10 m\/s\s*1명 · 정답/.test((await answersPanel()) ?? '') && /십\s*1명 · 오답\s*나래\s*정답으로 인정/.test((await answersPanel()) ?? ''), fmt(await answersPanel()));
+await teacher.shot('gb-short-answers');
+await clickPanel('정답으로 인정');
+check('골든벨 8번: 선생님이 인정하면 다시 채점(살아남, 점수 2점)',
+  /선생님이 정답으로 인정했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === false && (await gbOf('나래')).gbScore === 2 &&
+    (await gbOf('나래')).gbLives === 1 && /인정 거두기/.test((await answersPanel()) ?? ''),
+  `${fmt(await gbCard(b))} | ${JSON.stringify(await gbOf('나래'))}`);
+check('골든벨 8번: 인정하면 맞힌 학생 수도 바뀜', /맞힌 학생 2명 · 틀린 학생 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+await clickPanel('인정 거두기');
+check('골든벨 8번: 인정을 거두면 처음 채점으로(탈락, 1점)', (await gbOf('나래')).gbOut === true && (await gbOf('나래')).gbScore === 1 && /틀렸습니다/.test((await gbCard(b)) ?? ''),
+  JSON.stringify(await gbOf('나래')));
+await clickPanel('정답으로 인정');
+
+await nextButton();
+await wait(500);
+check('골든벨 9번: 새 문제가 되면 답 칸이 비어 있음', (await a.js(`document.querySelector('.df-gb-answer-input').value`)) === '' && !/낸 답: /.test((await gbCard(a)) ?? ''));
+await submitShort(a, '나,가');
+await waitReveal();
+check('골든벨 9번: 쉼표 답은 순서를 바꿔도 맞음', /정답: 가, 나/.test((await gbCard(a)) ?? '') && /내 답: 나,가 · 맞았습니다/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+check('골든벨 9번: 답을 내지 않으면 틀림', /답을 내지 않아 틀린 것으로 셉니다/.test((await gbCard(b)) ?? '') && /\(답을 내지 않음\)/.test((await answersPanel()) ?? ''),
+  fmt(await gbCard(b)));
+check('골든벨 9번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
+await nextButton();
+await wait(500);
+check('골든벨 결과: 선생님 창에 순위', /1위 가람 9점/.test((await gbPanel()) ?? '') && /2위 나래 2점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+check('골든벨 결과: 학생 화면에 내 점수와 순위', /내 점수 9점/.test((await gbCard(a)) ?? '') && /1위 가람 9점/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
 await teacher.shot('gb-end');
 
 // 골든벨 중에 들어온 학생은 골든벨 맵에서 시작한다.

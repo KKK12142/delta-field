@@ -72,9 +72,20 @@ export interface GbFileInfo {
   error: string | null;
 }
 
-/** 골든벨 요청(gbStart, gbNext, gbEnd)의 답. 할 수 없으면 error에 까닭을 적는다. */
+/** 골든벨 요청(gbStart, gbNext, gbEnd, gbSubmit, gbAccept)의 답. 할 수 없으면 error에 까닭을 적는다. */
 export interface GbReply {
   error: string | null;
+}
+
+/** 학생이 단답형 답을 낸다. 제한 시간 안에는 다시 낼 수 있고 마지막에 낸 답으로 채점한다. */
+export interface GbSubmitMessage {
+  text: string;
+}
+
+/** 선생님이 단답형 정답 공개 뒤 낸 답 하나(answerKey)를 정답으로 인정하거나 인정을 거둔다. */
+export interface GbAcceptMessage {
+  key: string;
+  accept: boolean;
 }
 
 /** 서버가 들어오기를 거절할 때 쓰는 번호. 방 만들기 오류는 HTTP 응답 번호로도 쓰이므로 200~599 안에서 고르고, Colyseus의 번호(520~526)와 겹치지 않게 했다. */

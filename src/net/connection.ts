@@ -5,7 +5,9 @@ import {
   ROOM_NAME,
   RejectCode,
   type GbFileInfo,
+  type GbAcceptMessage,
   type GbReply,
+  type GbSubmitMessage,
   type JoinOptions,
   type MapId,
   type MoveMessage,
@@ -118,6 +120,18 @@ export class Net {
 
   gbEnd(): Promise<GbReply> {
     return this.room.request('gbEnd');
+  }
+
+  /** 학생: 단답형 답을 낸다(다시 내면 바뀐다). */
+  gbSubmit(text: string): Promise<GbReply> {
+    const message: GbSubmitMessage = { text };
+    return this.room.request('gbSubmit', message);
+  }
+
+  /** 선생님: 단답형 낸 답(고른 꼴)을 정답으로 인정하거나 인정을 거둔다. */
+  gbAccept(key: string, accept: boolean): Promise<GbReply> {
+    const message: GbAcceptMessage = { key, accept };
+    return this.room.request('gbAccept', message);
   }
 
   onStatus(listener: (status: ConnectionStatus) => void) {

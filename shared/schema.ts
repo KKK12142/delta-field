@@ -37,7 +37,10 @@ export const Player = schema(
     gbRevive: t.uint8().default(0),
     /** 이번 문제의 채점 결과(GbResult) */
     gbResult: t.string().default(''),
-    /** 이번 문제에서 서 있던 구역 이름. ''은 구역 밖 */
+    /**
+     * 이번 문제의 내 답: OX·객관식은 서 있던 구역 이름(''은 구역 밖), 단답형은 낸 글(''은 내지 않음).
+     * 정답을 공개할 때 채운다(단답형 답이 공개 전에 다른 학생에게 가지 않게 서버가 따로 들고 있다).
+     */
     gbAnswer: t.string().default(''),
   },
   'Player',
@@ -59,8 +62,14 @@ export const GoldenBell = schema(
     choices: t.array('string'),
     /** 남은 시간(초) */
     timeLeft: t.uint16().default(0),
-    /** 정답 구역 이름. 정답 공개 때만 채운다. */
+    /** 정답 공개 때만 채운다. OX·객관식은 정답 구역 이름, 단답형은 정답 표현들(같은 꼴은 하나만, answerDisplay)을 ' / '로 이은 글 */
     answer: t.string().default(''),
+    /** 해설. 정답 공개 때만 채운다(문제 파일에 없으면 '') */
+    explain: t.string().default(''),
+    /** 단답형: 답을 낸 학생 수(누가 무엇을 냈는지는 공개 전에 보내지 않는다) */
+    submitted: t.uint16().default(0),
+    /** 단답형 정답 공개 뒤 선생님이 정답으로 인정한 답(answerKey) */
+    accepted: t.array('string'),
   },
   'GoldenBell',
 );

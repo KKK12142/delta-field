@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { YAMLParseError, parse } from 'yaml';
-import type { GbQuestionType } from '../shared/goldenbell.ts';
+import { GB_MAX_ANSWER, normalizeAnswer, type GbQuestionType } from '../shared/goldenbell.ts';
 import type { GbFileInfo } from '../shared/protocol.ts';
 
 export interface GbQuestion {
@@ -13,8 +13,12 @@ export interface GbQuestion {
   question: string;
   /** 객관식 보기(OX는 빈 목록) */
   choices: string[];
-  /** 정답 구역 이름: OX는 'O'·'X', 객관식은 '1'~'4' */
+  /** 정답 구역 이름: OX는 'O'·'X', 객관식은 '1'~'4'. 단답형은 answers의 첫 표현 */
   answer: string;
+  /** 단답형 정답 표현들(OX·객관식은 빈 목록) */
+  answers: string[];
+  /** 해설(정답 공개 때 모두에게 보인다). 없으면 '' */
+  explain: string;
   seconds: number;
 }
 
@@ -94,6 +98,7 @@ export function parseQuestionSet(text: string, file: string): QuestionSet {
     const type = textOf(q.type).toLowerCase();
     const question = textOf(q.question);
     const seconds = Number(q.seconds);
+    const explain = textOf(q.explain);
     const before = errors.length;
     if (!question) errors.push(`${n}번 문제: question(문제 글)이 비어 있습니다.`);
     if (!Number.isInteger(seconds) || seconds < MIN_SECONDS || seconds > MAX_SECONDS) {
@@ -102,7 +107,7 @@ export function parseQuestionSet(text: string, file: string): QuestionSet {
     if (type === 'ox') {
       const answer = textOf(q.answer).toUpperCase();
       if (answer !== 'O' && answer !== 'X') errors.push(`${n}번 문제: OX 문제의 answer는 O 또는 X로 씁니다.`);
-      if (errors.length === before) questions.push({ type, question, choices: [], answer, seconds });
+      if (errors.length === before) questions.push({ type, question, choices: [], answer, answers: [], explain, seconds });
     } else if (type === 'choice') {
       const choices = Array.isArray(q.choices) ? q.choices.map(textOf) : [];
       if (choices.length < 2 || choices.length > MAX_CHOICES || choices.some((c) => !c)) {
@@ -112,9 +117,19 @@ export function parseQuestionSet(text: string, file: string): QuestionSet {
       if (!Number.isInteger(answer) || answer < 1 || answer > Math.max(choices.length, 1)) {
         errors.push(`${n}번 문제: answer는 1~${Math.max(choices.length, 1)} 사이의 보기 번호로 씁니다.`);
       }
-      if (errors.length === before) questions.push({ type, question, choices, answer: String(answer), seconds });
+      if (errors.length === before) questions.push({ type, question, choices, answer: String(answer), answers: [], explain, seconds });
+    } else if (type === 'short') {
+      // 정답이 하나면 answers: 관성처럼, 여럿이면 [10 m/s, 10m/s]처럼 쓴다.
+      const raw = Array.isArray(q.answers) ? q.answers : q.answers === undefined ? [] : [q.answers];
+      const answers = raw.map(textOf);
+      if (!answers.length || answers.some((a) => !normalizeAnswer(a))) {
+        errors.push(`${n}번 문제: 단답형 문제의 answers(정답)는 빈 것 없이 씁니다. 여럿이면 [정답1, 정답2]처럼 씁니다.`);
+      } else if (answers.some((a) => a.length > GB_MAX_ANSWER)) {
+        errors.push(`${n}번 문제: answers(정답)는 ${GB_MAX_ANSWER}자 안으로 씁니다.`);
+      }
+      if (errors.length === before) questions.push({ type, question, choices: [], answer: answers[0], answers, explain, seconds });
     } else {
-      errors.push(`${n}번 문제: type은 ox 또는 choice로 씁니다.`);
+      errors.push(`${n}번 문제: type은 ox, choice, short 가운데 하나로 씁니다.`);
     }
   });
   if (errors.length) throw new Error(errors.join('\n'));

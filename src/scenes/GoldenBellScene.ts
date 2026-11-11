@@ -6,8 +6,10 @@ import { alpha, color, fontFamily, motion, size } from '../theme';
 import type { TagStyle } from './avatar';
 import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
 
-/** 구역을 그리는 깊이: 바닥(0) 위, 사물·아바타(깊이 = y 픽셀) 아래 */
+/** 구역을 칠하는 깊이: 바닥(0) 위, 사물·아바타(깊이 = y 픽셀) 아래 */
 const ZONE_DEPTH = 1;
+/** 구역 이름(O·X, 1~4)과 보기 글의 깊이: 앞에 선 캐릭터에 가려지지 않게 아바타(깊이 = y 픽셀)보다 위 */
+const ZONE_TEXT_DEPTH = 1_000_000;
 
 /** 골든벨 맵: 선생님이 낸 문제의 답 구역으로 걸어가 선다. 채점은 서버가 한다. */
 export class GoldenBellScene extends MapScene {
@@ -22,6 +24,8 @@ export class GoldenBellScene extends MapScene {
   private hudBottom = 0;
   /** 선생님이 보낸 요청의 답을 기다리는 중 */
   private waiting = false;
+  /** 답 칸에 글자를 쓰게 한(focus) 단답형 문제 번호 */
+  private focusedIndex = -1;
   /** 흐려지기를 시작한 문제 번호와 그 시각 */
   private fade = { index: -1, startedAt: 0 };
 
@@ -40,15 +44,20 @@ export class GoldenBellScene extends MapScene {
     this.waiting = false;
     this.panel = null;
     this.fade = { index: -1, startedAt: 0 };
+    this.focusedIndex = -1;
   }
 
   create() {
     super.create();
     this.zoneLayer = this.add.graphics().setDepth(ZONE_DEPTH);
     const teacher = this.net.role === 'teacher';
-    this.hud = new GbHud(teacher);
+    this.hud = new GbHud(teacher, (text) => void this.submit(text));
     if (teacher) {
-      this.panel = new GbPanel({ next: () => void this.ask(() => this.net.gbNext()), end: () => void this.ask(() => this.net.gbEnd()) });
+      this.panel = new GbPanel({
+        next: () => void this.ask(() => this.net.gbNext()),
+        end: () => void this.ask(() => this.net.gbEnd()),
+        accept: (key, accept) => void this.ask(() => this.net.gbAccept(key, accept)),
+      });
     }
     this.events.once('shutdown', () => {
       this.hud.destroy();
@@ -61,7 +70,17 @@ export class GoldenBellScene extends MapScene {
     this.exposeDevHooks({
       gb: () => {
         const gb = this.net.goldenbell;
-        return { phase: gb.phase, index: gb.index, total: gb.total, type: gb.type, timeLeft: gb.timeLeft, answer: gb.answer };
+        return {
+          phase: gb.phase,
+          index: gb.index,
+          total: gb.total,
+          type: gb.type,
+          timeLeft: gb.timeLeft,
+          answer: gb.answer,
+          explain: gb.explain,
+          submitted: gb.submitted,
+          accepted: [...gb.accepted],
+        };
       },
       /** 보이는 모습: 내 아바타와 다른 사람 아바타의 투명도와 머리 위 글 */
       looks: () => ({
@@ -140,6 +159,11 @@ export class GoldenBellScene extends MapScene {
     const players = [...this.net.room.state.players.values()];
     const teacher = this.net.role === 'teacher';
     this.hud.showCard(cardView(gb, me, players, teacher));
+    // 키보드가 있는 기기에서는 단답형 문제가 시작되면 답 칸에 바로 쓸 수 있게 한다(터치 기기에서는 화면 키보드가 갑자기 떠 지도를 가리므로 하지 않는다).
+    if (!teacher && !this.touch && gb.phase === 'question' && gb.type === 'short' && this.focusedIndex !== gb.index) {
+      this.focusedIndex = gb.index;
+      this.hud.focusAnswer();
+    }
     if (me && !teacher) this.hud.showMine(mineView(gb, me, this.zones));
     this.panel?.show(panelView(gb, players, this.zones), this.waiting);
     this.avatar.setAlpha(me?.gbOut ? alpha.outAvatar : 1);
@@ -173,7 +197,7 @@ export class GoldenBellScene extends MapScene {
           resolution: size.textResolution,
         })
         .setOrigin(0.5, 0)
-        .setDepth(ZONE_DEPTH);
+        .setDepth(ZONE_TEXT_DEPTH);
       this.zoneTexts.push(label);
       const choice = /^\d$/.test(z.label) ? choices[Number(z.label) - 1] : undefined;
       if (choice) {
@@ -188,9 +212,23 @@ export class GoldenBellScene extends MapScene {
               resolution: size.textResolution,
             })
             .setOrigin(0.5, 0)
-            .setDepth(ZONE_DEPTH),
+            .setDepth(ZONE_TEXT_DEPTH),
         );
       }
+    }
+  }
+
+  /** 학생이 단답형 답을 낸다. 서버가 받으면 낸 답을 보이고, 거절하면 그 까닭을 보인다. */
+  private async submit(text: string) {
+    this.hud.setSending(true);
+    try {
+      const reply = await this.net.gbSubmit(text);
+      if (reply.error) this.hud.setSent('', reply.error);
+      else this.hud.setSent(text);
+    } catch {
+      this.hud.setSent('', '서버에서 답을 받지 못했습니다. 다시 냅니다.');
+    } finally {
+      this.hud.setSending(false);
     }
   }
 

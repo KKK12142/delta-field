@@ -34,6 +34,9 @@ const randomSchool = () => {
   return randomIn(c + 0.2, r + 0.2, 0.6, 0.6);
 };
 
+/** 단답형 문제에 봇이 내는 답(아무거나) */
+const BOT_ANSWERS = ['1', '2', '모름', '정답'];
+
 export class Bot {
   constructor(i, gameUrl) {
     this.gameUrl = gameUrl;
@@ -76,9 +79,14 @@ export class Bot {
       const gb = this.room.state.goldenbell;
       if (gb.phase === 'question' && this.answered !== gb.index) {
         this.answered = gb.index;
-        const zones = activeZones(goldenbellMap.zones, gb.type, gb.choices.length);
-        const z = zones[Math.floor(Math.random() * zones.length)];
-        this.target = randomIn(z.col + 0.6, z.row + 0.6, z.w - 1.2, z.h - 1.2);
+        if (gb.type === 'short') {
+          // 단답형은 걸어가지 않고 아무 답이나 하나 낸다(선생님 창에 답 묶음이 몇 개 생기게).
+          this.room.send('gbSubmit', { text: BOT_ANSWERS[Math.floor(Math.random() * BOT_ANSWERS.length)] });
+        } else {
+          const zones = activeZones(goldenbellMap.zones, gb.type, gb.choices.length);
+          const z = zones[Math.floor(Math.random() * zones.length)];
+          this.target = randomIn(z.col + 0.6, z.row + 0.6, z.w - 1.2, z.h - 1.2);
+        }
       }
     } else if (this.wander && Math.hypot(this.target.col - this.pos.col, this.target.row - this.pos.row) < 0.05) {
       this.target = randomSchool();

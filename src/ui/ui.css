@@ -418,3 +418,43 @@
   font-size: var(--df-font-small);
   pointer-events: none;
 }
+
+/* 골든벨 단답형: 학생 답 칸, 선생님 창의 낸 답 묶음 */
+.df-hud input {
+  pointer-events: auto;
+}
+.df-gb-answer-form {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+.df-gb-answer-input {
+  flex: 1;
+  min-width: 0;
+}
+.df-gb-explain {
+  color: var(--df-text-muted);
+}
+.df-gb-answers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.df-gb-answer {
+  padding: var(--df-cctv-row-pad);
+  border-radius: var(--df-radius);
+  background: var(--df-choice);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--df-hud-gap);
+}
+.df-gb-answer .df-row {
+  align-self: stretch;
+}
+.df-gb-answer.is-correct .df-gb-answer-text,
+.df-gb-answer.is-accepted .df-gb-answer-text {
+  color: var(--df-correct);
+}
+.df-gb-answer.is-wrong .df-gb-answer-text {
+  color: var(--df-wrong);
+}

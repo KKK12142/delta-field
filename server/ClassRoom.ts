@@ -4,7 +4,18 @@ import { Room, ServerError, matchMaker, type Client } from '@colyseus/core';
 import school from '../src/data/school.json' with { type: 'json' };
 import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
 import characters from '../src/data/characters.json' with { type: 'json' };
-import { GB_LIVES, activeZones, judge, zoneAt, type Zones } from '../shared/goldenbell.ts';
+import {
+  GB_LIVES,
+  GB_MAX_ANSWER,
+  activeZones,
+  answerDisplay,
+  answerKey,
+  judge,
+  matchAnswer,
+  zoneAt,
+  type GbScore,
+  type Zones,
+} from '../shared/goldenbell.ts';
 import {
   CODE_LENGTH,
   DEFAULT_CHARACTER,
@@ -13,8 +24,10 @@ import {
   RejectCode,
   classGroupName,
   cleanNickname,
+  type GbAcceptMessage,
   type GbFileInfo,
   type GbReply,
+  type GbSubmitMessage,
   type JoinOptions,
   type MoveMessage,
   type StatusMessage,
@@ -79,6 +92,10 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   /** 골든벨 문제(정답 포함). 서버에만 둔다. */
   private questions: QuestionSet | null = null;
   private timer: { clear(): void } | null = null;
+  /** 단답형: 접속 id → 낸 답. 정답 공개 전에는 상태(모두에게 가는 값)에 넣지 않는다. */
+  private shortAnswers = new Map<string, string>();
+  /** 이번 문제를 채점하기 전의 목숨·점수(선생님이 단답형 답을 정답으로 인정하거나 거둘 때 다시 채점한다) */
+  private beforeJudge = new Map<string, GbScore>();
 
   onCreate(options: Partial<JoinOptions>) {
     checkTeacher(options?.password);
@@ -114,6 +131,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('gbStart', (client: Client, message: { file?: unknown }) => this.gbStart(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
     this.onMessage('gbEnd', (client: Client) => this.gbEnd(client));
+    this.onMessage('gbSubmit', (client: Client, message: GbSubmitMessage) => this.gbSubmit(client, message));
+    this.onMessage('gbAccept', (client: Client, message: GbAcceptMessage) => this.gbAccept(client, message));
 
     console.log(`방 ${this.roomId}을 만들었습니다.`);
   }
@@ -157,6 +176,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
 
   onLeave(client: Client) {
     this.state.players.delete(client.sessionId);
+    if (this.shortAnswers.delete(client.sessionId)) this.state.goldenbell.submitted = this.shortAnswers.size;
+    this.beforeJudge.delete(client.sessionId);
   }
 
   onDispose() {
@@ -221,7 +242,12 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.question = q.question;
     replaceAll(gb.choices, q.choices);
     gb.answer = '';
+    gb.explain = '';
     gb.timeLeft = q.seconds;
+    this.shortAnswers.clear();
+    this.beforeJudge.clear();
+    gb.submitted = 0;
+    replaceAll(gb.accepted, []);
     for (const p of this.state.players.values()) {
       p.gbResult = '';
       p.gbAnswer = '';
@@ -241,19 +267,67 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.reveal();
   }
 
-  /** 시간이 끝나면 학생마다 서 있는 구역으로 채점하고 정답을 공개한다. 구역 밖은 틀린 것으로 센다. */
+  /**
+   * 시간이 끝나면 채점하고 정답을 공개한다. OX·객관식은 서 있는 구역으로(구역 밖은 틀림),
+   * 단답형은 마지막에 낸 답으로(내지 않으면 틀림) 채점한다.
+   */
   private reveal() {
     const gb = this.state.goldenbell;
     const q = this.questions?.questions[gb.index];
     if (!q) return;
     const zones = activeZones(GB_ZONES, q.type, q.choices.length);
-    for (const p of this.state.players.values()) {
+    this.beforeJudge.clear();
+    for (const [id, p] of this.state.players) {
       if (p.role !== 'student' || p.map !== 'goldenbell') continue;
-      p.gbAnswer = zoneAt(zones, p.col, p.row);
-      judge(p, p.gbAnswer === q.answer);
+      this.beforeJudge.set(id, scoreOf(p));
+      if (q.type === 'short') {
+        p.gbAnswer = this.shortAnswers.get(id) ?? '';
+        judge(p, matchAnswer(p.gbAnswer, q.answers));
+      } else {
+        p.gbAnswer = zoneAt(zones, p.col, p.row);
+        judge(p, p.gbAnswer === q.answer);
+      }
     }
-    gb.answer = q.answer;
+    gb.answer = q.type === 'short' ? answerDisplay(q.answers) : q.answer;
+    gb.explain = q.explain;
     gb.phase = 'reveal';
+  }
+
+  /** 학생이 단답형 답을 낸다. 제한 시간 안에는 다시 낼 수 있고, 마지막에 낸 답으로 채점한다. */
+  private gbSubmit(client: Client, message: GbSubmitMessage): GbReply {
+    const p = this.state.players.get(client.sessionId);
+    const gb = this.state.goldenbell;
+    if (!p || p.role !== 'student' || p.map !== 'goldenbell') return refuse('학생만 답을 낼 수 있습니다.');
+    if (gb.phase !== 'question' || gb.type !== 'short' || gb.timeLeft <= 0) return refuse('지금은 답을 낼 수 없습니다.');
+    const text = typeof message?.text === 'string' ? message.text.replace(/\s+/g, ' ').trim() : '';
+    if (!text) return refuse('답을 써서 냅니다.');
+    if (text.length > GB_MAX_ANSWER) return refuse(`답은 ${GB_MAX_ANSWER}자 안으로 씁니다.`);
+    this.shortAnswers.set(client.sessionId, text);
+    gb.submitted = this.shortAnswers.size;
+    return ok;
+  }
+
+  /**
+   * 선생님이 단답형 정답 공개 뒤, 같은 꼴(answerKey)의 답을 낸 학생들을 정답으로 인정하거나 인정을 거둔다.
+   * 채점 전의 목숨·점수로 되돌린 뒤 다시 채점한다.
+   */
+  private gbAccept(client: Client, message: GbAcceptMessage): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 정답을 인정할 수 있습니다.');
+    const gb = this.state.goldenbell;
+    const q = this.questions?.questions[gb.index];
+    if (gb.phase !== 'reveal' || q?.type !== 'short') return refuse('단답형 정답을 공개한 뒤에만 인정할 수 있습니다.');
+    const key = typeof message?.key === 'string' ? message.key : '';
+    const accept = message?.accept === true;
+    const members = [...this.state.players].filter(([id, p]) => this.beforeJudge.has(id) && p.gbAnswer && answerKey(p.gbAnswer) === key);
+    if (!key || !members.length) return refuse('그 답을 낸 학생이 없습니다.');
+    if (matchAnswer(members[0][1].gbAnswer, q.answers)) return refuse('이미 정답으로 채점한 답입니다.');
+    if (accept === gb.accepted.includes(key)) return ok;
+    for (const [id, p] of members) {
+      Object.assign(p, this.beforeJudge.get(id));
+      judge(p, accept);
+    }
+    replaceAll(gb.accepted, accept ? [...gb.accepted, key] : gb.accepted.filter((k) => k !== key));
+    return ok;
   }
 
   /** 골든벨을 끝내고 모두 학교 맵으로 돌려보낸다(자리는 화면이 기억해 둔 곳). */
@@ -281,5 +355,15 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     replaceAll(gb.choices, []);
     gb.timeLeft = 0;
     gb.answer = '';
+    gb.explain = '';
+    gb.submitted = 0;
+    replaceAll(gb.accepted, []);
+    this.shortAnswers.clear();
+    this.beforeJudge.clear();
   }
+}
+
+/** 채점에 쓰는 값만 떼어 둔다. */
+function scoreOf(p: Player): GbScore {
+  return { gbLives: p.gbLives, gbScore: p.gbScore, gbOut: p.gbOut, gbRevive: p.gbRevive, gbResult: p.gbResult };
 }
