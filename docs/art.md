@@ -9,7 +9,7 @@
   - 그림 생성은 BAZE(게이트웨이)에 API 키로 GPT 이미지 생성을 불러서 하고, 생성 그림을 바탕으로 쓴다.
   - 실제 인물이나 기존 게임의 캐릭터·그림을 따라 하지 않는다.
 - 교사(2026-11-11): 캐릭터는 30×60도트, 화면에서 2배(60×120px). 타일·사물도 같은 2배 기준(한 칸 48px = 24도트).
-- 대장(잠정): 캐릭터는 네 방향 걷기와 서 있기. 투명 배경 PNG. 파일은 public/assets/ 아래.
+- 대장(잠정): 캐릭터는 네 방향 걷기와 서 있기. 투명 배경 PNG. 파일은 public/sprites/ 아래(Vite가 그대로 내어 줌).
 
 ## 규격
 
@@ -37,8 +37,9 @@
   | 줄 2 오른쪽 | 걸음 A | 서기 | 걸음 B |
   | 줄 3 위(뒷모습) | 걸음 A | 서기 | 걸음 B |
 
-  - 프레임 번호 = 줄 × 3 + 칸. Phaser: `this.load.spritesheet('char-01', 'assets/characters/char-01.png', { frameWidth: 30, frameHeight: 60 })`. 화면에 그릴 때 `setScale(2)`(카메라 확대는 그 위에 곱해진다).
+  - 프레임 번호 = 줄 × 3 + 칸. Phaser: `this.load.spritesheet('char-01', 'sprites/characters/char-01.png', { frameWidth: 30, frameHeight: 60 })`. 화면에 그릴 때 `setScale(2)`(카메라 확대는 그 위에 곱해진다).
   - 걷기는 A → 서기 → B → 서기를 되풀이한다(초당 8프레임 제안). 멈추면 그 방향의 서기 프레임.
+  - 지금 시트(2026-11-11)는 임시다: 옆·뒤·걷기가 아직 없어 30×60 앞모습(색 줄이기 전)을 12칸 모두에 넣었다. 프레임 번호와 크기는 그대로이니 게임 코드는 바꾸지 않고 그림만 갈아 끼운다.
   - 오른쪽 줄은 왼쪽 줄을 좌우로 뒤집어 만들어도 된다. 그래도 시트에는 네 줄을 모두 둔다(게임 코드에서 뒤집지 않는다).
 - 들고 있는 소품은 걸을 때 함께 움직여야 해서 다루기 어렵다. 과학 소품은 몸에 붙은 것(보안경, 목걸이, 주머니)으로 한다.
 
@@ -67,10 +68,11 @@
 | art/raw/<이름>/ | 그림 생성으로 받은 원본과 프롬프트(.json) | 넣지 않음(크고 버리는 것이 많다) |
 | art/work/ | 다듬는 중간 그림과 미리보기 | 넣지 않음 |
 | art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본 | 넣음 |
-| public/assets/characters/char-01.png | 캐릭터 시트 | 넣음 |
-| public/assets/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
-| public/assets/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 ObjectKind와 같게(blackboard, teacherDesk …). 닫힘·열림이 있는 문은 두 장을 가로로 이어 한 장(닫힘이 왼쪽) | 넣음 |
-| public/assets/icons/<아이템 id>.png | 아이템 아이콘(locker-key …) | 넣음 |
+| public/sprites/characters/char-01.png | 캐릭터 시트 | 넣음 |
+| src/data/characters.json | 캐릭터 목록 `[{ id, name }]`. name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
+| public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
+| public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 ObjectKind와 같게(blackboard, teacherDesk …). 닫힘·열림이 있는 문은 두 장을 가로로 이어 한 장(닫힘이 왼쪽) | 넣음 |
+| public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …) | 넣음 |
 
 ## 캐릭터 구상(8가지, 교사 확인 전)
 공통: 고등학생, 2.5등신. 성별은 정하지 않고 머리 모양과 옷으로 구분한다. 교사가 8가지 구상을 그대로 쓰기로 했다(2026-11-11).
@@ -177,7 +179,7 @@
    - 여러 그림을 한 장으로 늘어놓아 비교하려면 `pnpm art:board --out <판.png> --cols 4 --height 240 [--label "1 LAB|45.01 CR" ...] <그림> ...`. --label은 그림 순서대로 칸 위에 적는 글자(영문 대문자·숫자, '|'는 줄바꿈, 3×5 도트 글꼴이라 한글 글꼴이 필요 없다).
 2. 도트 시트 → 글자판: `pnpm art:grid to-txt art/work/char-01.png art/src/characters/char-01.txt --frame 30x60 --names down-a,down,down-b`
 3. 글자판을 고친다: 걸음 프레임 만들기, 어긋난 도트 고치기, 팔레트 맞추기, 겹 이름 달기.
-4. 글자판 → 게임 그림: `pnpm art:grid to-png art/src/characters/char-01.txt public/assets/characters/char-01.png`
+4. 글자판 → 게임 그림: `pnpm art:grid to-png art/src/characters/char-01.txt public/sprites/characters/char-01.png`
    - 크게 보려면 `--scale 8`로 따로 저장한다. 실제 모양은 교사가 윈도우 크롬에서 본다.
 
 ### 글자판

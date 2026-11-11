@@ -1,0 +1,10 @@
+[
+  { "id": "char-01", "name": "실험실" },
+  { "id": "char-02", "name": "전자기" },
+  { "id": "char-03", "name": "탐험" },
+  { "id": "char-04", "name": "관찰" },
+  { "id": "char-05", "name": "운동" },
+  { "id": "char-06", "name": "교복" },
+  { "id": "char-07", "name": "천문" },
+  { "id": "char-08", "name": "메이커" }
+]
