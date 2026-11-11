@@ -11,7 +11,10 @@
     "dev": "vite",
     "check": "tsc",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "share": "bash scripts/share.sh on",
+    "share:off": "bash scripts/share.sh off",
+    "share:status": "bash scripts/share.sh status"
   },
   "dependencies": {
     "phaser": "4.2.1"

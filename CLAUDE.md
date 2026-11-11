@@ -9,6 +9,9 @@
 - Phaser 4.2.1, Vite 8.3.7, TypeScript 7.0.2(엄격 모드), pnpm 10.26.0, Node 24(nvm, .nvmrc)
 - 구조: src/main.ts(시작), src/scenes/FieldScene.ts(바닥·캐릭터), src/iso.ts(아이소메트릭 좌표), src/theme.ts(색·크기)
 - 명령: pnpm dev(개발 서버), pnpm check(타입 검사), pnpm build(타입 검사 뒤 빌드)
+- 공유: pnpm share / pnpm share:off / pnpm share:status. 개발 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
+  교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 개발 서버 기록은 .run/.
+- 기획: docs/design.md에 정한 내용을 적는다. 새로 정한 것이 있으면 고쳐 둔다.
 - 동시 접속 서버는 교사가 나중에 정한다. 먼저 만들지 않는다.
 
 ## 일하는 방식
