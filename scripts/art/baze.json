@@ -1,0 +1,11 @@
+{
+  "_설명": "BAZE 게이트웨이로 그림을 부르는 설정(docs/art.md). 키는 여기 적지 않고 환경 변수 BAZE_API_KEY로만 준다. 빈 값은 교사에게 받아 채운다.",
+  "url": "",
+  "editUrl": "",
+  "model": "",
+  "format": "openai-images",
+  "authHeader": "Authorization",
+  "authPrefix": "Bearer ",
+  "size": "1024x1024",
+  "body": {}
+}

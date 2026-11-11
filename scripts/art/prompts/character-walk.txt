@@ -1,0 +1,6 @@
+Walking animation sheet of one character: 4 rows and 3 columns of sprites with wide, equal gaps.
+Rows from top: walking down (toward the viewer), walking left, walking right, walking up (back view).
+Columns from left: left foot forward, standing still, right foot forward.
+Same character, same height, same proportions, same colors in every sprite; feet on the same baseline in each row.
+Each sprite is exactly 16 game pixels wide and 24 game pixels tall, chibi proportions (head about 2/5 of the height).
+Character: {{desc}}

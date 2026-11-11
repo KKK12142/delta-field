@@ -1,0 +1,4 @@
+One object sprite for a top-down school map, seen from above at a slight angle: the top surface is visible
+and the front face is visible below it. No vanishing-point perspective; edges are straight horizontal and vertical.
+Size: {{size}} (one floor tile is 16 game pixels). The object may rise above its floor area but not spread wider.
+Object: {{desc}}

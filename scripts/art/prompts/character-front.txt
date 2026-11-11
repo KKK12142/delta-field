@@ -1,0 +1,4 @@
+One character sprite, front view (facing the viewer), standing still, centered, full body, feet at the bottom.
+The sprite is exactly 16 game pixels wide and 24 game pixels tall: a teenage student with chibi proportions
+(the head is about 2/5 of the height), short legs, a silhouette that stays readable at tiny size.
+Character: {{desc}}

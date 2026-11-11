@@ -18,6 +18,9 @@
     "playtest": "node scripts/playtest.mjs",
     "loadtest": "node scripts/loadtest.mjs",
     "bots": "node scripts/bots.mjs",
+    "art:gen": "node --env-file-if-exists=.env scripts/art/generate.mjs",
+    "art:fit": "node scripts/art/fit.mjs",
+    "art:grid": "node scripts/art/grid.mjs",
     "dev:server": "node --watch --env-file-if-exists=.env server/main.ts",
     "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts"
   },
