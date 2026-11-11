@@ -16,6 +16,8 @@
     "share:off": "bash scripts/share.sh off",
     "share:status": "bash scripts/share.sh status",
     "playtest": "node scripts/playtest.mjs",
+    "loadtest": "node scripts/loadtest.mjs",
+    "bots": "node scripts/bots.mjs",
     "dev:server": "node --watch --env-file-if-exists=.env server/main.ts",
     "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts"
   },

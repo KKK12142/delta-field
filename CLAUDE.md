@@ -18,7 +18,8 @@
   pnpm start(수업용: 빌드한 뒤 게임 서버가 화면까지 한 주소로 내어 줌. 교사의 맥에서 쓴다),
   pnpm playtest(화면·게임 서버를 켠 채로 DF_TEACHER_PASSWORD를 넘겨, 헤드리스 크롬에서 선생님 1명·학생 2명으로 한 판을 자동으로 해 본다.
   방 데이터를 바꾸면 scripts/playtest.mjs도 맞춘다. 확인용 게임 서버는 확인용 비밀번호로 따로 켜고, 끝나면 끈다.
-  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(README))
+  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(README)),
+  pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 화면·게임 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 서버 기록은 .run/.

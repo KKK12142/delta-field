@@ -18,6 +18,8 @@
 - `pnpm build` 타입 검사 뒤 `dist/`로 빌드.
 - `pnpm preview` 빌드 결과 보기.
 - `pnpm playtest` 화면·게임 서버를 켠 채로(`DF_TEACHER_PASSWORD`를 넘겨) 헤드리스 크롬에서 선생님 1명, 학생 2명으로 한 판을 자동으로 해 본다.
+- `pnpm loadtest` 화면·게임 서버를 켠 채로(`DF_TEACHER_PASSWORD`를 넘겨) 학생 35명(봇 34 + 크롬 1)이 들어와 움직이고 골든벨을 할 때 서버 CPU, 데이터 양, 응답 시간을 잰다. 결과는 `.run/loadtest/`.
+- `pnpm bots <방 코드> [봇 수] [분]` 선생님이 만든 방에 봇(기본 34명)만 넣어 정한 시간(기본 5분) 동안 돌아다니게 한다. 실제 컴퓨터·태블릿에서 화면이 끊기는지 볼 때 쓴다.
 - `pnpm share` / `pnpm share:off` / `pnpm share:status` 화면·게임 서버를 켜고 Tailscale 망(맥·태블릿)에 내어 주고 거둔다.
 
 공유 중인 서버를 그대로 둔 채 확인용 서버를 따로 켤 때는 포트를 바꾼다. 게임 서버는 `DF_PORT`, 화면 서버는 `DF_WEB_PORT`(넘겨 줄 게임 서버는 `DF_PORT`)를 쓴다.
@@ -28,6 +30,7 @@
 DF_PORT=2667 DF_TEACHER_PASSWORD=확인용 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell node server/main.ts
 DF_WEB_PORT=5273 DF_PORT=2667 pnpm dev
 DF_TEACHER_PASSWORD=확인용 pnpm playtest http://localhost:5273/
+DF_TEACHER_PASSWORD=확인용 pnpm loadtest http://localhost:5273/ http://localhost:2667
 ```
 
 ## 골든벨 문제 파일

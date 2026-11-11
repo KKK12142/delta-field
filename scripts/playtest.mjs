@@ -2,10 +2,9 @@
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버의 선생님 비밀번호를 DF_TEACHER_PASSWORD로 넘긴다.
 // 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell로 켠다(제한 시간이 짧은 확인용 문제 파일).
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
-// 개발 모드에서만 있는 window.__df로 위치를 옮기고 상태를 읽는다.
 // 퀴즈 답 번호와 사물 위치는 src/data/classroom.json에 맞춰 두었다. 방 데이터를 바꾸면 함께 고친다.
-import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
+import { launchChrome, wait } from './lib/chrome.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
 const password = process.env.DF_TEACHER_PASSWORD;
@@ -15,106 +14,8 @@ if (!password) {
 }
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
-const port = 9334;
-const chrome = spawn('google-chrome', [
-  '--headless=new', '--no-sandbox', `--remote-debugging-port=${port}`, '--window-size=1280,800',
-  '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
-  `--user-data-dir=${outDir}/profile`, 'about:blank',
-], { stdio: 'ignore' });
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-
-let version;
-for (let i = 0; i < 40 && !version; i++) {
-  try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await wait(250); }
-}
-
-/** CDP 연결 하나 */
-async function cdp(wsUrl) {
-  const ws = new WebSocket(wsUrl);
-  await new Promise((r) => ws.addEventListener('open', r));
-  let id = 0;
-  const pending = new Map();
-  const handlers = [];
-  ws.addEventListener('message', (e) => {
-    const m = JSON.parse(e.data);
-    if (m.id && pending.has(m.id)) { pending.get(m.id)(m.result ?? { error: m.error }); pending.delete(m.id); }
-    else if (m.method) for (const h of handlers) h(m);
-  });
-  return {
-    send: (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); }),
-    on: (h) => handlers.push(h),
-    close: () => ws.close(),
-  };
-}
-
-const browser = await cdp(version.webSocketDebuggerUrl);
-const consoleErrors = [];
-const KEYS = {
-  Space: [' ', 'Space', 32], Enter: ['Enter', 'Enter', 13], Escape: ['Escape', 'Escape', 27],
-  ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37], ArrowRight: ['ArrowRight', 'ArrowRight', 39],
-  ArrowUp: ['ArrowUp', 'ArrowUp', 38], ArrowDown: ['ArrowDown', 'ArrowDown', 40],
-  1: ['1', 'Digit1', 49], 2: ['2', 'Digit2', 50], 3: ['3', 'Digit3', 51], 4: ['4', 'Digit4', 52],
-};
-
-/** 따로 떨어진 창(쿠키·저장소를 나누지 않음) 하나를 연다. */
-async function openPage(name, url, { touch = false } = {}) {
-  const { browserContextId } = await browser.send('Target.createBrowserContext');
-  const { targetId } = await browser.send('Target.createTarget', { url: 'about:blank', browserContextId, newWindow: true });
-  const page = await cdp(`ws://127.0.0.1:${port}/devtools/page/${targetId}`);
-  page.on((m) => {
-    if (m.method === 'Runtime.exceptionThrown') consoleErrors.push(`[${name}] ${m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text}`);
-    if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') {
-      consoleErrors.push(`[${name}] ${m.params.args.map((a) => a.value ?? a.description).join(' ')}`);
-    }
-  });
-  await page.send('Page.enable');
-  await page.send('Runtime.enable');
-  if (touch) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  await page.send('Page.navigate', { url });
-  await wait(2000);
-  let shotN = 0;
-  const p = {
-    name,
-    js: async (expr) => (await page.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.value,
-    shot: async (label) => {
-      const r = await page.send('Page.captureScreenshot', { format: 'png' });
-      writeFileSync(`${outDir}/${name}-${String(++shotN).padStart(2, '0')}-${label}.png`, Buffer.from(r.data, 'base64'));
-    },
-    press: async (key, holdMs = 80) => {
-      const [k, code, vk] = KEYS[key];
-      const text = k.length === 1 ? k : k === 'Enter' ? '\r' : undefined;
-      await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, text });
-      await wait(holdMs);
-      await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk });
-      await wait(300);
-    },
-    touch: (type, points) => page.send('Input.dispatchTouchEvent', { type, touchPoints: points }),
-    /** 화면 좌표를 마우스로 누른다. */
-    click: async (x, y) => {
-      for (const type of ['mousePressed', 'mouseReleased']) {
-        await page.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
-      }
-      await wait(300);
-    },
-    dialogText: () => p.js(`document.querySelector('.df-dialog')?.innerText ?? null`),
-    error: () => p.js(`(() => { const e = document.querySelector('.df-error'); return e && !e.hidden ? e.textContent : null; })()`),
-    /** 첫 화면에 입력하고 들어가기를 누른다. teacher면 선생님 화면으로 바꾼다. */
-    enter: async ({ teacher = false, nickname, code = '', pw = '' }) => {
-      await p.js(`(() => {
-        const sw = document.querySelector('.df-link');
-        if (${teacher} !== sw.textContent.includes('학생')) sw.click();
-        const set = (id, v) => { const i = document.getElementById(id); i.value = v; };
-        set('df-nickname', ${JSON.stringify(nickname)});
-        set('df-code', ${JSON.stringify(code)});
-        set('df-password', ${JSON.stringify(pw)});
-        document.querySelector('.df-start form').requestSubmit();
-      })()`);
-      await wait(1500);
-    },
-    close: () => browser.send('Target.closeTarget', { targetId }),
-  };
-  return p;
-}
+const chrome = await launchChrome(outDir);
+const { openPage, consoleErrors } = chrome;
 
 const results = [];
 function check(name, ok, detail = '') { results.push(`${ok ? '통과' : '실패'}  ${name}${detail ? '  (' + detail + ')' : ''}`); }
@@ -433,6 +334,5 @@ check('선생님이 방 코드로 기존 방에 다시 들어감', (await teache
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));
 console.log(`캡처: ${outDir}`);
-browser.close();
-chrome.kill();
+chrome.close();
 process.exit(results.some((r) => r.startsWith('실패')) ? 1 : 0);
