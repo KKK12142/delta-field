@@ -1,13 +1,13 @@
 import { Scene } from 'phaser';
-import { type Point, tileCorners, toScreen } from '../iso';
-import { color } from '../theme';
+import { toScreen } from '../grid';
+import { alpha, color, size } from '../theme';
 
 const COLS = 12;
 const ROWS = 12;
 const SPEED = 4; // 칸/초
 
 export class FieldScene extends Scene {
-  private pos = { col: COLS / 2, row: ROWS / 2 };
+  private pos = { col: (COLS - 1) / 2, row: (ROWS - 1) / 2 };
   private avatar!: Phaser.GameObjects.Container;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
 
@@ -17,18 +17,27 @@ export class FieldScene extends Scene {
 
   create() {
     const ground = this.add.graphics();
+    ground.lineStyle(size.tileLine, color.tileLine, alpha.tileLine);
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
+        const x = col * size.tile;
+        const y = row * size.tile;
         ground.fillStyle((col + row) % 2 === 0 ? color.tile : color.tileAlt, 1);
-        ground.lineStyle(1, color.tileLine, 0.6);
-        tracePolygon(ground, tileCorners(col, row));
-        ground.fillPath();
-        ground.strokePath();
+        ground.fillRect(x, y, size.tile, size.tile);
+        ground.strokeRect(x, y, size.tile, size.tile);
       }
     }
 
-    const shadow = this.add.ellipse(0, 0, 28, 12, color.avatarShadow, 0.18);
-    const body = this.add.ellipse(0, -18, 24, 32, color.avatar);
+    // 발밑 그림자를 칸 좌표에 두고, 몸은 그 위로 세워 그린다.
+    const shadow = this.add.ellipse(
+      0,
+      0,
+      size.avatarShadowWidth,
+      size.avatarShadowHeight,
+      color.avatarShadow,
+      alpha.avatarShadow,
+    );
+    const body = this.add.ellipse(0, -size.avatarHeight / 2, size.avatarWidth, size.avatarHeight, color.avatar);
     this.avatar = this.add.container(0, 0, [shadow, body]);
 
     const keyboard = this.input.keyboard;
@@ -36,7 +45,10 @@ export class FieldScene extends Scene {
     this.keys = keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
 
     this.add
-      .text(16, 16, '방향키나 WASD로 움직입니다.', { color: color.text, fontSize: '18px' })
+      .text(size.hintMargin, size.hintMargin, '방향키나 WASD로 움직입니다.', {
+        color: color.text,
+        fontSize: size.hintFont,
+      })
       .setScrollFactor(0);
 
     this.centerCamera();
@@ -45,15 +57,18 @@ export class FieldScene extends Scene {
   }
 
   private centerCamera() {
-    const c = toScreen((COLS - 1) / 2, (ROWS - 1) / 2);
-    this.cameras.main.centerOn(c.x, c.y);
+    this.cameras.main.centerOn((COLS * size.tile) / 2, (ROWS * size.tile) / 2);
   }
 
   update(_time: number, delta: number) {
     const k = this.keys;
-    const dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
-    const dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.W.isDown ? 1 : 0);
+    let dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
+    let dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.W.isDown ? 1 : 0);
     if (dx === 0 && dy === 0) return;
+    // 대각선으로 갈 때도 같은 빠르기가 되게 한다.
+    const len = Math.hypot(dx, dy);
+    dx /= len;
+    dy /= len;
     const step = (SPEED * delta) / 1000;
     this.pos.col = clamp(this.pos.col + dx * step, 0, COLS - 1);
     this.pos.row = clamp(this.pos.row + dy * step, 0, ROWS - 1);
@@ -63,14 +78,9 @@ export class FieldScene extends Scene {
   private placeAvatar() {
     const p = toScreen(this.pos.col, this.pos.row);
     this.avatar.setPosition(p.x, p.y);
+    // 아래쪽에 있는 것이 앞에 보이게 한다.
     this.avatar.setDepth(p.y);
   }
-}
-
-function tracePolygon(g: Phaser.GameObjects.Graphics, points: Point[]) {
-  g.beginPath();
-  points.forEach((p, i) => (i === 0 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y)));
-  g.closePath();
 }
 
 function clamp(v: number, lo: number, hi: number) {

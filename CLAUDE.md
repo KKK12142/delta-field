@@ -1,13 +1,13 @@
 # Delta Field
 
-수업에서 쓰는 2D·아이소메트릭 화면의 웹 공간이다. 학생이 캐릭터를 움직여 장소를 돌아다닌다.
+수업에서 쓰는 2D 탑다운 화면의 웹 공간이다. 학생이 캐릭터를 움직여 장소를 돌아다닌다.
 보편적인 장르의 프로그램을 새로 만든다. 교사(고등학교 물리)와 직접 대화하며 기획, 개발, 확인을 한다.
 이름을 함께 쓰는 Delta Science(deltascience.kr)는 맥의 다른 세션이 맡는다.
 
 ## 환경
 - 집 데스크탑 WSL2 Ubuntu의 ~/projects/delta-field. 교사는 맥의 Orca 앱으로 원격 접속하고, 이 컴퓨터를 원격으로 켜고 끈다.
 - Phaser 4.2.1, Vite 8.3.7, TypeScript 7.0.2(엄격 모드), pnpm 10.26.0, Node 24(nvm, .nvmrc)
-- 구조: src/main.ts(시작), src/scenes/FieldScene.ts(바닥·캐릭터), src/iso.ts(아이소메트릭 좌표), src/theme.ts(색·크기)
+- 구조: src/main.ts(시작), src/scenes/FieldScene.ts(바닥·캐릭터), src/grid.ts(칸 좌표 → 화면 좌표), src/theme.ts(색·크기)
 - 명령: pnpm dev(개발 서버), pnpm check(타입 검사), pnpm build(타입 검사 뒤 빌드)
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 개발 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 개발 서버 기록은 .run/.
