@@ -65,7 +65,7 @@ action 종류
 - 벽은 윗면과 앞면 두 가지를 그린다. 아래 칸이 바닥인 벽 칸이 앞면이다(그 칸을 통째로 앞면 그림으로 덮을 수 있게 그리기 코드를 나눠 두었다: src/scenes/painter.ts의 wall()).
 - 바닥은 변형 2~4개를 이어 한 장으로(docs/art.md).
 
-### 사물(kind는 src/data/room.ts의 OBJECT_KINDS, 파일은 public/assets/objects/<kind>.png)
+### 사물(kind는 src/data/room.ts의 OBJECT_KINDS, 파일은 public/sprites/objects/<kind>.png)
 | kind | 이름 | 차지 칸(가로×세로) | 놓인 곳 | 상태 |
 |---|---|---|---|---|
 | blackboard | 칠판 | 6×1 | 교실 위쪽 벽의 앞면 칸(벽에 걸림) | |

@@ -1,3 +1,3 @@
 One square floor tile seen straight from above, filling the whole image edge to edge, with no border and no background.
-The tile is exactly 24 by 24 game pixels and repeats seamlessly when placed next to copies of itself.
+The tile is exactly 30 by 30 game pixels and repeats seamlessly when placed next to copies of itself.
 Floor: {{desc}}
