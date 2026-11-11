@@ -11,7 +11,7 @@
 //                      --frame이 있으면(--full 아닐 때) 기본은 frame이다. frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
 //   --bg auto          배경: auto, alpha(투명 배경), #ff00ff(이 색을 모두 지운다)
 //   --tol 48           배경색으로 볼 색 차이(0~255)
-//   --badge 0.08x0.06  오른쪽 아래 구석(그림 너비·높이의 비율)을 지운다. 생성 그림의 "AI" 표시 자리. 0이면 지우지 않는다(--full일 때도)
+//   --badge 0.1x0.08   오른쪽 아래 구석(그림 너비·높이의 비율)을 지운다. 생성 그림의 "AI" 표시 자리. 0이면 지우지 않는다(--full일 때도)
 //   --merge 16         차이가 이 값(0~255) 이하인 색을 하나로 묶는다(생성 그림의 잡음 없애기)
 //   --colors 0         시트 전체의 색 수를 이만큼으로 줄인다(0이면 --merge만 한다)
 //   --cols 3           시트의 칸 수(기본: --grid의 칸 수)
@@ -36,7 +36,7 @@ const { values: opt, positionals } = parseArgs({
     px: { type: 'string' },
     bg: { type: 'string', default: 'auto' },
     tol: { type: 'string', default: '48' },
-    badge: { type: 'string', default: '0.08x0.06' },
+    badge: { type: 'string', default: '0.1x0.08' },
     height: { type: 'string' },
     merge: { type: 'string', default: '16' },
     colors: { type: 'string', default: '0' },

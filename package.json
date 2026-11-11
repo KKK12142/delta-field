@@ -25,7 +25,8 @@
     "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts",
     "art:models": "node --env-file-if-exists=$HOME/.config/delta-field/baze.env scripts/art/models.mjs",
     "art:board": "node scripts/art/board.mjs",
-    "art:palette": "node scripts/art/palette.mjs"
+    "art:palette": "node scripts/art/palette.mjs",
+    "art:walk": "node scripts/art/walk.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.18.23",

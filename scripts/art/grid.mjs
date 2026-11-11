@@ -12,13 +12,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { createImage, readPng, scaleNearest, writePng } from './png.mjs';
+import { CHARS, parseTxt } from './sprite.mjs';
 
 process.on('uncaughtException', (err) => {
   console.error(err.message);
   process.exit(1);
 });
-
-const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
@@ -73,7 +72,7 @@ function toTxt() {
 }
 
 function toPng() {
-  const { fw, fh, cols, palette, frames: own } = parseTxt(readFileSync(from, 'utf8'));
+  const { fw, fh, cols, palette, frames: own } = parseTxt(readFileSync(from, 'utf8'), from);
   // --fill N: 프레임이 N개보다 적으면 처음부터 되풀이해 N칸을 채운다(앞모습만 있을 때의 임시 시트)
   const frames = opt.fill ? Array.from({ length: Number(opt.fill) }, (_, i) => own[i % own.length]) : own;
   const layers = opt.layer?.split(',');
@@ -93,41 +92,4 @@ function toPng() {
   });
   writePng(to, scaleNearest(sheet, Number(opt.scale)));
   console.log(`저장: ${to} (프레임 ${frames.length}개${layers ? `, 겹 ${layers.join('·')}만` : ''})`);
-}
-
-function parseTxt(text) {
-  let fw = 0;
-  let fh = 0;
-  let cols = 1;
-  const palette = new Map();
-  const frames = [];
-  let mode = '';
-  const lines = text.split('\n');
-  const fail = (n, msg) => {
-    throw new Error(`${from} ${n + 1}번째 줄: ${msg}`);
-  };
-  lines.forEach((raw, n) => {
-    const line = raw.trimEnd();
-    if (!line || line.startsWith('#')) return;
-    const [head, ...rest] = line.split(/\s+/);
-    if (head === 'size') [fw, fh] = rest[0].split('x').map(Number);
-    else if (head === 'cols') cols = Number(rest[0]);
-    else if (head === 'palette') mode = 'palette';
-    else if (head === 'frame') {
-      mode = 'frame';
-      frames.push({ name: rest.join(' '), rows: [], line: n });
-    } else if (mode === 'palette') {
-      if (head.length !== 1 || head === '.' || !/^#[0-9a-f]{6}$/i.test(rest[0] ?? '')) fail(n, '팔레트 줄은 "글자 #rrggbb [겹]"입니다.');
-      const v = parseInt(rest[0].slice(1), 16);
-      palette.set(head, { rgb: [(v >> 16) & 255, (v >> 8) & 255, v & 255], layer: rest[1] ?? 'base' });
-    } else if (mode === 'frame') {
-      const f = frames.at(-1);
-      if (line.length !== fw) fail(n, `한 줄은 ${fw}글자입니다(지금 ${line.length}글자).`);
-      for (const ch of line) if (ch !== '.' && !palette.has(ch)) fail(n, `팔레트에 없는 글자입니다: ${ch}`);
-      f.rows.push(line);
-    } else fail(n, `알 수 없는 줄입니다: ${line}`);
-  });
-  if (!fw || !fh) throw new Error(`${from}: size가 없습니다.`);
-  for (const f of frames) if (f.rows.length !== fh) fail(f.line, `프레임 ${f.name}은 ${fh}줄이어야 합니다(지금 ${f.rows.length}줄).`);
-  return { fw, fh, cols, palette, frames };
 }
