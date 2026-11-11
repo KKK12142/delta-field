@@ -1,7 +1,7 @@
 // 수업 하나 = 방 하나. 선생님이 비밀번호로 만들고, 학생은 방 코드로 들어온다.
-// 교실(방탈출)과 골든벨 맵이 있고, 골든벨을 시작하면 모두 골든벨 맵으로 옮긴다.
+// 학교(교실·복도·실험실·운동장이 이어진 방탈출) 맵과 골든벨 맵이 있고, 골든벨을 시작하면 모두 골든벨 맵으로 옮긴다.
 import { Room, ServerError, matchMaker, type Client } from '@colyseus/core';
-import classroom from '../src/data/classroom.json' with { type: 'json' };
+import school from '../src/data/school.json' with { type: 'json' };
 import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
 import { GB_LIVES, activeZones, judge, zoneAt, type Zones } from '../shared/goldenbell.ts';
 import {
@@ -21,12 +21,12 @@ import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './question
 
 /** 맵 id → 크기(칸) */
 const MAP_SIZES: Record<string, { rows: number; cols: number }> = {
-  classroom: { rows: classroom.layout.length, cols: classroom.layout[0].length },
+  school: { rows: school.layout.length, cols: school.layout[0].length },
   goldenbell: { rows: goldenbellMap.layout.length, cols: goldenbellMap.layout[0].length },
 };
-const ITEM_IDS = new Set(Object.keys(classroom.items));
-/** 살펴볼 수 있는(action이 있는) 사물 id */
-const ACTION_IDS = new Set(classroom.objects.filter((o) => 'action' in o).map((o) => o.id));
+const ITEM_IDS = new Set(Object.keys(school.items));
+/** 살펴볼 수 있는(action이 있는) 사물 id. 연 문도 마친 사물(done)로 받는다. */
+const ACTION_IDS = new Set(school.objects.filter((o) => 'action' in o).map((o) => o.id));
 const GB_ZONES: Zones = goldenbellMap.zones;
 /** 골든벨 맵에서 학생의 발밑을 처음 세우는 곳(방 데이터에서 벽과 구역에 닿지 않게 띄워 둔 네모) */
 const GB_SPAWN = goldenbellMap.spawn;
@@ -125,8 +125,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     const player = new Player();
     player.nickname = nickname;
     player.role = teacher ? 'teacher' : 'student';
-    player.col = classroom.start.col;
-    player.row = classroom.start.row;
+    player.col = school.start.col;
+    player.row = school.start.row;
     // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.
     if (this.state.goldenbell.phase !== '') this.enterGoldenBell(player);
     this.state.players.set(client.sessionId, player);
@@ -160,7 +160,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     return this.state.players.get(client.sessionId)?.role === 'teacher';
   }
 
-  /** 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 교실 자리는 화면이 기억한다. */
+  /** 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 학교 맵의 자리는 화면이 기억한다. */
   private enterGoldenBell(p: Player) {
     p.map = 'goldenbell';
     p.col = GB_SPAWN.col + Math.random() * GB_SPAWN.w;
@@ -247,7 +247,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.phase = 'reveal';
   }
 
-  /** 골든벨을 끝내고 모두 교실로 돌려보낸다(교실의 자리는 화면이 기억해 둔 곳). */
+  /** 골든벨을 끝내고 모두 학교 맵으로 돌려보낸다(자리는 화면이 기억해 둔 곳). */
   private gbEnd(client: Client): GbReply {
     if (!this.isTeacher(client)) return refuse('선생님만 골든벨을 끝낼 수 있습니다.');
     const gb = this.state.goldenbell;
@@ -260,7 +260,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.title = '';
     gb.total = 0;
     gb.index = -1;
-    for (const p of this.state.players.values()) p.map = 'classroom';
+    for (const p of this.state.players.values()) p.map = 'school';
     console.log(`방 ${this.roomId}: 골든벨을 끝냈습니다.`);
     return ok;
   }

@@ -4,11 +4,16 @@
 /** 게임 화면(Phaser)에서 쓰는 색 */
 export const color = {
   background: 0xf4efe6,
-  floor: 0xe9e1d2,
-  floorAlt: 0xe2d9c8,
-  floorLine: 0xcfc3ad,
-  wall: 0x8a7f72,
-  wallTop: 0xa59a8c,
+  // 칸 종류별 색(단순 도형 단계). 칸 종류는 src/data/room.ts의 TILES, 그리기는 src/scenes/painter.ts
+  // 바닥: fill과 alt를 체크무늬로 번갈아 칠하고, line이 있으면 칸 테두리를 긋는다. 벽: top은 윗면, face는 앞면(아래가 바닥일 때)
+  tile: {
+    classroomFloor: { fill: 0xe9e1d2, alt: 0xe2d9c8, line: 0xcfc3ad },
+    hallFloor: { fill: 0xe3e1db, alt: 0xdbd8d0, line: 0xc6c1b5 },
+    labFloor: { fill: 0xdde6e8, alt: 0xd3dde0, line: 0xb9c8cc },
+    field: { fill: 0xd9c49c, alt: 0xd4bf96, line: null },
+    wall: { top: 0xa59a8c, face: 0x8a7f72 },
+    fence: { top: 0x7e8a68, face: 0x66714f },
+  },
   avatar: 0x3b6ea8, // 나
   remoteAvatar: 0x8fa9c4, // 다른 학생
   teacherAvatar: 0xc0603a, // 선생님
@@ -41,7 +46,15 @@ export const color = {
     teacherDesk: 0xa0714f,
     desk: 0xc79a6d,
     locker: 0x7d8fa3,
+    bulletinBoard: 0x9b6b43,
+    shoeRack: 0x8c7a63,
+    labBench: 0x5f6f7a,
+    cabinet: 0x7a8f86,
+    tree: 0x4f7a45,
+    goalpost: 0xf3f1ec,
     door: 0x6b4a33,
+    entrance: 0x5d7f95,
+    gate: 0x55585c,
   },
 } as const;
 
@@ -71,7 +84,9 @@ export const uiColor = {
 export const size = {
   tile: 48, // 바닥 한 칸의 한 변(픽셀)
   floorLine: 1,
-  wallFace: 18, // 벽 앞면 높이(픽셀)
+  viewTiles: 12, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
+  zoomSnap: 3, // 따라가기 확대 배율을 1/zoomSnap 단위로 맞춘다(3이면 1, 4/3, 5/3, 2…: 도트 3배 그림이 고르게 보임). 0이면 맞추지 않는다
+  wallFace: 18, // 벽 앞면 높이(픽셀). 아래가 바닥인 벽 칸의 아래쪽을 앞면으로 칠한다. 칸 전체(48)로 하면 그 벽 칸이 통째로 앞면이 된다
   highlightLine: 3,
   avatarWidth: 26,
   avatarHeight: 34,
@@ -84,19 +99,17 @@ export const size = {
   nicknameFont: '14px',
   nicknameGap: 6,
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
-  viewMargin: 0.92, // 방을 화면에 맞출 때 남기는 비율
-  zoomMin: 0.6,
+  viewMargin: 0.92, // 맵 전체를 화면에 맞출 때(골든벨, CCTV 전체 보기) 남기는 비율
+  zoomMin: 0.15,
   zoomMax: 2,
   reserveTop: 100, // 위쪽 안내 자리(픽셀)
-  reserveBottomTouch: 150, // 터치 기기에서 조이스틱 자리(픽셀)
   // CCTV 모드
   tagFont: '12px',
   tagPadX: 5,
   tagPadY: 2,
   tagGap: 3, // 닉네임과 지금 하는 일 표시 사이(픽셀)
-  followZoomScale: 1.8, // 따라갈 때 전체 보기보다 이만큼 크게 본다
-  followZoomMax: 2.5,
-  followLerp: 0.15, // 화면이 따라가는 학생을 쫓는 빠르기(0~1, 클수록 바로)
+  followLerp: 0.15, // 화면이 따라가는 아바타(나, CCTV로 고른 학생)를 쫓는 빠르기(0~1, 클수록 바로)
+  cctvMarkScale: 0.8, // CCTV 전체 보기에서 학생 아바타·글이 적어도 이 확대 배율일 때만큼 크게 보이게 키운다
   pickRadius: 30, // 학생을 누를 때 아바타 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다
   // 골든벨
   reserveGap: 12, // 문제 카드와 지도 사이(픽셀)
@@ -144,6 +157,7 @@ export const alpha = {
   zoneCorrect: 0.6, // 정답 공개: 정답 구역
   zoneDim: 0.08, // 정답 공개: 나머지 구역
   outAvatar: 0.4, // 골든벨에서 탈락한 학생
+  openDoor: 0.25, // 연 문(지나갈 수 있음)
 } as const;
 
 /** 움직임 */

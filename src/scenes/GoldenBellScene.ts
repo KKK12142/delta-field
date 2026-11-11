@@ -127,7 +127,7 @@ export class GoldenBellScene extends MapScene {
     const cam = this.cameras.main;
     return {
       top: Math.max(size.reserveTop, this.hud.bottom + size.reserveGap),
-      bottom: this.touch ? size.reserveBottomTouch : 0,
+      bottom: 0,
       right: this.panel ? Math.max(0, cam.width - this.panel.left) : 0,
     };
   }

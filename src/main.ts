@@ -1,6 +1,6 @@
 import { AUTO, Game, Scale } from 'phaser';
 import type { MapId } from '../shared/protocol.ts';
-import classroom from './data/classroom.json';
+import school from './data/school.json';
 import goldenbell from './data/goldenbell.json';
 import { loadRoom } from './data/room';
 import { RunState } from './game/state';
@@ -17,7 +17,7 @@ import './ui/ui.css';
 applyCssTheme();
 
 const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
-  classroom: loadRoom(classroom),
+  school: loadRoom(school),
   goldenbell: loadRoom(goldenbell),
 };
 const net = await askEntry(connect, joinErrorText);
@@ -37,7 +37,7 @@ const ctx: MapContext = {
   dialog,
   touch: isTouchDevice(),
   net,
-  classroomPos: null,
+  schoolPos: null,
 };
 
 const game = new Game({
@@ -47,6 +47,6 @@ const game = new Game({
   scale: { mode: Scale.RESIZE, width: '100%', height: '100%' },
 });
 // 골든벨을 하는 중에 들어왔으면 골든벨 맵에서 시작한다.
-const first: MapId = net.me()?.map === 'goldenbell' ? 'goldenbell' : 'classroom';
-game.scene.add('classroom', RoomScene, first === 'classroom', ctx);
+const first: MapId = net.me()?.map === 'goldenbell' ? 'goldenbell' : 'school';
+game.scene.add('school', RoomScene, first === 'school', ctx);
 game.scene.add('goldenbell', GoldenBellScene, first === 'goldenbell', ctx);

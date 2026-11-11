@@ -1,25 +1,26 @@
-// 맵 하나를 돌아다니는 장면의 바탕. 교실(RoomScene)과 골든벨(GoldenBellScene)이 이어받는다.
-// 맵 그리기, 내 아바타와 다른 사람 아바타, 움직임과 충돌, 화면 맞추기, 맵 옮기기를 맡는다.
+// 맵 하나를 돌아다니는 장면의 바탕. 학교(RoomScene)와 골든벨(GoldenBellScene)이 이어받는다.
+// 맵 그리기(그리는 방법은 painter.ts), 내 아바타와 다른 사람 아바타, 움직임과 충돌, 화면 맞추기·따라가기, 맵 옮기기를 맡는다.
 import { Scene } from 'phaser';
 import type { MapId } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
-import type { Room } from '../data/room';
+import { isFloor, mapSize, type Room, type RoomObject } from '../data/room';
 import type { RunState } from '../game/state';
 import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
 import { Joystick } from '../ui/joystick';
 import { alpha, color, fontFamily, motion, size } from '../theme';
+import { MapPainter, type ObjectView } from './painter';
 
 /** 장면이 바뀌어도 이어지는 것 */
 export interface MapContext {
   rooms: Record<MapId, Room>;
-  /** 교실 방탈출 진행. 골든벨에 다녀와도 그대로 둔다. */
+  /** 학교 방탈출 진행. 골든벨에 다녀와도 그대로 둔다. */
   state: RunState;
   dialog: Dialog;
   touch: boolean;
   net: Net;
-  /** 교실을 떠날 때 서 있던 자리. 교실로 돌아오면 이 자리에 선다. */
-  classroomPos: { col: number; row: number } | null;
+  /** 학교 맵을 떠날 때 서 있던 자리. 학교 맵으로 돌아오면 이 자리에 선다. */
+  schoolPos: { col: number; row: number } | null;
 }
 
 /** 다른 접속자의 아바타. 서버가 알려 준 위치(target)로 부드럽게 따라간다. */
@@ -33,7 +34,7 @@ export interface Remote {
 /** 아바타 위 짧은 글의 모양: CCTV에서 지금 하는 일, 골든벨에서 목숨 */
 export type TagStyle = 'cctv' | 'lives';
 
-/** 위쪽 안내, 아래쪽 조이스틱, 오른쪽 창이 가리는 화면 픽셀 */
+/** 위쪽 안내, 아래쪽, 오른쪽 창이 가리는 화면 픽셀 */
 export interface Reserved {
   top: number;
   bottom: number;
@@ -48,6 +49,8 @@ export abstract class MapScene extends Scene {
   protected dialog!: Dialog;
   protected touch = false;
   protected readonly remotes = new Map<string, Remote>();
+  /** 사물 id → 화면에 그린 사물(문 열림 모양을 바꿀 때 쓴다) */
+  protected readonly objectViews = new Map<string, ObjectView>();
   protected joystick: Joystick | null = null;
   /** 발밑 위치(칸 단위). 칸 (c, r)은 [c, c+1) × [r, r+1)을 차지한다. */
   protected pos = { col: 0, row: 0 };
@@ -65,12 +68,13 @@ export abstract class MapScene extends Scene {
     this.dialog = ctx.dialog;
     this.touch = ctx.touch;
     this.remotes.clear();
+    this.objectViews.clear();
     this.leaving = false;
   }
 
   /** 이어받는 장면은 super.create() 뒤에 제 안내를 만들고 fitCamera()를 부른다. */
   create() {
-    this.drawRoom();
+    this.drawMap();
     const own = this.makeAvatar(this.net.nickname, color.avatar, color.nickname, this.ownTagStyle());
     this.avatar = own.avatar;
     this.ownTag = own.tag;
@@ -121,7 +125,7 @@ export abstract class MapScene extends Scene {
     return this.spawnPoint();
   }
 
-  /** 다른 맵으로 옮기기 직전에 할 일(교실은 서 있던 자리를 기억한다) */
+  /** 다른 맵으로 옮기기 직전에 할 일(학교 맵은 서 있던 자리를 기억한다) */
   protected beforeLeave() {}
 
   private leave(map: MapId) {
@@ -134,75 +138,84 @@ export abstract class MapScene extends Scene {
 
   // ---- 그리기 ----
 
-  private drawRoom() {
-    const t = size.tile;
-    const g = this.add.graphics();
-    const layout = this.room.layout;
-    layout.forEach((line, row) => {
-      [...line].forEach((ch, col) => {
-        const x = col * t;
-        const y = row * t;
-        if (ch === '#') {
-          g.fillStyle(color.wallTop, 1).fillRect(x, y, t, t);
-          // 아래가 바닥이면 벽 앞면을 그려 위에서 비스듬히 본 느낌을 준다.
-          if (layout[row + 1]?.[col] === '.') {
-            g.fillStyle(color.wall, 1).fillRect(x, y + t - size.wallFace, t, size.wallFace);
-          }
-        } else {
-          g.fillStyle((col + row) % 2 === 0 ? color.floor : color.floorAlt, 1).fillRect(x, y, t, t);
-          g.lineStyle(size.floorLine, color.floorLine, alpha.floorLine).strokeRect(x, y, t, t);
-        }
-      });
-    });
-
-    for (const o of this.room.objects) {
-      const x = o.col * t;
-      const y = o.row * t;
-      const bottom = (o.row + o.h) * t;
-      this.add
-        .rectangle(x, y, o.w * t, o.h * t, color.object[o.kind])
-        .setOrigin(0, 0)
-        .setDepth(bottom);
-      if (o.action) {
-        this.add
-          .text(x + (o.w * t) / 2, y + (o.h * t) / 2, o.name, {
-            fontFamily,
-            fontSize: size.labelFont,
-            color: o.kind === 'desk' ? color.label : color.labelOnDark,
-            resolution: size.textResolution,
-          })
-          .setOrigin(0.5)
-          .setDepth(bottom + 1);
-      }
-    }
+  private drawMap() {
+    const painter = new MapPainter(this, this.room);
+    painter.ground();
+    for (const o of this.room.objects) this.objectViews.set(o.id, painter.object(o));
   }
 
   /** 가리는 것이 없을 때의 화면 비움. 이어받는 장면이 안내 크기에 맞춰 바꾼다. */
   protected reserved(): Reserved {
-    return { top: size.reserveTop, bottom: this.touch ? size.reserveBottomTouch : 0, right: 0 };
+    return { top: size.reserveTop, bottom: 0, right: 0 };
   }
 
-  /** 방 전체가 가리는 것 없는 자리에 들어가는 확대 배율 */
+  /** 맵 크기(픽셀) */
+  protected mapPixels() {
+    const { cols, rows } = mapSize(this.room);
+    return { w: cols * size.tile, h: rows * size.tile };
+  }
+
+  /** 맵 전체가 가리는 것 없는 자리에 들어가는 확대 배율 */
   protected fitZoom({ top, bottom, right }: Reserved) {
     const cam = this.cameras.main;
-    const roomW = this.room.layout[0].length * size.tile;
-    const roomH = this.room.layout.length * size.tile;
+    const map = this.mapPixels();
     return Math.min(
       size.zoomMax,
-      Math.max(size.zoomMin, Math.min((cam.width - right) / roomW, (cam.height - top - bottom) / roomH) * size.viewMargin),
+      Math.max(size.zoomMin, Math.min((cam.width - right) / map.w, (cam.height - top - bottom) / map.h) * size.viewMargin),
     );
   }
 
-  /** 방 전체를 가리는 것 없는 자리의 가운데에 맞춘다. */
+  /** 아바타를 따라갈 때의 확대 배율: 화면 짧은 쪽에 viewTiles칸쯤 보이게 하고, zoomSnap이 있으면 1/zoomSnap 단위로 맞춘다. */
+  protected viewZoom() {
+    const cam = this.cameras.main;
+    let zoom = Math.min(cam.width, cam.height) / (size.viewTiles * size.tile);
+    if (size.zoomSnap > 0) zoom = Math.max(1, Math.round(zoom * size.zoomSnap)) / size.zoomSnap;
+    return Math.min(size.zoomMax, Math.max(size.zoomMin, zoom));
+  }
+
+  /** 맵 전체를 가리는 것 없는 자리의 가운데에 맞춘다(골든벨, CCTV 전체 보기). */
   protected fitCamera() {
     const cam = this.cameras.main;
     const r = this.reserved();
     const zoom = this.fitZoom(r);
-    const roomW = this.room.layout[0].length * size.tile;
-    const roomH = this.room.layout.length * size.tile;
+    const map = this.mapPixels();
     cam.stopFollow();
+    cam.removeBounds();
     cam.setZoom(zoom);
-    cam.centerOn(roomW / 2 + r.right / 2 / zoom, roomH / 2 - (r.top - r.bottom) / 2 / zoom);
+    cam.centerOn(map.w / 2 + r.right / 2 / zoom, map.h / 2 - (r.top - r.bottom) / 2 / zoom);
+  }
+
+  /**
+   * 아바타를 viewZoom() 배율로 따라간다. 아바타 몸통이 가리는 것 없는 자리의 가운데에 오게 한다.
+   * inBounds면 맵 밖(가리는 자리 몫은 빼고)을 비추지 않는다. 맵이 화면보다 작은 쪽은 가운데에 둔다.
+   */
+  protected followCamera(target: Phaser.GameObjects.Container, inBounds: boolean) {
+    const cam = this.cameras.main;
+    const r = this.reserved();
+    const zoom = this.viewZoom();
+    cam.setZoom(zoom);
+    if (inBounds) {
+      const map = this.mapPixels();
+      const viewW = cam.width / zoom;
+      const viewH = cam.height / zoom;
+      let x = 0;
+      let w = map.w + r.right / zoom;
+      let y = -r.top / zoom;
+      let h = map.h + (r.top + r.bottom) / zoom;
+      if (w < viewW) {
+        x -= (viewW - w) / 2;
+        w = viewW;
+      }
+      if (h < viewH) {
+        y -= (viewH - h) / 2;
+        h = viewH;
+      }
+      cam.setBounds(x, y, w, h);
+    } else {
+      cam.removeBounds();
+    }
+    // 카메라 가운데 = 대상 - offset
+    cam.startFollow(target, false, size.followLerp, size.followLerp, -r.right / 2 / zoom, size.avatarHeight / 2 + (r.top - r.bottom) / 2 / zoom);
   }
 
   /** 아바타 하나. tagStyle을 주면 닉네임 위에 짧은 글을 (감춰 둔 채로) 붙인다. */
@@ -252,6 +265,11 @@ export abstract class MapScene extends Scene {
   /** 매 프레임 다른 사람 아바타마다 할 일(골든벨은 탈락한 학생을 흐리게 한다) */
   protected decorateRemote(_r: Remote, _p: Player) {}
 
+  /** 다른 사람 아바타의 크기 배율(CCTV 전체 보기에서는 작은 지도 위에서도 보이게 키운다) */
+  protected remoteScale(): number {
+    return 1;
+  }
+
   // ---- 다른 접속자(같은 맵에 있는 사람만) ----
 
   private syncRemotes(delta: number) {
@@ -280,6 +298,8 @@ export abstract class MapScene extends Scene {
       r.avatar.x += (x - r.avatar.x) * k;
       r.avatar.y += (y - r.avatar.y) * k;
       r.avatar.setDepth(r.avatar.y);
+      const scale = this.remoteScale();
+      if (r.avatar.scale !== scale) r.avatar.setScale(scale);
       this.decorateRemote(r, p);
     }
     for (const [id, r] of this.remotes) {
@@ -337,7 +357,7 @@ export abstract class MapScene extends Scene {
     this.placeAvatar();
   }
 
-  /** 발밑 네모(반경 avatarFeet)가 벽과 사물에 닿지 않는지 */
+  /** 발밑 네모(반경 avatarFeet)가 벽과 사물(연 문은 빼고)에 닿지 않는지 */
   protected free(col: number, row: number) {
     const r = size.avatarFeet;
     const corners = [
@@ -350,9 +370,24 @@ export abstract class MapScene extends Scene {
   }
 
   private blocked(col: number, row: number) {
-    const ch = this.room.layout[Math.floor(row)]?.[Math.floor(col)];
-    if (ch !== '.') return true;
-    return this.room.objects.some((o) => col >= o.col && col < o.col + o.w && row >= o.row && row < o.row + o.h);
+    if (!isFloor(this.room.layout[Math.floor(row)]?.[Math.floor(col)])) return true;
+    return this.room.objects.some(
+      (o) => col >= o.col && col < o.col + o.w && row >= o.row && row < o.row + o.h && this.objectBlocks(o),
+    );
+  }
+
+  /** 이 사물이 길을 막는지. 학교 맵은 연 문을 지나갈 수 있게 한다. */
+  protected objectBlocks(_o: RoomObject) {
+    return true;
+  }
+
+  /** 아바타 몸통 가운데의 화면 좌표(아바타 크기 배율을 따진다) */
+  protected bodyOnScreen(avatar: Phaser.GameObjects.Container) {
+    const cam = this.cameras.main;
+    return {
+      x: cam.x + (avatar.x - cam.worldView.x) * cam.zoom,
+      y: cam.y + (avatar.y - (size.avatarHeight / 2) * avatar.scaleY - cam.worldView.y) * cam.zoom,
+    };
   }
 
   // ---- 개발 중 자동 확인용(헤드리스 크롬). 빌드에는 들어가지 않는다. ----
@@ -395,11 +430,24 @@ export abstract class MapScene extends Scene {
         screenOf: (nickname: string) => {
           const id = this.net.others(this.mapId).find(([, p]) => p.nickname === nickname)?.[0];
           const r = id ? this.remotes.get(id) : undefined;
-          if (!r) return null;
+          return r ? this.bodyOnScreen(r.avatar) : null;
+        },
+        /** 카메라: 확대 배율, 비추는 곳(칸), 내 아바타 몸통의 화면 좌표, 맵 전체의 화면 네모 */
+        camera: () => {
           const cam = this.cameras.main;
+          const v = cam.worldView;
+          const map = this.mapPixels();
+          const t = size.tile;
           return {
-            x: cam.x + (r.avatar.x - cam.worldView.x) * cam.zoom,
-            y: cam.y + (r.avatar.y - size.avatarHeight / 2 - cam.worldView.y) * cam.zoom,
+            zoom: cam.zoom,
+            view: { col: v.x / t, row: v.y / t, w: v.width / t, h: v.height / t },
+            me: this.bodyOnScreen(this.avatar),
+            map: {
+              x: cam.x + (0 - v.x) * cam.zoom,
+              y: cam.y + (0 - v.y) * cam.zoom,
+              w: map.w * cam.zoom,
+              h: map.h * cam.zoom,
+            },
           };
         },
         ...extra,

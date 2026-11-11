@@ -7,8 +7,8 @@
 ## 환경
 - 집 데스크탑 WSL2 Ubuntu의 ~/projects/delta-field. 교사는 맥의 Orca 앱으로 원격 접속하고, 이 컴퓨터를 원격으로 켜고 끈다.
 - Phaser 4.2.1, Vite 8.3.7, TypeScript 7.0.2(엄격 모드), pnpm 10.26.0, Node 24(nvm, .nvmrc)
-- 구조: src/main.ts(시작), src/scenes/(MapScene.ts 맵·움직임 바탕, RoomScene.ts 교실·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨),
-  src/data/(맵 데이터 JSON과 형식: classroom.json, goldenbell.json), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
+- 구조: src/main.ts(시작), src/scenes/(MapScene.ts 맵·움직임·카메라 바탕, painter.ts 맵 그리기, RoomScene.ts 학교 맵·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨),
+  src/data/(맵 데이터 JSON과 형식: school.json, goldenbell.json. 형식은 docs/map.md), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
   src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창·골든벨 안내, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
   server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기), shared/(서버와 화면이 함께 쓰는 약속·상태·골든벨 규칙),
   goldenbell/(골든벨 문제 YAML. 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다),
