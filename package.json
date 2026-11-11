@@ -22,7 +22,9 @@
     "art:fit": "node scripts/art/fit.mjs",
     "art:grid": "node scripts/art/grid.mjs",
     "dev:server": "node --watch --env-file-if-exists=.env server/main.ts",
-    "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts"
+    "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts",
+    "art:models": "node --env-file-if-exists=$HOME/.config/delta-field/baze.env scripts/art/models.mjs",
+    "art:board": "node scripts/art/board.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.18.23",

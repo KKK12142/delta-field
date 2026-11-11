@@ -7,7 +7,8 @@
 //   --frame 16x24      프레임 크기(도트). 그림이 크면 같은 비율로 줄여 넣는다. 없으면 가장 큰 그림에 맞춘다
 //   --anchor bottom    프레임 안 자리: bottom(아래 가운데, 캐릭터·사물) 또는 center
 //   --full             --grid 칸 전체를 그림 하나로 본다(바닥 타일처럼 배경이 없는 그림). --frame과 함께 쓰면 칸을 프레임 크기로 나눠 가짜 픽셀 크기를 정한다
-//   --px auto          가짜 픽셀 한 칸의 크기(받은 그림의 픽셀). auto면 찾는다. 숫자나 "가로x세로"로 정할 수 있다
+//   --px auto          가짜 픽셀 한 칸의 크기(받은 그림의 픽셀). auto면 찾는다. 숫자나 "가로x세로"로 정할 수 있다.
+//                      frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
 //   --bg auto          배경: auto, alpha(투명 배경), #ff00ff(이 색을 모두 지운다)
 //   --tol 48           배경색으로 볼 색 차이(0~255)
 //   --merge 16         차이가 이 값(0~255) 이하인 색을 하나로 묶는다(생성 그림의 잡음 없애기)
@@ -34,6 +35,7 @@ const { values: opt, positionals } = parseArgs({
     px: { type: 'string', default: 'auto' },
     bg: { type: 'string', default: 'auto' },
     tol: { type: 'string', default: '48' },
+    height: { type: 'string' },
     merge: { type: 'string', default: '16' },
     colors: { type: 'string', default: '0' },
     cols: { type: 'string' },
@@ -140,6 +142,11 @@ let grid;
     grid = { px: gx.p, ox: gx.phase, py: gy.p, oy: gy.phase };
     report.push(`가짜 픽셀: 가로 ${gx.p.toFixed(2)}, 세로 ${gy.p.toFixed(2)}(받은 그림의 픽셀). 뚜렷함 ${gx.score.toFixed(1)}·${gy.score.toFixed(1)}`);
     if (Math.min(gx.score, gy.score) < 1.5) report.push('  격자가 뚜렷하지 않습니다. 결과가 이상하면 --px로 크기를 직접 정하십시오.');
+  } else if (opt.px === 'frame') {
+    // 생성 그림의 "도트"는 크기가 고르지 않아 격자를 찾기 어려울 때가 많다. 가장 큰 그림의 높이를 --height 도트(기본: 프레임 높이)로
+    // 나눠 칸 크기를 정하고, 그 격자로 바로 옮긴다(아래 3에서). 여기서는 덩어리를 찾기 위한 거친 격자만 둔다.
+    if (!frame) throw new Error('--px frame은 --frame과 함께 씁니다.');
+    grid = { px: 8, ox: 0, py: 8, oy: 0 };
   } else {
     const [px, py] = opt.px.includes('x') ? pair(opt.px, '--px') : [Number(opt.px), Number(opt.px)];
     grid = { px, ox: 0, py, oy: 0 };
@@ -238,6 +245,23 @@ function blockError({ p, phase }, axis) {
 // 받은 그림 전체를 가짜 픽셀 격자에 맞춰 한 칸에 한 점씩 옮긴 뒤(작은 그림 한 장) 그림 하나하나로 나눈다.
 // --full이면 --grid 칸대로 자른다. 아니면 이어진 덩어리(한 점 틈은 이어진 것으로 본다)를 그림 하나로 보고 --grid의 줄·칸 순서로 늘어놓는다.
 // 생성 그림은 칸에 맞춰 놓이지 않는 일이 많아 덩어리로 찾는 쪽을 기본으로 한다.
+if (opt.px === 'frame') {
+  const before = report.length;
+  const coarse = splitBlobs(toDots());
+  report.length = before;
+  if (!coarse.length) throw new Error('그림을 찾지 못했습니다. --bg, --tol을 확인해 주십시오.');
+  const tall = coarse.reduce((a, b) => (b.height > a.height ? b : a));
+  // 거친 격자의 덩어리 둘레(한 칸 여유)에서 실제 픽셀 경계를 찾는다
+  const b = tall.box;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = Math.max(0, (b.y0 - 1) * 8); y < Math.min(H, (b.y1 + 2) * 8); y++)
+    for (let x = Math.max(0, (b.x0 - 1) * 8); x < Math.min(W, (b.x1 + 2) * 8); x++)
+      if (mask[y * W + x]) (x0 = Math.min(x0, x)), (y0 = Math.min(y0, y)), (x1 = Math.max(x1, x)), (y1 = Math.max(y1, y));
+  const rows = Number(opt.height ?? frame[1]);
+  const p = (y1 - y0 + 1) / rows;
+  grid = { px: p, ox: x0, py: p, oy: y0 };
+  report.push(`가짜 픽셀: 가장 큰 그림의 높이 ${y1 - y0 + 1}픽셀을 ${rows}도트로 나눠 ${p.toFixed(2)}로 정했습니다(--px frame).`);
+}
 const dots = toDots();
 const sprites = opt.full ? splitCells(dots) : splitBlobs(dots);
 
@@ -301,7 +325,19 @@ function splitBlobs(d) {
   blobs.sort((a, b) => b.length - a.length);
   const big = want === 1 ? 1 : Math.min(want, blobs.filter((b) => b.length >= blobs[0].length / 10).length);
   const keep = blobs.slice(0, big);
+  const boxOf = (pts) => {
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+  };
+  const gap = (a, b) => Math.max(a.x0 - b.x1, b.x0 - a.x1, a.y0 - b.y1, b.y0 - a.y1);
+  let dropped = 0;
   for (const extra of blobs.slice(big)) {
+    // 그림에서 멀리(3점 넘게) 떨어진 작은 조각은 붙이지 않고 지운다(생성 그림 구석의 표시 등)
+    const eb = boxOf(extra);
+    if (extra.length < blobs[0].length / 10 && keep.every((k) => gap(eb, boxOf(k)) > 3)) {
+      dropped++;
+      continue;
+    }
     const [ex, ey] = center(extra);
     let best = keep[0];
     let bestD = Infinity;
@@ -313,7 +349,8 @@ function splitBlobs(d) {
     best.push(...extra);
   }
   if (keep.length !== want) report.push(`  덩어리가 ${keep.length}개입니다(--grid ${gridRows}x${gridCols}이면 ${want}개). 줄·칸 순서를 확인해 주십시오.`);
-  if (blobs.length > keep.length) report.push(`  작은 조각 ${blobs.length - keep.length}개를 가까운 그림에 붙였습니다.`);
+  if (blobs.length - keep.length - dropped > 0) report.push(`  작은 조각 ${blobs.length - keep.length - dropped}개를 가까운 그림에 붙였습니다.`);
+  if (dropped) report.push(`  멀리 떨어진 작은 조각 ${dropped}개를 지웠습니다.`);
   // 줄 나누기: 가운데 y로 늘어놓고 가장 큰 틈 (줄 수 - 1)곳에서 자른다. 줄 안에서는 x 순서
   const items = keep.map((pts) => ({ pts, c: center(pts) })).sort((a, b) => a.c[1] - b.c[1]);
   const cuts = items
@@ -333,6 +370,7 @@ function splitBlobs(d) {
         const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
         const x0 = Math.min(...xs), y0 = Math.min(...ys);
         const out = createImage(Math.max(...xs) - x0 + 1, Math.max(...ys) - y0 + 1);
+        out.box = { x0: x0 + 0, y0, x1: Math.max(...xs), y1: Math.max(...ys) }; // 받은 그림 전체를 옮긴 도트 그림 안의 자리
         for (const [x, y] of pts) out.data.set(d.data.subarray((y * w + x) * 4, (y * w + x) * 4 + 4), ((y - y0) * out.width + (x - x0)) * 4);
         return out;
       }),
