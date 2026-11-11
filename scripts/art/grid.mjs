@@ -1,13 +1,13 @@
 // 도트 그림 글자판(.txt) ↔ PNG. 도트 그림 편집 프로그램이 없어, 작은 그림은 글자판으로 고치고 git으로 바뀐 곳을 본다.
 // 글자판 형식(docs/art.md "글자판"):
-//   size 20x40          프레임 크기
+//   size 30x60          프레임 크기
 //   cols 3              PNG로 만들 때 한 줄의 프레임 수
 //   palette             아래 줄마다: 글자 색 [겹 이름]. 겹 이름이 없으면 base
 //   o #2b2433 line
 //   frame down-stand    프레임 이름. 다음 줄부터 세로 크기만큼 그림. '.'은 투명
 //
 // 사용:
-//   node scripts/art/grid.mjs to-txt <시트.png> <글자판.txt> --frame 20x40 [--names a,b,c]
+//   node scripts/art/grid.mjs to-txt <시트.png> <글자판.txt> --frame 30x60 [--names a,b,c]
 //   node scripts/art/grid.mjs to-png <글자판.txt> <시트.png> [--layer hair,top] [--scale 3]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
@@ -34,7 +34,7 @@ const [command, from, to] = positionals;
 if (command === 'to-txt' && from && to && opt.frame) toTxt();
 else if (command === 'to-png' && from && to) toPng();
 else {
-  console.error('사용: grid.mjs to-txt <시트.png> <글자판.txt> --frame 20x40 | grid.mjs to-png <글자판.txt> <시트.png> [--layer 겹,...] [--scale N]');
+  console.error('사용: grid.mjs to-txt <시트.png> <글자판.txt> --frame 30x60 | grid.mjs to-png <글자판.txt> <시트.png> [--layer 겹,...] [--scale N]');
   process.exit(2);
 }
 

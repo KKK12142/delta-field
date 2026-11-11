@@ -11,18 +11,18 @@
     { "id": "fenceFace", "prompt": "wall.txt", "desc": "green metal mesh fence around a school sports ground: thin vertical posts and diamond mesh, packed dirt visible through the mesh" }
   ],
   "objects": [
-    { "id": "blackboard", "size": "6 tiles wide, hangs on the wall front face (96x16 game pixels)", "desc": "dark green classroom chalkboard with a light wooden frame and a chalk tray at the bottom, blank" },
-    { "id": "teacherDesk", "size": "2 tiles wide and 1 tile deep (32 game pixels wide)", "desc": "teacher's lectern desk made of medium-brown wood with a closed front panel" },
-    { "id": "desk", "size": "2 tiles wide and 1 tile deep (32 game pixels wide)", "desc": "pair of plain student desks side by side, light wood tops on thin gray metal legs" },
-    { "id": "locker", "size": "1 tile wide and 3 tiles deep, standing against a side wall (16 game pixels wide)", "desc": "row of three gray-blue metal student lockers seen from above, doors facing sideways" },
-    { "id": "bulletinBoard", "size": "4 tiles wide, hangs on the wall front face (64x16 game pixels)", "desc": "cork bulletin board with a wooden frame and a few small blank colored paper notes pinned on it" },
-    { "id": "shoeRack", "size": "4 tiles wide and 1 tile deep (64 game pixels wide)", "desc": "low wooden shoe rack with open cubbies, a few pairs of plain sneakers inside" },
-    { "id": "labBench", "size": "3 tiles wide and 2 tiles deep (48 game pixels wide)", "desc": "science lab bench with a dark gray top, a small sink, a beaker and a test tube rack on top, cabinet doors on the front" },
-    { "id": "cabinet", "size": "3 tiles wide and 1 tile deep (48 game pixels wide)", "desc": "tall chemical cabinet with glass doors showing rows of small bottles, white metal frame" },
-    { "id": "tree", "size": "2 tiles wide and 2 tiles deep (32 game pixels wide)", "desc": "round leafy green tree with a short brown trunk, seen from above at a slight angle" },
-    { "id": "goalpost", "size": "1 tile wide and 3 tiles deep, the goal faces sideways (16 game pixels wide)", "desc": "small soccer goal with white posts and white net, seen from above, opening to the side" },
-    { "id": "door", "size": "2 tiles wide, set in the wall front face (32 game pixels wide)", "desc": "two versions side by side: a closed wooden classroom sliding door with a small window, and the same door open showing a dark doorway" },
-    { "id": "entrance", "size": "2 tiles wide, set in the wall front face (32 game pixels wide)", "desc": "two versions side by side: closed glass double doors of a school building entrance with metal frames, and the same doors open" },
-    { "id": "gate", "size": "4 tiles wide and 1 tile deep (64 game pixels wide)", "desc": "sliding metal school gate with vertical bars between two brick pillars, closed" }
+    { "id": "blackboard", "size": "6 tiles wide, hangs on the wall front face (144x24 game pixels)", "desc": "dark green classroom chalkboard with a light wooden frame and a chalk tray at the bottom, blank" },
+    { "id": "teacherDesk", "size": "2 tiles wide and 1 tile deep (48 game pixels wide)", "desc": "teacher's lectern desk made of medium-brown wood with a closed front panel" },
+    { "id": "desk", "size": "2 tiles wide and 1 tile deep (48 game pixels wide)", "desc": "pair of plain student desks side by side, light wood tops on thin gray metal legs" },
+    { "id": "locker", "size": "1 tile wide and 3 tiles deep, standing against a side wall (24 game pixels wide)", "desc": "row of three gray-blue metal student lockers seen from above, doors facing sideways" },
+    { "id": "bulletinBoard", "size": "4 tiles wide, hangs on the wall front face (96x24 game pixels)", "desc": "cork bulletin board with a wooden frame and a few small blank colored paper notes pinned on it" },
+    { "id": "shoeRack", "size": "4 tiles wide and 1 tile deep (96 game pixels wide)", "desc": "low wooden shoe rack with open cubbies, a few pairs of plain sneakers inside" },
+    { "id": "labBench", "size": "3 tiles wide and 2 tiles deep (72 game pixels wide)", "desc": "science lab bench with a dark gray top, a small sink, a beaker and a test tube rack on top, cabinet doors on the front" },
+    { "id": "cabinet", "size": "3 tiles wide and 1 tile deep (72 game pixels wide)", "desc": "tall chemical cabinet with glass doors showing rows of small bottles, white metal frame" },
+    { "id": "tree", "size": "2 tiles wide and 2 tiles deep (48 game pixels wide)", "desc": "round leafy green tree with a short brown trunk, seen from above at a slight angle" },
+    { "id": "goalpost", "size": "1 tile wide and 3 tiles deep, the goal faces sideways (24 game pixels wide)", "desc": "small soccer goal with white posts and white net, seen from above, opening to the side" },
+    { "id": "door", "size": "2 tiles wide, set in the wall front face (48 game pixels wide)", "desc": "two versions side by side: a closed wooden classroom sliding door with a small window, and the same door open showing a dark doorway" },
+    { "id": "entrance", "size": "2 tiles wide, set in the wall front face (48 game pixels wide)", "desc": "two versions side by side: closed glass double doors of a school building entrance with metal frames, and the same doors open" },
+    { "id": "gate", "size": "4 tiles wide and 1 tile deep (96 game pixels wide)", "desc": "sliding metal school gate with vertical bars between two brick pillars, closed" }
   ]
 }
