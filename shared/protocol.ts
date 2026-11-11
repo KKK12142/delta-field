@@ -16,8 +16,13 @@ export type Role = 'student' | 'teacher';
 export type MapId = 'school' | 'goldenbell';
 export const MAP_IDS: MapId[] = ['school', 'goldenbell'];
 
+/** 캐릭터 id를 모르거나 주지 않으면 이 캐릭터로 받는다. 캐릭터 목록은 src/data/characters.json */
+export const DEFAULT_CHARACTER = 'char-01';
+
 export interface JoinOptions {
   nickname: string;
+  /** 고른 캐릭터 id(src/data/characters.json). 여럿이 같은 캐릭터를 골라도 된다. */
+  character?: string;
   /** 선생님만 넣는다. */
   password?: string;
 }

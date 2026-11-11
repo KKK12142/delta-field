@@ -1,12 +1,15 @@
 // 서버가 모든 접속자에게 맞춰 주는 상태. 바뀐 값만 자동으로 보낸다.
 import { schema, t, type SchemaType } from '@colyseus/schema';
 import { GB_LIVES } from './goldenbell.ts';
+import { DEFAULT_CHARACTER } from './protocol.ts';
 
 export const Player = schema(
   {
     nickname: t.string(),
     /** 'student' | 'teacher' */
     role: t.string(),
+    /** 캐릭터 id(src/data/characters.json) */
+    character: t.string().default(DEFAULT_CHARACTER),
     /** 발밑 위치(칸 단위) */
     col: t.float32(),
     row: t.float32(),

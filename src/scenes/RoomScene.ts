@@ -95,7 +95,7 @@ export class RoomScene extends MapScene {
           following: following?.nickname ?? null,
           zoom: cam.zoom,
           center: { col: cam.midPoint.x / size.tile, row: cam.midPoint.y / size.tile },
-          tags: [...this.remotes.values()].filter((r) => r.tag?.visible).map((r) => r.tag!.text),
+          tags: [...this.remotes.values()].filter((r) => r.avatar.tag?.visible).map((r) => r.avatar.tag!.text),
         };
       },
     });
@@ -188,10 +188,11 @@ export class RoomScene extends MapScene {
     else super.fitCamera();
   }
 
-  /** CCTV 전체 보기에서는 작은 지도 위에서도 학생이 보이게 아바타와 글을 키운다. */
+  /** CCTV 전체 보기에서는 작은 지도 위에서도 학생이 보이게 캐릭터와 글을 따로 키운다. */
   protected remoteScale() {
-    if (!this.cctv || this.cctv.following) return 1;
-    return Math.max(1, size.cctvMarkScale / this.cameras.main.zoom);
+    if (!this.cctv || this.cctv.following) return { sprite: 1, text: 1 };
+    const zoom = this.cameras.main.zoom;
+    return { sprite: Math.max(1, size.cctvAvatarZoom / zoom), text: Math.max(1, size.cctvTextZoom / zoom) };
   }
 
   // ---- 골든벨 시작(선생님) ----
@@ -262,7 +263,7 @@ export class RoomScene extends MapScene {
     if (!this.cctv) return;
     this.cctv.panel.destroy();
     this.cctv = null;
-    for (const r of this.remotes.values()) r.tag?.setVisible(false);
+    for (const r of this.remotes.values()) r.avatar.tag?.setVisible(false);
     this.game.canvas.style.cursor = '';
     this.hud.setCctv(false);
     this.joystick?.setHidden(false);
@@ -296,7 +297,7 @@ export class RoomScene extends MapScene {
       .map(([id, p]) => describeStudent(this.room, id, p))
       .sort(byNickname);
     for (const s of students) {
-      const tag = this.remotes.get(s.id)?.tag;
+      const tag = this.remotes.get(s.id)?.avatar.tag;
       if (!tag) continue;
       if (s.tag !== null && tag.text !== s.tag) tag.setText(s.tag);
       tag.setVisible(s.tag !== null);
@@ -312,23 +313,24 @@ export class RoomScene extends MapScene {
     else cctv.panel.showList(students);
   }
 
-  /** 화면 좌표에서 가장 가까운 학생(아바타 몸통 가운데에서 pickRadius 안. 키운 아바타는 그만큼 넓게) */
+  /**
+   * 화면 좌표에 있는 학생. 아바타 몸(발에서 머리까지) 안이거나 몸통 가운데에서 pickRadius(화면 픽셀) 안이면 고른다.
+   * 여럿이면 앞에 그려진(발이 아래인) 학생, 그다음 몸통 가운데가 가까운 학생
+   */
   private pickStudent(screenX: number, screenY: number): string | null {
     const cam = this.cameras.main;
     const p = cam.getWorldPoint(screenX, screenY);
-    let best: string | null = null;
-    let bestDist = Infinity;
+    let best: { id: string; hit: boolean; y: number; d: number } | null = null;
     for (const [id] of this.net.students(this.mapId)) {
-      const r = this.remotes.get(id);
-      if (!r) continue;
-      const scale = r.avatar.scaleY;
-      const d = Math.hypot(p.x - r.avatar.x, p.y - (r.avatar.y - (size.avatarHeight / 2) * scale));
-      if (d <= (size.pickRadius / cam.zoom) * scale && d < bestDist) {
-        best = id;
-        bestDist = d;
-      }
+      const a = this.remotes.get(id)?.avatar;
+      if (!a) continue;
+      const d = Math.hypot(p.x - a.x, p.y - (a.y - a.bodyOffset));
+      const hit = a.hit(p.x, p.y);
+      if (!hit && d > size.pickRadius / cam.zoom) continue;
+      const better = !best || (hit && !best.hit) || (hit === best.hit && (hit ? a.y > best.y : d < best.d));
+      if (better) best = { id, hit, y: a.y, d };
     }
-    return best;
+    return best?.id ?? null;
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer) {

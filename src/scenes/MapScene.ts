@@ -8,7 +8,8 @@ import type { RunState } from '../game/state';
 import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
 import { Joystick } from '../ui/joystick';
-import { alpha, color, fontFamily, motion, size } from '../theme';
+import { color, motion, size } from '../theme';
+import { Avatar, loadCharacters, prepareCharacters, type TagStyle } from './avatar';
 import { MapPainter, type ObjectView } from './painter';
 
 /** 장면이 바뀌어도 이어지는 것 */
@@ -25,14 +26,10 @@ export interface MapContext {
 
 /** 다른 접속자의 아바타. 서버가 알려 준 위치(target)로 부드럽게 따라간다. */
 export interface Remote {
-  avatar: Phaser.GameObjects.Container;
+  /** 머리 위 짧은 글은 avatar.tag(CCTV의 학생, 골든벨의 학생) */
+  avatar: Avatar;
   target: { x: number; y: number };
-  /** 아바타 위에 띄우는 짧은 글(선생님 화면의 학생만) */
-  tag: Phaser.GameObjects.Text | null;
 }
-
-/** 아바타 위 짧은 글의 모양: CCTV에서 지금 하는 일, 골든벨에서 목숨 */
-export type TagStyle = 'cctv' | 'lives';
 
 /** 위쪽 안내, 아래쪽, 오른쪽 창이 가리는 화면 픽셀 */
 export interface Reserved {
@@ -54,9 +51,7 @@ export abstract class MapScene extends Scene {
   protected joystick: Joystick | null = null;
   /** 발밑 위치(칸 단위). 칸 (c, r)은 [c, c+1) × [r, r+1)을 차지한다. */
   protected pos = { col: 0, row: 0 };
-  protected avatar!: Phaser.GameObjects.Container;
-  /** 내 아바타 위의 짧은 글(골든벨의 목숨). 없으면 null */
-  protected ownTag: Phaser.GameObjects.Text | null = null;
+  protected avatar!: Avatar;
   protected keys!: Record<string, Phaser.Input.Keyboard.Key>;
   /** 다른 맵으로 옮기는 중이면 true(이 장면의 일을 멈춘다) */
   private leaving = false;
@@ -72,12 +67,15 @@ export abstract class MapScene extends Scene {
     this.leaving = false;
   }
 
+  preload() {
+    loadCharacters(this);
+  }
+
   /** 이어받는 장면은 super.create() 뒤에 제 안내를 만들고 fitCamera()를 부른다. */
   create() {
+    prepareCharacters(this);
     this.drawMap();
-    const own = this.makeAvatar(this.net.nickname, color.avatar, color.nickname, this.ownTagStyle());
-    this.avatar = own.avatar;
-    this.ownTag = own.tag;
+    this.avatar = new Avatar(this, this.net.me()?.character ?? this.net.character, this.net.nickname, color.nickname, this.ownTagStyle());
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error('키보드 입력을 쓸 수 없습니다.');
@@ -218,40 +216,6 @@ export abstract class MapScene extends Scene {
     cam.startFollow(target, false, size.followLerp, size.followLerp, -r.right / 2 / zoom, size.avatarHeight / 2 + (r.top - r.bottom) / 2 / zoom);
   }
 
-  /** 아바타 하나. tagStyle을 주면 닉네임 위에 짧은 글을 (감춰 둔 채로) 붙인다. */
-  protected makeAvatar(nickname: string, bodyColor: number, nameColor: string, tagStyle: TagStyle | null = null) {
-    const shadow = this.add.ellipse(0, 0, size.avatarShadowWidth, size.avatarShadowHeight, color.avatarShadow, alpha.avatarShadow);
-    const body = this.add.ellipse(0, -size.avatarHeight / 2, size.avatarWidth, size.avatarHeight, bodyColor);
-    const name = this.add
-      .text(0, -size.avatarHeight - size.nicknameGap, nickname, {
-        fontFamily,
-        fontSize: size.nicknameFont,
-        color: nameColor,
-        resolution: size.textResolution,
-      })
-      .setOrigin(0.5, 1);
-    const parts: Phaser.GameObjects.GameObject[] = [shadow, body, name];
-    let tag: Phaser.GameObjects.Text | null = null;
-    if (tagStyle) {
-      // CCTV 글은 어두운 바탕에 흰 글, 목숨(하트)은 바탕 없이 테두리만 두른다.
-      const style: Phaser.Types.GameObjects.Text.TextStyle =
-        tagStyle === 'lives'
-          ? { fontSize: size.livesFont, color: color.livesText, stroke: color.livesStroke, strokeThickness: size.livesStroke }
-          : { fontSize: size.tagFont, color: color.tagText, backgroundColor: color.tagBackground };
-      tag = this.add
-        .text(0, name.y - name.height - size.tagGap, '', {
-          fontFamily,
-          padding: { x: size.tagPadX, y: size.tagPadY },
-          resolution: size.textResolution,
-          ...style,
-        })
-        .setOrigin(0.5, 1)
-        .setVisible(false);
-      parts.push(tag);
-    }
-    return { avatar: this.add.container(0, 0, parts), tag };
-  }
-
   /** 다른 사람 아바타에 붙일 짧은 글. 기본은 선생님 화면의 학생에게 CCTV 글 */
   protected wantsTag(p: Player): TagStyle | null {
     return p.role === 'student' && this.net.role === 'teacher' ? 'cctv' : null;
@@ -265,9 +229,9 @@ export abstract class MapScene extends Scene {
   /** 매 프레임 다른 사람 아바타마다 할 일(골든벨은 탈락한 학생을 흐리게 한다) */
   protected decorateRemote(_r: Remote, _p: Player) {}
 
-  /** 다른 사람 아바타의 크기 배율(CCTV 전체 보기에서는 작은 지도 위에서도 보이게 키운다) */
-  protected remoteScale(): number {
-    return 1;
+  /** 다른 사람 아바타의 캐릭터와 글을 키우는 배율(CCTV 전체 보기에서는 작은 지도 위에서도 보이게 키운다) */
+  protected remoteScale() {
+    return { sprite: 1, text: 1 };
   }
 
   // ---- 다른 접속자(같은 맵에 있는 사람만) ----
@@ -283,23 +247,22 @@ export abstract class MapScene extends Scene {
       let r = this.remotes.get(id);
       if (!r) {
         const teacher = p.role === 'teacher';
-        const { avatar, tag } = this.makeAvatar(
-          p.nickname,
-          teacher ? color.teacherAvatar : color.remoteAvatar,
-          teacher ? color.teacherNickname : color.remoteNickname,
-          this.wantsTag(p),
-        );
+        const avatar = new Avatar(this, p.character, p.nickname, teacher ? color.teacherNickname : color.remoteNickname, this.wantsTag(p));
         avatar.setPosition(x, y);
-        r = { avatar, target: { x, y }, tag };
+        r = { avatar, target: { x, y } };
         this.remotes.set(id, r);
       }
       r.target.x = x;
       r.target.y = y;
-      r.avatar.x += (x - r.avatar.x) * k;
-      r.avatar.y += (y - r.avatar.y) * k;
+      const dx = x - r.avatar.x;
+      const dy = y - r.avatar.y;
+      // 서버 위치와 떨어져 있는 동안 그쪽으로 걷는다.
+      r.avatar.step(dx, dy, Math.hypot(dx, dy) > motion.remoteWalkGap);
+      r.avatar.x += dx * k;
+      r.avatar.y += dy * k;
       r.avatar.setDepth(r.avatar.y);
       const scale = this.remoteScale();
-      if (r.avatar.scale !== scale) r.avatar.setScale(scale);
+      r.avatar.setMarkScale(scale.sprite, scale.text);
       this.decorateRemote(r, p);
     }
     for (const [id, r] of this.remotes) {
@@ -333,7 +296,10 @@ export abstract class MapScene extends Scene {
       dx = this.joystick.vector.x;
       dy = this.joystick.vector.y;
     }
+    const before = { ...this.pos };
     if (dx !== 0 || dy !== 0) this.move(dx, dy, (motion.speed * delta) / 1000);
+    // 누른 쪽을 보고, 실제로 움직였을 때만 걷는다(벽을 밀면 그쪽을 보고 선다).
+    this.avatar.step(dx, dy, this.pos.col !== before.col || this.pos.row !== before.row);
     this.net.sendMove(this.mapId, this.pos.col, this.pos.row);
   }
 
@@ -382,11 +348,11 @@ export abstract class MapScene extends Scene {
   }
 
   /** 아바타 몸통 가운데의 화면 좌표(아바타 크기 배율을 따진다) */
-  protected bodyOnScreen(avatar: Phaser.GameObjects.Container) {
+  protected bodyOnScreen(avatar: Avatar) {
     const cam = this.cameras.main;
     return {
       x: cam.x + (avatar.x - cam.worldView.x) * cam.zoom,
-      y: cam.y + (avatar.y - (size.avatarHeight / 2) * avatar.scaleY - cam.worldView.y) * cam.zoom,
+      y: cam.y + (avatar.y - avatar.bodyOffset - cam.worldView.y) * cam.zoom,
     };
   }
 
@@ -405,6 +371,7 @@ export abstract class MapScene extends Scene {
           this.net.others().map(([, p]) => ({
             nickname: p.nickname,
             role: p.role,
+            character: p.character,
             map: p.map,
             col: p.col,
             row: p.row,
@@ -421,7 +388,10 @@ export abstract class MapScene extends Scene {
             gbResult: p.gbResult,
             gbAnswer: p.gbAnswer,
           })),
-        drawn: () => [...this.remotes.values()].map((r) => ({ x: r.avatar.x, y: r.avatar.y })),
+        drawn: () =>
+          [...this.remotes.values()].map((r) => ({ x: r.avatar.x, y: r.avatar.y, ...r.avatar.look() })),
+        /** 내 아바타: 캐릭터, 걷기 애니메이션(멈췄으면 null), 프레임 번호, 몸 높이(화면 픽셀) */
+        avatar: () => ({ ...this.avatar.look(), height: this.avatar.sprite.displayHeight * this.cameras.main.zoom }),
         teleport: (col: number, row: number) => {
           this.pos = { col, row };
           this.placeAvatar();

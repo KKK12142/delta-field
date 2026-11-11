@@ -2,6 +2,7 @@
 // scripts/loadtest.mjs(35명 시험)와 scripts/bots.mjs(선생님 방에 봇만 넣기)가 함께 쓴다.
 import goldenbellMap from '../../src/data/goldenbell.json' with { type: 'json' };
 import school from '../../src/data/school.json' with { type: 'json' };
+import characters from '../../src/data/characters.json' with { type: 'json' };
 import { isFloor } from '../../src/data/room.ts';
 import { activeZones } from '../../shared/goldenbell.ts';
 import { MOVE_INTERVAL_MS } from '../../shared/protocol.ts';
@@ -37,6 +38,7 @@ export class Bot {
   constructor(i, gameUrl) {
     this.gameUrl = gameUrl;
     this.nickname = `봇${String(i + 1).padStart(2, '0')}`;
+    this.character = characters[i % characters.length].id;
     this.map = 'school';
     this.pos = randomIn(school.start.col - 1.5, school.start.row - 1.5, 3, 1.5);
     this.target = { ...this.pos };
@@ -48,7 +50,7 @@ export class Bot {
 
   async join(code) {
     const t0 = performance.now();
-    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname });
+    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character });
     this.joinMs = performance.now() - t0;
     this.room.send('move', { ...this.pos, map: this.map });
   }

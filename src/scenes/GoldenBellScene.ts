@@ -3,7 +3,8 @@ import type { Player } from '../../shared/schema.ts';
 import { cardView, livesTag, mineView, panelView } from '../game/goldenbell';
 import { GbHud, GbPanel } from '../ui/goldenbell';
 import { alpha, color, fontFamily, motion, size } from '../theme';
-import { MapScene, type MapContext, type Remote, type Reserved, type TagStyle } from './MapScene';
+import type { TagStyle } from './avatar';
+import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
 
 /** 구역을 그리는 깊이: 바닥(0) 위, 사물·아바타(깊이 = y 픽셀) 아래 */
 const ZONE_DEPTH = 1;
@@ -64,11 +65,11 @@ export class GoldenBellScene extends MapScene {
       },
       /** 보이는 모습: 내 아바타와 다른 사람 아바타의 투명도와 머리 위 글 */
       looks: () => ({
-        me: { alpha: this.avatar.alpha, tag: this.ownTag?.visible ? this.ownTag.text : null },
+        me: { alpha: this.avatar.alpha, tag: this.avatar.tag?.visible ? this.avatar.tag.text : null },
         others: Object.fromEntries(
           [...this.remotes].map(([id, r]) => [
             this.net.room.state.players.get(id)?.nickname ?? id,
-            { alpha: r.avatar.alpha, tag: r.tag?.visible ? r.tag.text : null },
+            { alpha: r.avatar.alpha, tag: r.avatar.tag?.visible ? r.avatar.tag.text : null },
           ]),
         ),
       }),
@@ -109,7 +110,7 @@ export class GoldenBellScene extends MapScene {
   /** 탈락한 학생은 흐리게, 문제를 푸는 동안(학생 화면)은 점점 사라지게 보인다. */
   protected decorateRemote(r: Remote, p: Player) {
     r.avatar.setAlpha((p.gbOut ? alpha.outAvatar : 1) * this.othersVisibility());
-    if (r.tag) setTag(r.tag, livesTag(p));
+    if (r.avatar.tag) setTag(r.avatar.tag, livesTag(p));
   }
 
   /**
@@ -142,7 +143,7 @@ export class GoldenBellScene extends MapScene {
     if (me && !teacher) this.hud.showMine(mineView(gb, me, this.zones));
     this.panel?.show(panelView(gb, players, this.zones), this.waiting);
     this.avatar.setAlpha(me?.gbOut ? alpha.outAvatar : 1);
-    if (me && this.ownTag) setTag(this.ownTag, livesTag(me));
+    if (me && this.avatar.tag) setTag(this.avatar.tag, livesTag(me));
 
     const showZones = gb.phase === 'question' || gb.phase === 'reveal';
     const key = showZones ? `${gb.type}|${gb.choices.join('|')}|${gb.answer}` : '';
