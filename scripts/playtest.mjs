@@ -288,16 +288,17 @@ check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.
 await gbRound('X', 'O');
 check('골든벨 3번: 목숨을 다 잃으면 탈락', /탈락했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === true, fmt(await gbCard(b)));
 la = await looks(a);
-check('골든벨 3번: 탈락한 학생은 머리 위에 탈락, 흐리게 보임', la.others['나래'].tag === '탈락' && la.others['나래'].alpha < 1, JSON.stringify(la.others['나래']));
+check('골든벨 3번: 탈락한 학생은 머리 위에 해골 3개, 흐리게 보임', la.others['나래'].tag === '💀💀💀' && la.others['나래'].alpha < 1, JSON.stringify(la.others['나래']));
 
 await gbRound('O', 'O');
 check('골든벨 4번: 탈락 중 맞히면 부활까지 남은 수, 점수는 그대로',
   /2문제를 더 맞히면 다시 살아납니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbScore === 0, fmt(await gbCard(b)));
+check('골든벨 4번: 맞히면 해골이 하나 없어짐', (await looks(b)).me.tag === '💀💀' && (await looks(a)).others['나래'].tag === '💀💀', JSON.stringify((await looks(b)).me));
 
 await gbRound(2, 2, async () => {
   check('골든벨 5번: 보기가 3개면 구역도 3개', /1 0명 · 2 2명 · 3 0명 · 구역 밖 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
 });
-check('골든벨 5번: 부활까지 1문제', /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
+check('골든벨 5번: 부활까지 1문제, 해골 1개', /1문제를 더 맞히면/.test((await gbCard(b)) ?? '') && (await looks(b)).me.tag === '💀', fmt(await gbCard(b)));
 
 await gbRound('X', 'X');
 check('골든벨 6번: 3문제를 맞혀 목숨 1개로 다시 살아남',

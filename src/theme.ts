@@ -34,7 +34,7 @@ export const color = {
   zoneLabel: '#2e2a26',
   // 골든벨: 머리 위 목숨
   livesText: '#d23c4e',
-  livesBackground: 'rgba(255, 253, 248, 0.9)',
+  livesStroke: '#ffffff', // 배경 없이 띄우므로 테두리로 바닥과 구분한다
   // 사물 종류별 색(단순 도형 단계)
   object: {
     blackboard: 0x2f5d4a,
@@ -104,6 +104,7 @@ export const size = {
   zoneTextFont: '20px',
   zoneTextPad: 10,
   livesFont: '13px',
+  livesStroke: 3, // 하트 테두리 두께(픽셀)
 } as const;
 
 /** 대화상자·안내 크기(CSS) */

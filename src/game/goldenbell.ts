@@ -35,9 +35,9 @@ export interface PanelView {
   ranking: string[];
 }
 
-/** 머리 위에 띄우는 목숨: ♥♥♡, 탈락이면 '탈락' */
+/** 머리 위에 띄우는 목숨: ♥♥♡. 탈락하면 해골 3개가 되고, 맞힐 때마다 하나씩 없어져 다 없어지면 다시 살아난다. */
 export function livesTag(p: Player) {
-  if (p.gbOut) return '탈락';
+  if (p.gbOut) return '💀'.repeat(Math.max(0, GB_REVIVE_CORRECT - p.gbRevive));
   return `${'♥'.repeat(p.gbLives)}${'♡'.repeat(Math.max(0, GB_LIVES - p.gbLives))}`;
 }
 
@@ -130,7 +130,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
 
 export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
   const lives = me.gbOut
-    ? `탈락 · ${GB_REVIVE_CORRECT - me.gbRevive}문제를 맞히면 다시 살아납니다`
+    ? `탈락 ${livesTag(me)} · ${GB_REVIVE_CORRECT - me.gbRevive}문제를 맞히면 다시 살아납니다`
     : `목숨 ${livesTag(me)}`;
   let where = '';
   if (gb.phase === 'question') {

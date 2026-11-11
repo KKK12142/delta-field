@@ -220,15 +220,17 @@ export abstract class MapScene extends Scene {
     const parts: Phaser.GameObjects.GameObject[] = [shadow, body, name];
     let tag: Phaser.GameObjects.Text | null = null;
     if (tagStyle) {
-      const lives = tagStyle === 'lives';
+      // CCTV 글은 어두운 바탕에 흰 글, 목숨(하트)은 바탕 없이 테두리만 두른다.
+      const style: Phaser.Types.GameObjects.Text.TextStyle =
+        tagStyle === 'lives'
+          ? { fontSize: size.livesFont, color: color.livesText, stroke: color.livesStroke, strokeThickness: size.livesStroke }
+          : { fontSize: size.tagFont, color: color.tagText, backgroundColor: color.tagBackground };
       tag = this.add
         .text(0, name.y - name.height - size.tagGap, '', {
           fontFamily,
-          fontSize: lives ? size.livesFont : size.tagFont,
-          color: lives ? color.livesText : color.tagText,
-          backgroundColor: lives ? color.livesBackground : color.tagBackground,
           padding: { x: size.tagPadX, y: size.tagPadY },
           resolution: size.textResolution,
+          ...style,
         })
         .setOrigin(0.5, 1)
         .setVisible(false);
