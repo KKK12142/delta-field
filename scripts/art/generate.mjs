@@ -4,6 +4,7 @@
 //
 // 사용: pnpm art:gen(키는 ~/.config/delta-field/baze.env에서 읽는다) 또는 node --env-file-if-exists=<키 파일> scripts/art/generate.mjs <프롬프트 파일> --out <이름> [옵션]
 //   --char char-01     scripts/art/characters.json의 desc를 {{desc}}에 넣는다
+//   --thing desk       scripts/art/things.json의 desc·size를 {{desc}}·{{size}}에 넣는다
 //   --var key=값       {{key}}에 넣는다(여러 번 쓸 수 있다)
 //   --ref <그림.png>   참고 그림(같은 캐릭터의 다른 방향 등). 설정의 editUrl로 보낸다
 //   --n 1              한 번에 받을 장 수
@@ -23,6 +24,7 @@ const { values: opt, positionals } = parseArgs({
   options: {
     out: { type: 'string' },
     char: { type: 'string' },
+    thing: { type: 'string' },
     var: { type: 'string', multiple: true, default: [] },
     ref: { type: 'string' },
     n: { type: 'string', default: '1' },
@@ -33,7 +35,7 @@ const { values: opt, positionals } = parseArgs({
 });
 const promptFile = positionals[0];
 if (!promptFile || !opt.out || !/^[\w.-]+$/.test(opt.out)) {
-  console.error('사용: generate.mjs <프롬프트 파일> --out <이름(영문·숫자·-)> [--char id] [--var key=값] [--ref 그림.png] [--n 1] [--dry-run]');
+  console.error('사용: generate.mjs <프롬프트 파일> --out <이름(영문·숫자·-)> [--char id] [--thing id] [--var key=값] [--ref 그림.png] [--n 1] [--dry-run]');
   process.exit(2);
 }
 
@@ -48,6 +50,13 @@ process.on('uncaughtException', (err) => {
 
 // ---------- 프롬프트 만들기 ----------
 const vars = {};
+if (opt.thing) {
+  const t = JSON.parse(readFileSync(join(here, 'things.json'), 'utf8'));
+  const c = [...t.tiles, ...t.objects].find((x) => x.id === opt.thing);
+  if (!c) throw new Error(`things.json에 ${opt.thing}가 없습니다.`);
+  vars.desc = c.desc;
+  if (c.size) vars.size = c.size;
+}
 if (opt.char) {
   const list = JSON.parse(readFileSync(join(here, 'characters.json'), 'utf8')).characters;
   const c = list.find((x) => x.id === opt.char);
@@ -62,7 +71,7 @@ for (const v of opt.var) {
 let prompt = readFileSync(promptFile, 'utf8');
 if (!opt['no-style']) prompt = readFileSync(join(here, 'prompts', 'style.txt'), 'utf8') + '\n' + prompt;
 prompt = prompt.replace(/\{\{(\w+)\}\}/g, (m, k) => {
-  if (!(k in vars)) throw new Error(`프롬프트의 ${m}에 넣을 값이 없습니다(--char 또는 --var ${k}=...).`);
+  if (!(k in vars)) throw new Error(`프롬프트의 ${m}에 넣을 값이 없습니다(--char, --thing 또는 --var ${k}=...).`);
   return vars[k];
 });
 prompt = prompt.trim();

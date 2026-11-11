@@ -17,7 +17,8 @@
 - PNG 파일은 1배(도트 1개 = 픽셀 1개)로 저장하고, 게임에서 3배로 키운다. 키울 때는 가장 가까운 픽셀(nearest)로 해서 흐려지지 않게 한다.
   - 까닭: 카메라 확대(zoomMin 0.6 ~ followZoomMax 2.5)가 늘 곱해지므로 3배로 키운 파일을 써도 선명함은 같고 파일만 9배 커진다.
   - Phaser에서는 그림마다 `texture.setFilter(Phaser.Textures.FilterMode.NEAREST)`를 건다. 게임 설정의 `pixelArt: true`는 닉네임 글자까지 각지게 하므로 쓰지 않는다.
-  - 확대가 정수 배가 아니면 도트 폭이 1·2픽셀로 고르지 않게 보인다. 카메라 확대를 정수 배로 맞출지는 맵 담당과 정한다.
+  - 확대가 정수 배가 아니면 도트 폭이 1·2픽셀로 고르지 않게 보인다. 따라가기 화면 확대는 1/3 단위(1, 4/3, 5/3, 2)로 맞춰
+    도트 하나가 정수 픽셀이 되게 한다(맵 담당, theme size.zoomSnap).
 - 확인용으로 크게 본 그림이 필요하면 `--scale`로 따로 만든다(아래 다듬기).
 
 ### 캐릭터
@@ -40,7 +41,8 @@
 
 ### 타일
 - 바닥 16×16. 같은 바닥의 변형 2~4개를 가로로 이어 한 장으로 둔다(예: 64×16). 이어 붙였을 때 경계가 보이지 않게 한다.
-- 벽은 윗면과 앞면으로 나눈다. 앞면 높이는 지금 18px(6도트)인데, 도트 그림에서는 앞면을 1칸(16도트) 이상 주는 일이 많다. 맵 담당과 정한다.
+- 벽(`#`)과 울타리(`%`)는 윗면 타일과 앞면 타일로 나눈다. 아래 칸이 바닥인 벽 칸이 앞면 칸이고, 그 칸 전체(16×16)를 앞면 그림으로 그린다(맵 담당 painter.ts의 wall(face)).
+  파일은 윗면과 앞면을 따로 둔다(wallTop, wallFace, fenceTop, fenceFace).
 - 바닥 타일에는 외곽선을 넣지 않는다.
 
 ### 사물
@@ -63,8 +65,8 @@
 | art/work/ | 다듬는 중간 그림과 미리보기 | 넣지 않음 |
 | art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본 | 넣음 |
 | public/assets/characters/char-01.png | 캐릭터 시트 | 넣음 |
-| public/assets/tiles/<장소>-floor.png, <장소>-wall.png | 바닥, 벽 | 넣음 |
-| public/assets/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 ObjectKind와 같게(blackboard, teacherDesk …) | 넣음 |
+| public/assets/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
+| public/assets/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 ObjectKind와 같게(blackboard, teacherDesk …). 닫힘·열림이 있는 문은 두 장을 가로로 이어 한 장(닫힘이 왼쪽) | 넣음 |
 | public/assets/icons/<아이템 id>.png | 아이템 아이콘(locker-key …) | 넣음 |
 
 ## 캐릭터 구상(8가지, 교사 확인 전)
@@ -93,10 +95,41 @@
 - 서버 Player에는 우선 캐릭터 id(char-01)만 둔다. 꾸미기가 생기면 겹별 id를 더한다.
 
 ## 만들 그림 목록
+맵은 48×34칸 학교 하나다: 위 왼쪽 교실(22×9), 위 오른쪽 실험실(23×9), 가운데 가로 복도(46×4), 아래 운동장(46×17). 자세한 것은 docs/map.md.
+생성 프롬프트에 들어가는 영어 설명과 크기는 scripts/art/things.json에 있다(`pnpm art:gen <프롬프트> --out <이름> --thing <id>`).
+
 - 캐릭터 8가지(시트 8장)
-- 교실(src/data/classroom.json, 14×10칸): 바닥, 벽, 칠판(6×1, 벽에 붙음), 교탁(2×1), 책상(2×1), 사물함(1×3), 문(2×1)
-- 아이콘: 사물함 열쇠(locker-key), 교실 문 열쇠(door-key)
-- 복도·실험실·운동장, 골든벨 맵: 맵 담당의 바닥·벽·사물 목록이 오면 채운다.
+- 바닥·벽(맵 글자 / 이름, 16×16)
+
+  | 글자 | 이름 | 내용 | 프롬프트 |
+  |---|---|---|---|
+  | `.` | classroomFloor | 교실 바닥(나무). 골든벨 맵도 쓴다 | floor.txt |
+  | `,` | hallFloor | 복도 바닥 | floor.txt |
+  | `:` | labFloor | 실험실 바닥 | floor.txt |
+  | `"` | field | 운동장 흙 | floor.txt |
+  | `#` | wallTop, wallFace | 건물 벽의 윗면, 앞면 | floor.txt, wall.txt |
+  | `%` | fenceTop, fenceFace | 울타리의 윗면, 앞면 | floor.txt, wall.txt |
+
+- 사물(kind, 차지 칸, 프롬프트는 모두 object.txt)
+
+  | kind | 이름 | 차지 칸 | 그림 너비(도트) | 비고 |
+  |---|---|---|---|---|
+  | blackboard | 칠판 | 6×1 | 96 | 벽 앞면에 걸림 |
+  | bulletinBoard | 게시판 | 4×1 | 64 | 벽 앞면에 걸림 |
+  | teacherDesk | 교탁 | 2×1 | 32 | |
+  | desk | 책상 | 2×1 | 32 | |
+  | locker | 사물함 | 1×3 | 16 | 옆벽에 붙음 |
+  | shoeRack | 신발장 | 4×1 | 64 | |
+  | labBench | 실험대 | 3×2 | 48 | |
+  | cabinet | 약품장 | 3×1 | 48 | |
+  | tree | 나무 | 2×2 | 32 | |
+  | goalpost | 축구 골대 | 1×3 | 16 | 옆을 보고 섬 |
+  | door | 교실·실험실 문 | 2×1 | 32 | 닫힘·열림 두 장 |
+  | entrance | 현관문 | 2×1 | 32 | 닫힘·열림 두 장 |
+  | gate | 교문 | 4×1 | 64 | |
+
+- 아이콘: 사물함 열쇠(locker-key), 교실 문 열쇠(door-key). 맵 담당이 아이템을 더하면 채운다.
+- 벽에 걸린 사물(칠판, 게시판)과 문은 벽 앞면 칸(16도트 높이) 안에 그린다. 위로 솟는 높이를 둘지는 맵에 놓아 본 뒤 정한다.
 
 ## 그림 생성(BAZE)
 - 설정은 scripts/art/baze.json: url(그림 만들기), editUrl(참고 그림으로 만들기), model, format, authHeader, authPrefix, size, body(그 밖의 값. 예: 투명 배경, 품질).
@@ -106,7 +139,7 @@
   - pnpm art:gen은 저장소 맨 위 .env를 읽는다. `--dry-run`은 보낼 내용만 보인다(키 없이 된다).
   - 받은 그림은 art/raw/<이름>/<시각>-<번호>.png, 같은 이름의 .json에 프롬프트와 설정(키 없음)을 남긴다.
 - 프롬프트(scripts/art/prompts/): style.txt(공통: 도트 규칙, 외곽선, 빛, 투명 또는 마젠타 배경, 글자·워터마크 없음, 기존 작품 따라 하지 않음)를 앞에 붙이고
-  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-walk.txt(걷기 시트 4×3), floor.txt(바닥 타일), object.txt(사물, {{size}})를 쓴다.
+  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-walk.txt(걷기 시트 4×3), floor.txt(바닥·벽 윗면 타일), wall.txt(벽·울타리 앞면 타일), object.txt(사물, {{size}})를 쓴다.
 - 캐릭터를 만드는 순서(제안)
   1. 앞모습을 캐릭터마다 여러 장 받아 교사가 고른다.
   2. 고른 그림을 참고 그림(--ref)으로 네 방향 서기를 받는다.
@@ -154,8 +187,7 @@ frame down            프레임 이름. 다음 줄부터 24줄, 한 줄 16글자
 - 진짜 생성 그림으로는 아직 해 보지 않았다. 도트 크기가 고르지 않거나 격자가 비뚤면 --px로 정하거나 글자판에서 손으로 고친다.
 
 ## 정하지 않은 것
-- BAZE: 주소(만들기, 참고 그림으로 만들기), 모델 이름, 요청·응답 형식, 인증 헤더 모양, 투명 배경·크기·품질 선택지, 한 장 값과 쓸 수 있는 양, 키를 둘 곳(.env의 BAZE_API_KEY 제안)
+- BAZE: 주소(만들기, 참고 그림으로 만들기), 모델 이름, 요청·응답 형식, 인증 헤더 모양, 투명 배경·크기·품질 선택지, 한 장 값과 쓸 수 있는 양, (키는 ~/.config/delta-field/baze.env에 둔다: 대장 결정)
 - 캐릭터 8가지 구상, 화면에 보일 이름, 피부색
 - 캐릭터 크기 16×24(화면 48×72px, 지금 아바타 26×34px보다 크다)가 35명이 모일 때 괜찮은지
-- 벽 앞면 높이, 카메라 확대를 정수 배로 맞출지(맵 담당)
 - 공용 팔레트(첫 생성 뒤)

@@ -1,0 +1,28 @@
+{
+  "_설명": "바닥·벽·사물 목록(docs/art.md '만들 그림 목록', 맵은 docs/map.md). desc·size는 그림 생성 프롬프트의 {{desc}}·{{size}}에 들어간다(generate.mjs --thing id). prompt는 쓸 프롬프트 파일.",
+  "tiles": [
+    { "id": "classroomFloor", "prompt": "floor.txt", "desc": "warm light-brown wooden classroom floor boards running horizontally, subtle plank seams" },
+    { "id": "hallFloor", "prompt": "floor.txt", "desc": "school hallway floor of pale gray-green square vinyl tiles with thin seams" },
+    { "id": "labFloor", "prompt": "floor.txt", "desc": "science lab floor of clean light-blue-gray square tiles with thin seams" },
+    { "id": "field", "prompt": "floor.txt", "desc": "school sports ground of packed light-brown dirt with a few tiny pebbles" },
+    { "id": "wallTop", "prompt": "floor.txt", "desc": "top of a thick school building wall seen from above: plain light gray concrete cap" },
+    { "id": "wallFace", "prompt": "wall.txt", "desc": "school building interior wall: cream painted plaster with a darker wainscot strip along the bottom" },
+    { "id": "fenceTop", "prompt": "floor.txt", "desc": "top of a low fence line seen from above: a narrow gray metal rail over packed light-brown dirt" },
+    { "id": "fenceFace", "prompt": "wall.txt", "desc": "green metal mesh fence around a school sports ground: thin vertical posts and diamond mesh, packed dirt visible through the mesh" }
+  ],
+  "objects": [
+    { "id": "blackboard", "size": "6 tiles wide, hangs on the wall front face (96x16 game pixels)", "desc": "dark green classroom chalkboard with a light wooden frame and a chalk tray at the bottom, blank" },
+    { "id": "teacherDesk", "size": "2 tiles wide and 1 tile deep (32 game pixels wide)", "desc": "teacher's lectern desk made of medium-brown wood with a closed front panel" },
+    { "id": "desk", "size": "2 tiles wide and 1 tile deep (32 game pixels wide)", "desc": "pair of plain student desks side by side, light wood tops on thin gray metal legs" },
+    { "id": "locker", "size": "1 tile wide and 3 tiles deep, standing against a side wall (16 game pixels wide)", "desc": "row of three gray-blue metal student lockers seen from above, doors facing sideways" },
+    { "id": "bulletinBoard", "size": "4 tiles wide, hangs on the wall front face (64x16 game pixels)", "desc": "cork bulletin board with a wooden frame and a few small blank colored paper notes pinned on it" },
+    { "id": "shoeRack", "size": "4 tiles wide and 1 tile deep (64 game pixels wide)", "desc": "low wooden shoe rack with open cubbies, a few pairs of plain sneakers inside" },
+    { "id": "labBench", "size": "3 tiles wide and 2 tiles deep (48 game pixels wide)", "desc": "science lab bench with a dark gray top, a small sink, a beaker and a test tube rack on top, cabinet doors on the front" },
+    { "id": "cabinet", "size": "3 tiles wide and 1 tile deep (48 game pixels wide)", "desc": "tall chemical cabinet with glass doors showing rows of small bottles, white metal frame" },
+    { "id": "tree", "size": "2 tiles wide and 2 tiles deep (32 game pixels wide)", "desc": "round leafy green tree with a short brown trunk, seen from above at a slight angle" },
+    { "id": "goalpost", "size": "1 tile wide and 3 tiles deep, the goal faces sideways (16 game pixels wide)", "desc": "small soccer goal with white posts and white net, seen from above, opening to the side" },
+    { "id": "door", "size": "2 tiles wide, set in the wall front face (32 game pixels wide)", "desc": "two versions side by side: a closed wooden classroom sliding door with a small window, and the same door open showing a dark doorway" },
+    { "id": "entrance", "size": "2 tiles wide, set in the wall front face (32 game pixels wide)", "desc": "two versions side by side: closed glass double doors of a school building entrance with metal frames, and the same doors open" },
+    { "id": "gate", "size": "4 tiles wide and 1 tile deep (64 game pixels wide)", "desc": "sliding metal school gate with vertical bars between two brick pillars, closed" }
+  ]
+}
