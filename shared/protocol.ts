@@ -19,10 +19,24 @@ export const MAP_IDS: MapId[] = ['school', 'goldenbell'];
 /** 캐릭터 id를 모르거나 주지 않으면 이 캐릭터로 받는다. 캐릭터 목록은 src/data/characters.json */
 export const DEFAULT_CHARACTER = 'char-01';
 
+/** 학생이 첫 화면에서 고르는 반(2026-11-12 교사 결정). 선생님은 고르지 않는다. */
+export const CLASS_GROUPS = [
+  { id: 'science', name: '수과학반' },
+  { id: 'aisw', name: 'AI.SW반' },
+] as const;
+export type ClassGroupId = (typeof CLASS_GROUPS)[number]['id'];
+
+/** 반 id의 이름. 모르는 id나 ''(선생님, 반 없음)이면 '' */
+export function classGroupName(id: string): string {
+  return CLASS_GROUPS.find((g) => g.id === id)?.name ?? '';
+}
+
 export interface JoinOptions {
   nickname: string;
   /** 고른 캐릭터 id(src/data/characters.json). 여럿이 같은 캐릭터를 골라도 된다. */
   character?: string;
+  /** 학생의 반 id(CLASS_GROUPS). 선생님은 넣지 않는다. */
+  classGroup?: string;
   /** 선생님만 넣는다. */
   password?: string;
 }

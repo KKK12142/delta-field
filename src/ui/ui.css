@@ -78,6 +78,27 @@
   border: var(--df-border) solid var(--df-panel-border);
   border-radius: var(--df-radius);
 }
+/* 첫 화면 반 고르기(학생) */
+.df-classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--df-gap);
+}
+.df-class {
+  font: inherit;
+  padding: var(--df-button-pad);
+  border: var(--df-choice-border) solid transparent;
+  border-radius: var(--df-radius);
+  background: var(--df-choice);
+  color: var(--df-text);
+  cursor: pointer;
+}
+.df-class:hover {
+  background: var(--df-choice-hover);
+}
+.df-class[aria-pressed='true'] {
+  border-color: var(--df-char-selected);
+}
 /* 첫 화면 캐릭터 고르기 */
 .df-chars {
   display: grid;
@@ -305,6 +326,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--df-hud-gap);
+  white-space: pre-line;
 }
 .df-cctv-empty {
   margin: 0;
@@ -330,6 +352,12 @@
   grid-template-columns: 1fr auto;
   align-items: baseline;
   column-gap: var(--df-gap);
+}
+.df-cctv-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--df-hud-gap-wide);
+  min-width: 0;
 }
 .df-cctv-row:hover {
   background: var(--df-choice-hover);

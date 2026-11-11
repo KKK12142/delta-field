@@ -10,6 +10,8 @@ export const Player = schema(
     role: t.string(),
     /** 캐릭터 id(src/data/characters.json) */
     character: t.string().default(DEFAULT_CHARACTER),
+    /** 학생의 반 id(shared/protocol.ts CLASS_GROUPS). 선생님이나 반을 모르면 '' */
+    classGroup: t.string().default(''),
     /** 발밑 위치(칸 단위) */
     col: t.float32(),
     row: t.float32(),

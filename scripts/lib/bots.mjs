@@ -5,7 +5,7 @@ import school from '../../src/data/school.json' with { type: 'json' };
 import characters from '../../src/data/characters.json' with { type: 'json' };
 import { isFloor } from '../../src/data/room.ts';
 import { activeZones } from '../../shared/goldenbell.ts';
-import { MOVE_INTERVAL_MS } from '../../shared/protocol.ts';
+import { CLASS_GROUPS, MOVE_INTERVAL_MS } from '../../shared/protocol.ts';
 import { motion } from '../../src/theme.ts';
 
 // 봇이 받는 데이터 양을 세려고, SDK를 불러오기 전에 WebSocket을 감싼다.
@@ -39,6 +39,8 @@ export class Bot {
     this.gameUrl = gameUrl;
     this.nickname = `봇${String(i + 1).padStart(2, '0')}`;
     this.character = characters[i % characters.length].id;
+    // 반은 번갈아 고른다(shared/protocol.ts CLASS_GROUPS).
+    this.classGroup = CLASS_GROUPS[i % CLASS_GROUPS.length].id;
     this.map = 'school';
     this.pos = randomIn(school.start.col - 1.5, school.start.row - 1.5, 3, 1.5);
     this.target = { ...this.pos };
@@ -50,7 +52,7 @@ export class Bot {
 
   async join(code) {
     const t0 = performance.now();
-    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character });
+    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character, classGroup: this.classGroup });
     this.joinMs = performance.now() - t0;
     this.room.send('move', { ...this.pos, map: this.map });
   }

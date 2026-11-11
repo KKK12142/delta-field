@@ -1,7 +1,7 @@
 import { Input } from 'phaser';
 import type { ActivityKind } from '../../shared/protocol.ts';
 import { areaAt, type RoomObject } from '../data/room';
-import { byNickname, describeStudent } from '../game/cctv';
+import { byClassAndNickname, classCounts, describeStudent } from '../game/cctv';
 import { formatDuration, RunState } from '../game/state';
 import { CctvPanel } from '../ui/cctv';
 import { objectParticle } from '../ui/dom';
@@ -295,14 +295,14 @@ export class RoomScene extends MapScene {
     const students = this.net
       .students(this.mapId)
       .map(([id, p]) => describeStudent(this.room, id, p))
-      .sort(byNickname);
+      .sort(byClassAndNickname);
     for (const s of students) {
       const tag = this.remotes.get(s.id)?.avatar.tag;
       if (!tag) continue;
       if (s.tag !== null && tag.text !== s.tag) tag.setText(s.tag);
       tag.setVisible(s.tag !== null);
     }
-    cctv.panel.setInfo(this.net.code, students.length);
+    cctv.panel.setInfo(this.net.code, students.length, classCounts(students));
     const followed = students.find((s) => s.id === cctv.following);
     if (cctv.following && !followed) {
       // 따라가던 학생이 나갔으면 전체 보기로 돌아간다.

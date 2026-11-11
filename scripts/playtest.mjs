@@ -31,6 +31,7 @@ check('선생님 비밀번호가 틀리면 안내', /비밀번호가 맞지 않�
 await teacher.enter({ teacher: true, nickname: '선생님', pw: password });
 const code = await teacher.js(`window.__df?.code()`);
 check('선생님이 방을 만들고 방 코드를 받음', /^\d{4}$/.test(code ?? ''), code);
+check('첫 화면: 선생님에게는 반 고르기가 없음', (await teacher.js(`document.querySelector('.df-classes')`)) === null);
 check('선생님 화면에 방 코드가 보임', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes(`방 코드 ${code}`));
 await teacher.shot('room-created');
 
@@ -46,6 +47,12 @@ check('첫 화면: 캐릭터 8가지 가운데 하나가 골라져 있음', pick
 await a.js(`document.querySelector('.df-char[data-id="char-03"]').click()`);
 check('첫 화면: 누른 캐릭터가 골라짐', (await a.js(`document.querySelector('.df-char[aria-pressed="true"]').dataset.id`)) === 'char-03');
 await a.shot('characters');
+// 반은 고르지 않은 채로 시작한다(enter()는 학생이면 반을 누르므로 먼저 본다).
+check('첫 화면: 학생은 반 2가지 가운데 고름, 처음에는 고르지 않음',
+  (await a.js(`[...document.querySelectorAll('.df-class')].map((b) => b.textContent + ':' + b.getAttribute('aria-pressed')).join(',')`)) ===
+    '수과학반:false,AI.SW반:false');
+await a.enter({ nickname: '가람', code, classGroup: null });
+check('반을 고르지 않으면 안내', /반을 골라야/.test((await a.error()) ?? ''), await a.error());
 await a.enter({ nickname: '', code });
 check('빈 닉네임이면 안내', /닉네임을 입력해야/.test((await a.error()) ?? ''));
 await a.enter({ nickname: '가람', code: '12' });
@@ -56,12 +63,12 @@ check('없는 방 코드면 안내', /인 방이 없습니다/.test((await a.err
 await a.enter({ nickname: '선생님', code });
 check('겹치는 닉네임이면 안내', /같은 닉네임/.test((await a.error()) ?? ''), await a.error());
 await a.shot('nickname-taken');
-await a.enter({ nickname: '가람', code, character: 'char-03' });
+await a.enter({ nickname: '가람', code, character: 'char-03', classGroup: 'aisw' });
 check('학생 A가 방 코드로 들어감', (await a.js(`window.__df?.code()`)) === code);
 
 // ---- 학생 B(태블릿) ----
 const b = await openPage('student-b', touchUrl, { touch: true });
-await b.enter({ nickname: '나래', code, character: 'char-05' });
+await b.enter({ nickname: '나래', code, character: 'char-05', classGroup: 'science' });
 check('학생 B가 들어감', (await b.js(`window.__df?.code()`)) === code);
 await wait(500);
 check('선생님 화면: 학생 2명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 2명 접속'));
@@ -182,8 +189,11 @@ const cctvOffBefore = (await teacher.js(`(() => { const s = window.__df; return 
 await clickText(teacher, '.df-hud button', 'CCTV 보기');
 await wait(400);
 check('CCTV: 창이 뜨고 학생 2명', cctvOffBefore && /학생 2명/.test((await cctvText()) ?? ''), fmt(await cctvText()));
-check('CCTV: 목록이 닉네임 순',
-  (await teacher.js(`[...document.querySelectorAll('.df-cctv-row-name')].map((n) => n.textContent).join(',')`)) === '가람,나래');
+check('CCTV: 목록과 머리글에 반이 보임',
+  /AI\.SW반/.test((await rowText('가람')) ?? '') && /수과학반/.test((await rowText('나래')) ?? '') && /수과학반 1 · AI\.SW반 1/.test((await cctvText()) ?? ''),
+  `${fmt(await rowText('가람'))} | ${fmt(await rowText('나래'))}`);
+check('CCTV: 목록이 반 순서(수과학반 나래 → AI.SW반 가람)',
+  (await teacher.js(`[...document.querySelectorAll('.df-cctv-row-name')].map((n) => n.textContent).join(',')`)) === '나래,가람');
 check('CCTV: 처음에는 교실에서 돌아다니는 중, 진행 0/11', /교실 · 돌아다니는 중/.test((await rowText('가람')) ?? '') && /진행 0\/11/.test((await rowText('가람')) ?? ''),
   fmt(await rowText('가람')));
 check('CCTV: 오른쪽 안내와 살펴보기 단추를 감춤',
@@ -559,6 +569,8 @@ const odd = await new Client(new URL('colyseus', baseUrl).href).joinById(code, {
 await wait(500);
 const oddChar = await teacher2.js(`__df.others().find((o) => o.nickname === '모름')?.character ?? null`);
 check('모르는 캐릭터 id는 char-01로 받음', oddChar === 'char-01', oddChar);
+const oddClass = await teacher2.js(`__df.others().find((o) => o.nickname === '모름')?.classGroup ?? null`);
+check('반을 넣지 않고 들어오면 반 없음(\'\')으로 받음', oddClass === '', JSON.stringify(oddClass));
 await odd.leave();
 
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));

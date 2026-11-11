@@ -11,6 +11,7 @@ import {
   MAX_CLIENTS,
   RECONNECT_SECONDS,
   RejectCode,
+  classGroupName,
   cleanNickname,
   type GbFileInfo,
   type GbReply,
@@ -131,6 +132,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     // 모르는 캐릭터면 기본 캐릭터로 받는다(거절하지 않는다).
     const character = options?.character;
     player.character = typeof character === 'string' && CHARACTER_IDS.has(character) ? character : DEFAULT_CHARACTER;
+    // 반도 모르는 값이면 ''(반 없음)으로 받는다. 선생님은 반이 없다.
+    player.classGroup = !teacher && classGroupName(String(options?.classGroup ?? '')) ? String(options.classGroup) : '';
     player.col = school.start.col;
     player.row = school.start.row;
     // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.

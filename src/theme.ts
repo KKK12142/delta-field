@@ -67,7 +67,7 @@ export const uiColor = {
   buttonDisabled: '#b9c4d1',
   choice: '#f1ebe0',
   choiceHover: '#e6dccb',
-  charSelected: '#3b6ea8', // 첫 화면에서 고른 캐릭터의 테두리
+  charSelected: '#3b6ea8', // 첫 화면에서 고른 캐릭터·반의 테두리
   correct: '#2e7d4f',
   wrong: '#b23b3b',
   badge: '#f2b134',
@@ -147,6 +147,7 @@ export const uiSize = {
   choiceBorder: '2px',
   hudPad: '8px 14px',
   hudGap: '2px',
+  hudGapWide: '6px', // CCTV 목록에서 닉네임과 반 사이
   badgePad: '2px 10px',
   lineHeight: '1.6',
   buttonPadSmall: '6px 12px',

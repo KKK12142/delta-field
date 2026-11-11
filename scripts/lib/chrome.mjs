@@ -99,12 +99,15 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
       dialogText: () => p.js(`document.querySelector('.df-dialog')?.innerText ?? null`),
       error: () => p.js(`(() => { const e = document.querySelector('.df-error'); return e && !e.hidden ? e.textContent : null; })()`),
       /** 첫 화면에 입력하고 들어가기를 누른다. teacher면 선생님 화면으로 바꾸고, character를 주면 그 캐릭터를 고른다. */
-      enter: async ({ teacher = false, nickname, code = '', pw = '', character = null }) => {
+      enter: async ({ teacher = false, nickname, code = '', pw = '', character = null, classGroup = 'science' }) => {
         await p.js(`(() => {
           const sw = document.querySelector('.df-link');
           if (${teacher} !== sw.textContent.includes('학생')) sw.click();
           const ch = ${JSON.stringify(character)};
           if (ch) document.querySelector(\`.df-char[data-id="\${ch}"]\`).click();
+          // 학생은 반을 고른다(classGroup이 null이면 고르지 않는다).
+          const cg = ${JSON.stringify(classGroup)};
+          if (!${teacher} && cg) document.querySelector(\`.df-class[data-id="\${cg}"]\`).click();
           const set = (id, v) => { const i = document.getElementById(id); i.value = v; };
           set('df-nickname', ${JSON.stringify(nickname)});
           set('df-code', ${JSON.stringify(code)});

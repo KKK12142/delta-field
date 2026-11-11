@@ -1,10 +1,14 @@
 // CCTV 모드에서 학생 한 명을 어떻게 적어 보일지 정한다. 서버가 맞춰 준 학생 상태와 방 데이터만 쓴다.
+import { CLASS_GROUPS, classGroupName } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
 import { areaAt, type Room } from '../data/room';
 
 export interface StudentView {
   id: string;
   nickname: string;
+  /** 반 id와 이름(반을 모르면 '') */
+  classGroup: string;
+  className: string;
   /** 지금 장소와 하는 일(목록과 정보 창). 예: "복도 · 신발장 퀴즈 푸는 중" */
   doing: string;
   /** 지도의 아바타 위에 띄울 짧은 표시. 돌아다니는 중이면 null */
@@ -44,6 +48,8 @@ export function describeStudent(room: Room, id: string, p: Player): StudentView 
   return {
     id,
     nickname: p.nickname,
+    classGroup: p.classGroup,
+    className: classGroupName(p.classGroup),
     doing,
     tag,
     progress: `진행 ${done}/${steps}`,
@@ -51,7 +57,17 @@ export function describeStudent(room: Room, id: string, p: Player): StudentView 
   };
 }
 
-/** 닉네임 가나다순 */
-export function byNickname(a: StudentView, b: StudentView) {
-  return a.nickname.localeCompare(b.nickname, 'ko');
+/** 반 순서(CLASS_GROUPS, 반을 모르면 맨 뒤), 같은 반 안에서는 닉네임 가나다순 */
+export function byClassAndNickname(a: StudentView, b: StudentView) {
+  return classOrder(a.classGroup) - classOrder(b.classGroup) || a.nickname.localeCompare(b.nickname, 'ko');
+}
+
+function classOrder(id: string) {
+  const i = CLASS_GROUPS.findIndex((g) => g.id === id);
+  return i < 0 ? CLASS_GROUPS.length : i;
+}
+
+/** 반마다 학생 수. 예: "수과학반 3 · AI.SW반 2" (반을 모르는 학생은 세지 않는다) */
+export function classCounts(students: StudentView[]) {
+  return CLASS_GROUPS.map((g) => `${g.name} ${students.filter((s) => s.classGroup === g.id).length}`).join(' · ');
 }
