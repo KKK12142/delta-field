@@ -32,6 +32,9 @@ export const color = {
     '4': 0x3d8f99,
   },
   zoneLabel: '#2e2a26',
+  // 골든벨: 머리 위 목숨
+  livesText: '#d23c4e',
+  livesBackground: 'rgba(255, 253, 248, 0.9)',
   // 사물 종류별 색(단순 도형 단계)
   object: {
     blackboard: 0x2f5d4a,
@@ -100,6 +103,7 @@ export const size = {
   zoneLabelFont: '56px',
   zoneTextFont: '20px',
   zoneTextPad: 10,
+  livesFont: '13px',
 } as const;
 
 /** 대화상자·안내 크기(CSS) */
@@ -145,6 +149,7 @@ export const motion = {
   speed: 4, // 칸/초
   joystickDeadZone: 0.15,
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
+  gbFadeMs: 2000, // 골든벨 문제가 시작되면 다른 학생이 이 시간(ms) 동안 흐려지다 사라진다(학생 화면만)
 } as const;
 
 /** uiColor, uiSize를 CSS 변수(--df-이름)로 넣는다. */

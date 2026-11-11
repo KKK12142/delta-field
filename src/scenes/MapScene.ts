@@ -30,6 +30,9 @@ export interface Remote {
   tag: Phaser.GameObjects.Text | null;
 }
 
+/** 아바타 위 짧은 글의 모양: CCTV에서 지금 하는 일, 골든벨에서 목숨 */
+export type TagStyle = 'cctv' | 'lives';
+
 /** 위쪽 안내, 아래쪽 조이스틱, 오른쪽 창이 가리는 화면 픽셀 */
 export interface Reserved {
   top: number;
@@ -49,6 +52,8 @@ export abstract class MapScene extends Scene {
   /** 발밑 위치(칸 단위). 칸 (c, r)은 [c, c+1) × [r, r+1)을 차지한다. */
   protected pos = { col: 0, row: 0 };
   protected avatar!: Phaser.GameObjects.Container;
+  /** 내 아바타 위의 짧은 글(골든벨의 목숨). 없으면 null */
+  protected ownTag: Phaser.GameObjects.Text | null = null;
   protected keys!: Record<string, Phaser.Input.Keyboard.Key>;
   /** 다른 맵으로 옮기는 중이면 true(이 장면의 일을 멈춘다) */
   private leaving = false;
@@ -66,7 +71,9 @@ export abstract class MapScene extends Scene {
   /** 이어받는 장면은 super.create() 뒤에 제 안내를 만들고 fitCamera()를 부른다. */
   create() {
     this.drawRoom();
-    this.avatar = this.makeAvatar(this.net.nickname, color.avatar, color.nickname).avatar;
+    const own = this.makeAvatar(this.net.nickname, color.avatar, color.nickname, this.ownTagStyle());
+    this.avatar = own.avatar;
+    this.ownTag = own.tag;
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error('키보드 입력을 쓸 수 없습니다.');
@@ -198,8 +205,8 @@ export abstract class MapScene extends Scene {
     cam.centerOn(roomW / 2 + r.right / 2 / zoom, roomH / 2 - (r.top - r.bottom) / 2 / zoom);
   }
 
-  /** 아바타 하나. withTag면 닉네임 위에 짧은 글을 (감춰 둔 채로) 붙인다. */
-  protected makeAvatar(nickname: string, bodyColor: number, nameColor: string, withTag = false) {
+  /** 아바타 하나. tagStyle을 주면 닉네임 위에 짧은 글을 (감춰 둔 채로) 붙인다. */
+  protected makeAvatar(nickname: string, bodyColor: number, nameColor: string, tagStyle: TagStyle | null = null) {
     const shadow = this.add.ellipse(0, 0, size.avatarShadowWidth, size.avatarShadowHeight, color.avatarShadow, alpha.avatarShadow);
     const body = this.add.ellipse(0, -size.avatarHeight / 2, size.avatarWidth, size.avatarHeight, bodyColor);
     const name = this.add
@@ -212,13 +219,14 @@ export abstract class MapScene extends Scene {
       .setOrigin(0.5, 1);
     const parts: Phaser.GameObjects.GameObject[] = [shadow, body, name];
     let tag: Phaser.GameObjects.Text | null = null;
-    if (withTag) {
+    if (tagStyle) {
+      const lives = tagStyle === 'lives';
       tag = this.add
         .text(0, name.y - name.height - size.tagGap, '', {
           fontFamily,
-          fontSize: size.tagFont,
-          color: color.tagText,
-          backgroundColor: color.tagBackground,
+          fontSize: lives ? size.livesFont : size.tagFont,
+          color: lives ? color.livesText : color.tagText,
+          backgroundColor: lives ? color.livesBackground : color.tagBackground,
           padding: { x: size.tagPadX, y: size.tagPadY },
           resolution: size.textResolution,
         })
@@ -229,9 +237,14 @@ export abstract class MapScene extends Scene {
     return { avatar: this.add.container(0, 0, parts), tag };
   }
 
-  /** 다른 사람 아바타에 짧은 글을 붙일지(선생님 화면의 학생에게) */
-  protected wantsTag(p: Player) {
-    return p.role === 'student' && this.net.role === 'teacher';
+  /** 다른 사람 아바타에 붙일 짧은 글. 기본은 선생님 화면의 학생에게 CCTV 글 */
+  protected wantsTag(p: Player): TagStyle | null {
+    return p.role === 'student' && this.net.role === 'teacher' ? 'cctv' : null;
+  }
+
+  /** 내 아바타에 붙일 짧은 글 */
+  protected ownTagStyle(): TagStyle | null {
+    return null;
   }
 
   /** 매 프레임 다른 사람 아바타마다 할 일(골든벨은 탈락한 학생을 흐리게 한다) */

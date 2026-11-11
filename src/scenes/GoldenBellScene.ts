@@ -1,9 +1,9 @@
 import { activeZones, type Zone, type Zones } from '../../shared/goldenbell.ts';
 import type { Player } from '../../shared/schema.ts';
-import { cardView, mineView, panelView } from '../game/goldenbell';
+import { cardView, livesTag, mineView, panelView } from '../game/goldenbell';
 import { GbHud, GbPanel } from '../ui/goldenbell';
-import { alpha, color, fontFamily, size } from '../theme';
-import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
+import { alpha, color, fontFamily, motion, size } from '../theme';
+import { MapScene, type MapContext, type Remote, type Reserved, type TagStyle } from './MapScene';
 
 /** 구역을 그리는 깊이: 바닥(0) 위, 사물·아바타(깊이 = y 픽셀) 아래 */
 const ZONE_DEPTH = 1;
@@ -21,6 +21,8 @@ export class GoldenBellScene extends MapScene {
   private hudBottom = 0;
   /** 선생님이 보낸 요청의 답을 기다리는 중 */
   private waiting = false;
+  /** 흐려지기를 시작한 문제 번호와 그 시각 */
+  private fade = { index: -1, startedAt: 0 };
 
   constructor() {
     super('goldenbell');
@@ -36,6 +38,7 @@ export class GoldenBellScene extends MapScene {
     this.hudBottom = 0;
     this.waiting = false;
     this.panel = null;
+    this.fade = { index: -1, startedAt: 0 };
   }
 
   create() {
@@ -59,6 +62,16 @@ export class GoldenBellScene extends MapScene {
         const gb = this.net.goldenbell;
         return { phase: gb.phase, index: gb.index, total: gb.total, type: gb.type, timeLeft: gb.timeLeft, answer: gb.answer };
       },
+      /** 보이는 모습: 내 아바타와 다른 사람 아바타의 투명도와 머리 위 글 */
+      looks: () => ({
+        me: { alpha: this.avatar.alpha, tag: this.ownTag?.visible ? this.ownTag.text : null },
+        others: Object.fromEntries(
+          [...this.remotes].map(([id, r]) => [
+            this.net.room.state.players.get(id)?.nickname ?? id,
+            { alpha: r.avatar.alpha, tag: r.tag?.visible ? r.tag.text : null },
+          ]),
+        ),
+      }),
     });
   }
 
@@ -84,9 +97,30 @@ export class GoldenBellScene extends MapScene {
     }
   }
 
-  /** 탈락한 학생은 흐리게 보인다. */
+  /** 학생은 모두 머리 위에 목숨을 띄운다(선생님은 띄우지 않는다). */
+  protected wantsTag(p: Player): TagStyle | null {
+    return p.role === 'student' ? 'lives' : null;
+  }
+
+  protected ownTagStyle(): TagStyle | null {
+    return this.net.role === 'student' ? 'lives' : null;
+  }
+
+  /** 탈락한 학생은 흐리게, 문제를 푸는 동안(학생 화면)은 점점 사라지게 보인다. */
   protected decorateRemote(r: Remote, p: Player) {
-    r.avatar.setAlpha(p.gbOut ? alpha.outAvatar : 1);
+    r.avatar.setAlpha((p.gbOut ? alpha.outAvatar : 1) * this.othersVisibility());
+    if (r.tag) setTag(r.tag, livesTag(p));
+  }
+
+  /**
+   * 다른 사람이 보이는 정도(0~1). 학생 화면에서는 문제가 시작되면 gbFadeMs 동안 흐려지다 사라져
+   * 다른 학생을 따라 움직이지 못하게 한다. 정답을 공개하면 다시 모두 보인다. 선생님 화면은 늘 보인다.
+   */
+  private othersVisibility() {
+    const gb = this.net.goldenbell;
+    if (this.net.role === 'teacher' || gb.phase !== 'question') return 1;
+    if (this.fade.index !== gb.index) this.fade = { index: gb.index, startedAt: performance.now() };
+    return Math.max(0, 1 - (performance.now() - this.fade.startedAt) / motion.gbFadeMs);
   }
 
   protected reserved(): Reserved {
@@ -108,6 +142,7 @@ export class GoldenBellScene extends MapScene {
     if (me && !teacher) this.hud.showMine(mineView(gb, me, this.zones));
     this.panel?.show(panelView(gb, players, this.zones), this.waiting);
     this.avatar.setAlpha(me?.gbOut ? alpha.outAvatar : 1);
+    if (me && this.ownTag) setTag(this.ownTag, livesTag(me));
 
     const showZones = gb.phase === 'question' || gb.phase === 'reveal';
     const key = showZones ? `${gb.type}|${gb.choices.join('|')}|${gb.answer}` : '';
@@ -171,4 +206,10 @@ export class GoldenBellScene extends MapScene {
       this.waiting = false;
     }
   }
+}
+
+/** 머리 위 글을 바뀌었을 때만 고쳐 보인다. */
+function setTag(tag: Phaser.GameObjects.Text, text: string) {
+  if (tag.text !== text) tag.setText(text);
+  tag.setVisible(true);
 }

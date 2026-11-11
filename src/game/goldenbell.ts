@@ -35,6 +35,12 @@ export interface PanelView {
   ranking: string[];
 }
 
+/** 머리 위에 띄우는 목숨: ♥♥♡, 탈락이면 '탈락' */
+export function livesTag(p: Player) {
+  if (p.gbOut) return '탈락';
+  return `${'♥'.repeat(p.gbLives)}${'♡'.repeat(Math.max(0, GB_LIVES - p.gbLives))}`;
+}
+
 /** 학생에게 보이는 순위 수 */
 const RANKING_FOR_STUDENTS = 10;
 
@@ -125,7 +131,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
 export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
   const lives = me.gbOut
     ? `탈락 · ${GB_REVIVE_CORRECT - me.gbRevive}문제를 맞히면 다시 살아납니다`
-    : `목숨 ${'♥'.repeat(me.gbLives)}${'♡'.repeat(Math.max(0, GB_LIVES - me.gbLives))}`;
+    : `목숨 ${livesTag(me)}`;
   let where = '';
   if (gb.phase === 'question') {
     const zone = zoneAt(activeZones(zones, gb.type, gb.choices.length), me.col, me.row);
