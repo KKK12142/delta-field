@@ -14,6 +14,7 @@
 - `pnpm check` 타입 검사.
 - `pnpm build` 타입 검사 뒤 `dist/`로 빌드.
 - `pnpm preview` 빌드 결과 보기.
+- `pnpm playtest` 개발 서버를 켠 채로 헤드리스 크롬에서 교실 방탈출 한 판을 자동으로 해 본다.
 - `pnpm share` / `pnpm share:off` / `pnpm share:status` 개발 서버를 Tailscale 망(맥·태블릿)에 내어 주고 거둔다.
 
 ## 정할 것

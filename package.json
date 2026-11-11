@@ -14,7 +14,8 @@
     "preview": "vite preview",
     "share": "bash scripts/share.sh on",
     "share:off": "bash scripts/share.sh off",
-    "share:status": "bash scripts/share.sh status"
+    "share:status": "bash scripts/share.sh status",
+    "playtest": "node scripts/playtest.mjs"
   },
   "dependencies": {
     "phaser": "4.2.1"
