@@ -1,6 +1,13 @@
-// 서버와의 연결. 방 만들기·들어가기, 내 위치 보내기, 연결 상태 알리기를 맡는다.
+// 서버와의 연결. 방 만들기·들어가기, 내 위치와 진행 상태 보내기, 연결 상태 알리기를 맡는다.
 import { Client, type Room } from '@colyseus/sdk';
-import { MOVE_INTERVAL_MS, ROOM_NAME, RejectCode, type JoinOptions, type Role } from '../../shared/protocol.ts';
+import {
+  MOVE_INTERVAL_MS,
+  ROOM_NAME,
+  RejectCode,
+  type JoinOptions,
+  type Role,
+  type StatusMessage,
+} from '../../shared/protocol.ts';
 import type { ClassState, Player } from '../../shared/schema.ts';
 
 /** 개발 중에는 Vite가 /colyseus를 서버(2567)로 넘겨 주고, 수업용 서버는 같은 주소에서 바로 받는다. */
@@ -17,6 +24,7 @@ export type ConnectionStatus = 'connected' | 'reconnecting' | 'closed';
 export class Net {
   private lastSentAt = 0;
   private lastSent = { col: NaN, row: NaN };
+  private lastStatus = '';
   private readonly statusListeners = new Set<(status: ConnectionStatus) => void>();
 
   constructor(
@@ -47,6 +55,11 @@ export class Net {
     return list;
   }
 
+  /** 학생만(나를 빼고) */
+  students(): [string, Player][] {
+    return this.others().filter(([, p]) => p.role === 'student');
+  }
+
   studentCount() {
     let n = 0;
     this.room.state.players.forEach((p) => {
@@ -63,6 +76,14 @@ export class Net {
     this.room.send('move', { col, row });
     this.lastSentAt = now;
     this.lastSent = { col, row };
+  }
+
+  /** 방탈출 진행 상태가 바뀌었으면 보낸다. 연결이 끊긴 동안 보낸 것은 다시 붙으면 SDK가 보낸다. */
+  sendStatus(status: StatusMessage) {
+    const key = JSON.stringify(status);
+    if (key === this.lastStatus) return;
+    this.room.send('status', status);
+    this.lastStatus = key;
   }
 
   onStatus(listener: (status: ConnectionStatus) => void) {

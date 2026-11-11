@@ -9,11 +9,15 @@ import {
   cleanNickname,
   type JoinOptions,
   type MoveMessage,
+  type StatusMessage,
 } from '../shared/protocol.ts';
 import { ClassState, Player } from '../shared/schema.ts';
 
 const ROWS = classroom.layout.length;
 const COLS = classroom.layout[0].length;
+const ITEM_IDS = new Set(Object.keys(classroom.items));
+/** 살펴볼 수 있는(action이 있는) 사물 id */
+const ACTION_IDS = new Set(classroom.objects.filter((o) => 'action' in o).map((o) => o.id));
 
 function checkTeacher(password: unknown) {
   const expected = process.env.DF_TEACHER_PASSWORD;
@@ -37,6 +41,19 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
+/** 아는 id만 남기고 겹친 것을 지운다. */
+function knownIds(value: unknown, known: Set<string>): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((v): v is string => typeof v === 'string' && known.has(v)))];
+}
+
+/** 목록이 달라졌을 때만 바꾼다(바뀐 값만 보내므로). */
+function replaceAll(list: string[] & { clear(): void }, values: string[]) {
+  if (list.length === values.length && values.every((v, i) => list[i] === v)) return;
+  list.clear();
+  list.push(...values);
+}
+
 export class ClassRoom extends Room<{ state: ClassState }> {
   maxClients = MAX_CLIENTS;
   state = new ClassState();
@@ -51,6 +68,19 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (!player || !message || !isFiniteNumber(message.col) || !isFiniteNumber(message.row)) return;
       player.col = Math.min(COLS, Math.max(0, message.col));
       player.row = Math.min(ROWS, Math.max(0, message.row));
+    });
+
+    // 학생의 방탈출 진행 상태. 선생님의 CCTV 모드에 보인다.
+    this.onMessage('status', (client: Client, message: StatusMessage) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player || player.role !== 'student' || !message) return;
+      const kind = message.activity === 'look' || message.activity === 'quiz' ? message.activity : '';
+      const object = kind && typeof message.object === 'string' && ACTION_IDS.has(message.object) ? message.object : '';
+      player.activity = object ? kind : '';
+      player.activityObject = object;
+      replaceAll(player.items, knownIds(message.items, ITEM_IDS));
+      replaceAll(player.done, knownIds(message.done, ACTION_IDS));
+      player.escaped = message.escaped === true;
     });
     console.log(`방 ${this.roomId}을 만들었습니다.`);
   }
@@ -74,8 +104,15 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   onDrop(client: Client) {
     // 들어오다 거절된 접속(닉네임 겹침 등)에도 onDrop이 불린다. 그때 기다리기를 걸면 오류로 서버 전체가 꺼지므로,
     // 실제로 들어와 있던 접속만 다시 붙기를 기다린다.
-    if (!this.state.players.has(client.sessionId)) return;
+    const player = this.state.players.get(client.sessionId);
+    if (!player) return;
+    player.online = false;
     this.allowReconnection(client, RECONNECT_SECONDS);
+  }
+
+  onReconnect(client: Client) {
+    const player = this.state.players.get(client.sessionId);
+    if (player) player.online = true;
   }
 
   onLeave(client: Client) {

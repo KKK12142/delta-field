@@ -9,6 +9,18 @@ export const Player = schema(
     /** 발밑 위치(칸 단위) */
     col: t.float32(),
     row: t.float32(),
+    /** 연결이 끊겨 다시 붙기를 기다리는 동안 false */
+    online: t.boolean().default(true),
+    // 아래는 학생의 방탈출 진행 상태(shared/protocol.ts의 StatusMessage). 선생님의 CCTV 모드에 쓴다.
+    /** ActivityKind: '' | 'look' | 'quiz' */
+    activity: t.string().default(''),
+    /** activity의 사물 id */
+    activityObject: t.string().default(''),
+    /** 가진 아이템 id */
+    items: t.array('string'),
+    /** 마친 사물 id */
+    done: t.array('string'),
+    escaped: t.boolean().default(false),
   },
   'Player',
 );

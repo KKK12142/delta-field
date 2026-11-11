@@ -23,6 +23,21 @@ export interface MoveMessage {
   row: number;
 }
 
+/** 학생이 지금 하는 일. ''은 돌아다니는 중, 'look'은 사물을 살펴보는 중, 'quiz'는 퀴즈를 푸는 중 */
+export type ActivityKind = '' | 'look' | 'quiz';
+
+/** 학생 화면이 서버에 알리는 방탈출 진행 상태. 선생님의 CCTV 모드에 쓴다. */
+export interface StatusMessage {
+  activity: ActivityKind;
+  /** activity가 있을 때 그 사물의 id, 없으면 '' */
+  object: string;
+  /** 가진 아이템 id */
+  items: string[];
+  /** 마친 사물 id */
+  done: string[];
+  escaped: boolean;
+}
+
 /** 서버가 들어오기를 거절할 때 쓰는 번호. 방 만들기 오류는 HTTP 응답 번호로도 쓰이므로 200~599 안에서 고르고, Colyseus의 번호(520~526)와 겹치지 않게 했다. */
 export const RejectCode = {
   noTeacherPassword: 503,

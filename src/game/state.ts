@@ -1,4 +1,5 @@
-// 한 판의 진행 상태. 서버가 생기면(2단계) 이 상태를 서버로 보내 CCTV 모드에 쓴다.
+// 한 판의 진행 상태. 서버로 보내 선생님의 CCTV 모드에 쓴다.
+import type { ActivityKind, StatusMessage } from '../../shared/protocol.ts';
 
 export class RunState {
   readonly nickname: string;
@@ -7,6 +8,8 @@ export class RunState {
   readonly done = new Set<string>();
   readonly startedAt = performance.now();
   escapedAt: number | null = null;
+  /** 지금 하는 일과 그 사물 id */
+  activity: { kind: ActivityKind; object: string } = { kind: '', object: '' };
 
   constructor(nickname: string) {
     this.nickname = nickname;
@@ -14,6 +17,17 @@ export class RunState {
 
   elapsedMs() {
     return (this.escapedAt ?? performance.now()) - this.startedAt;
+  }
+
+  /** 서버에 보낼 모양 */
+  toStatus(): StatusMessage {
+    return {
+      activity: this.activity.kind,
+      object: this.activity.object,
+      items: [...this.items],
+      done: [...this.done],
+      escaped: this.escapedAt !== null,
+    };
   }
 }
 

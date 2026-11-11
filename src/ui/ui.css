@@ -11,6 +11,10 @@
 #ui > * {
   pointer-events: auto;
 }
+/* display를 정한 요소도 hidden이면 감춘다. */
+#ui [hidden] {
+  display: none !important;
+}
 #game {
   touch-action: none;
 }
@@ -28,6 +32,10 @@
 .df-button:disabled {
   background: var(--df-button-disabled);
   cursor: default;
+}
+.df-button-small {
+  padding: var(--df-button-pad-small);
+  font-size: var(--df-font-small);
 }
 
 /* 시작 화면 */
@@ -160,6 +168,16 @@
 #ui > .df-hud {
   pointer-events: none;
 }
+.df-hud button {
+  pointer-events: auto;
+}
+.df-hud .df-button-small {
+  margin-top: var(--df-hud-gap);
+}
+/* CCTV 모드에서는 오른쪽을 CCTV 창이 쓴다. */
+.df-hud.is-cctv {
+  right: calc(min(var(--df-cctv-width), 100vw - 2 * var(--df-margin)) + 2 * var(--df-margin));
+}
 .df-hud-box {
   padding: var(--df-hud-pad);
   border: var(--df-border) solid var(--df-panel-border);
@@ -205,4 +223,79 @@
   border-radius: 50%;
   background: var(--df-joystick-knob-color);
   pointer-events: none;
+}
+
+/* CCTV 모드(선생님, 오른쪽) */
+.df-cctv {
+  position: absolute;
+  top: var(--df-margin);
+  right: var(--df-margin);
+  bottom: calc(var(--df-margin) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  width: min(var(--df-cctv-width), calc(100vw - 2 * var(--df-margin)));
+  padding: var(--df-margin);
+  border: var(--df-border) solid var(--df-panel-border);
+  border-radius: var(--df-radius);
+  background: var(--df-panel);
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-gap);
+}
+.df-cctv-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--df-gap);
+}
+.df-cctv-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+.df-cctv-empty {
+  margin: 0;
+}
+.df-cctv-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+.df-cctv-row {
+  font: inherit;
+  text-align: left;
+  padding: var(--df-cctv-row-pad);
+  border: 0;
+  border-radius: var(--df-radius);
+  background: var(--df-choice);
+  color: var(--df-text);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: var(--df-gap);
+}
+.df-cctv-row:hover {
+  background: var(--df-choice-hover);
+}
+.df-cctv-row-doing {
+  grid-column: 1 / -1;
+  font-size: var(--df-font-small);
+}
+.df-cctv-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+.df-cctv-name {
+  font-size: var(--df-font-title);
+}
+.df-cctv-hint,
+.df-cctv-detail .df-muted + .df-text {
+  margin-bottom: var(--df-gap);
+}
+.df-cctv-back {
+  align-self: flex-start;
 }

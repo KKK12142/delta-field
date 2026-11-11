@@ -20,6 +20,14 @@
 - `pnpm playtest` 화면·게임 서버를 켠 채로(`DF_TEACHER_PASSWORD`를 넘겨) 헤드리스 크롬에서 선생님 1명, 학생 2명으로 한 판을 자동으로 해 본다.
 - `pnpm share` / `pnpm share:off` / `pnpm share:status` 화면·게임 서버를 켜고 Tailscale 망(맥·태블릿)에 내어 주고 거둔다.
 
+공유 중인 서버를 그대로 둔 채 확인용 서버를 따로 켤 때는 포트를 바꾼다. 게임 서버는 `DF_PORT`, 화면 서버는 `DF_WEB_PORT`(넘겨 줄 게임 서버는 `DF_PORT`)를 쓴다.
+
+```
+DF_PORT=2667 DF_TEACHER_PASSWORD=확인용 node server/main.ts
+DF_WEB_PORT=5273 DF_PORT=2667 pnpm dev
+DF_TEACHER_PASSWORD=확인용 pnpm playtest http://localhost:5273/
+```
+
 ## 선생님 비밀번호
 
 저장소 맨 위에 `.env` 파일을 만들고 한 줄을 넣는다. `.env`는 저장소에 올라가지 않는다.

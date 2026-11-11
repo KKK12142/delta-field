@@ -19,6 +19,9 @@ export const color = {
   nickname: '#24476e',
   remoteNickname: '#5b6b7c',
   teacherNickname: '#8a3d1f',
+  // CCTV 모드에서 아바타 위에 띄우는 지금 하는 일
+  tagText: '#ffffff',
+  tagBackground: 'rgba(46, 42, 38, 0.78)',
   // 사물 종류별 색(단순 도형 단계)
   object: {
     blackboard: 0x2f5d4a,
@@ -67,11 +70,21 @@ export const size = {
   labelFont: '15px',
   nicknameFont: '14px',
   nicknameGap: 6,
+  textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
   viewMargin: 0.92, // 방을 화면에 맞출 때 남기는 비율
   zoomMin: 0.6,
   zoomMax: 2,
   reserveTop: 100, // 위쪽 안내 자리(픽셀)
   reserveBottomTouch: 150, // 터치 기기에서 조이스틱 자리(픽셀)
+  // CCTV 모드
+  tagFont: '12px',
+  tagPadX: 5,
+  tagPadY: 2,
+  tagGap: 3, // 닉네임과 지금 하는 일 표시 사이(픽셀)
+  followZoomScale: 1.8, // 따라갈 때 전체 보기보다 이만큼 크게 본다
+  followZoomMax: 2.5,
+  followLerp: 0.15, // 화면이 따라가는 학생을 쫓는 빠르기(0~1, 클수록 바로)
+  pickRadius: 30, // 학생을 누를 때 아바타 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다
 } as const;
 
 /** 대화상자·안내 크기(CSS) */
@@ -93,6 +106,9 @@ export const uiSize = {
   hudGap: '2px',
   badgePad: '2px 10px',
   lineHeight: '1.6',
+  buttonPadSmall: '6px 12px',
+  cctvWidth: '300px',
+  cctvRowPad: '8px 10px',
 } as const;
 
 /** 글꼴(게임 화면과 HTML에 함께 쓴다) */

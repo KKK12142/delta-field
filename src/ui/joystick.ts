@@ -32,6 +32,16 @@ export class Joystick {
     this.base.addEventListener('pointercancel', release);
   }
 
+  /** 감추면 놓은 것으로 친다. */
+  setHidden(hidden: boolean) {
+    this.base.hidden = hidden;
+    if (!hidden) return;
+    this.pointerId = null;
+    this.vector.x = 0;
+    this.vector.y = 0;
+    this.knob.style.transform = '';
+  }
+
   destroy() {
     this.base.remove();
   }
