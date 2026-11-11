@@ -4,11 +4,11 @@
 //
 // 사용: node scripts/art/fit.mjs <받은 그림.png> --out <시트.png> [옵션]
 //   --grid 4x3         그림이 4줄×3칸으로 놓여 있다(기본 1x1). 이어진 덩어리를 그림 하나로 보고 줄·칸 순서로 늘어놓는다
-//   --frame 16x24      프레임 크기(도트). 그림이 크면 같은 비율로 줄여 넣는다. 없으면 가장 큰 그림에 맞춘다
+//   --frame 20x40      프레임 크기(도트). 그림이 크면 같은 비율로 줄여 넣는다. 없으면 가장 큰 그림에 맞춘다
 //   --anchor bottom    프레임 안 자리: bottom(아래 가운데, 캐릭터·사물) 또는 center
 //   --full             --grid 칸 전체를 그림 하나로 본다(바닥 타일처럼 배경이 없는 그림). --frame과 함께 쓰면 칸을 프레임 크기로 나눠 가짜 픽셀 크기를 정한다
 //   --px auto          가짜 픽셀 한 칸의 크기(받은 그림의 픽셀). auto면 찾는다. 숫자나 "가로x세로"로 정할 수 있다.
-//                      frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
+//                      --frame이 있으면(--full 아닐 때) 기본은 frame이다. frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
 //   --bg auto          배경: auto, alpha(투명 배경), #ff00ff(이 색을 모두 지운다)
 //   --tol 48           배경색으로 볼 색 차이(0~255)
 //   --merge 16         차이가 이 값(0~255) 이하인 색을 하나로 묶는다(생성 그림의 잡음 없애기)
@@ -32,7 +32,7 @@ const { values: opt, positionals } = parseArgs({
     frame: { type: 'string' },
     anchor: { type: 'string', default: 'bottom' },
     full: { type: 'boolean', default: false },
-    px: { type: 'string', default: 'auto' },
+    px: { type: 'string' },
     bg: { type: 'string', default: 'auto' },
     tol: { type: 'string', default: '48' },
     height: { type: 'string' },
@@ -47,7 +47,7 @@ const { values: opt, positionals } = parseArgs({
 
 const input = positionals[0];
 if (!input || !opt.out) {
-  console.error('사용: node scripts/art/fit.mjs <받은 그림.png> --out <시트.png> [--grid 4x3] [--frame 16x24] ...(파일 맨 위 설명 참고)');
+  console.error('사용: node scripts/art/fit.mjs <받은 그림.png> --out <시트.png> [--grid 4x3] [--frame 20x40] ...(파일 맨 위 설명 참고)');
   process.exit(2);
 }
 const pair = (s, name) => {
@@ -57,6 +57,8 @@ const pair = (s, name) => {
 };
 const [gridRows, gridCols] = pair(opt.grid, '--grid');
 const frame = opt.frame ? pair(opt.frame, '--frame') : null;
+// 생성 그림은 도트 크기가 고르지 않아, 프레임이 있으면(타일이 아니면) 그림 높이로 칸 크기를 정하는 쪽을 기본으로 한다
+opt.px ??= frame && !opt.full ? 'frame' : 'auto';
 if (!['bottom', 'center'].includes(opt.anchor)) throw new Error('--anchor는 bottom 또는 center입니다.');
 
 const img = readPng(input);

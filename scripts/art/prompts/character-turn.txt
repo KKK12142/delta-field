@@ -1,5 +1,5 @@
 Turnaround of the same character as the reference image: 4 sprites in one row with wide, equal gaps.
 From left: facing down (toward the viewer), facing left, facing right, facing up (back view).
 All standing still, same height, same proportions, same colors, feet on the same baseline.
-Each sprite is exactly 16 game pixels wide and 24 game pixels tall, chibi proportions (head about 2/5 of the height).
+Each sprite is about 20 game pixels wide and exactly 40 game pixels tall, chibi proportions (2 to 2.5 heads tall, the head about 2/5 of the height).
 Character: {{desc}}
