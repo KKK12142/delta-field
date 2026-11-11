@@ -31,8 +31,11 @@ const KEYS = {
   1: ['1', 'Digit1', 49], 2: ['2', 'Digit2', 50], 3: ['3', 'Digit3', 51], 4: ['4', 'Digit4', 52],
 };
 
-/** 크롬을 켠다. outDir에 프로필과 캡처를 둔다. 돌려주는 openPage로 창을 열고, consoleErrors에 화면 오류가 모인다. */
-export async function launchChrome(outDir, port = 9334) {
+/**
+ * 크롬을 켠다. outDir에 프로필과 캡처를 둔다. 돌려주는 openPage로 창을 열고, consoleErrors에 화면 오류가 모인다.
+ * 여러 에이전트가 동시에 확인할 때는 DF_CHROME_PORT로 크롬 조종 포트를 나눈다(기본 9334).
+ */
+export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_PORT ?? 9334)) {
   const chrome = spawn('google-chrome', [
     '--headless=new', '--no-sandbox', `--remote-debugging-port=${port}`, '--window-size=1280,800',
     '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',

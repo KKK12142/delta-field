@@ -91,3 +91,4 @@ DF_TEACHER_PASSWORD=확인용비밀번호 pnpm loadtest http://localhost:5273/ h
 | `DF_PORT` | 게임 서버 포트(화면 서버가 넘겨 줄 곳도 이것을 쓴다) | 2567 |
 | `DF_WEB_PORT` | 화면 서버 포트 | 5173 |
 | `DF_GOLDENBELL_DIR` | 골든벨 문제 파일 폴더 | `goldenbell/` |
+| `DF_CHROME_PORT` | `playtest`·`loadtest`가 켜는 크롬의 조종 포트(여러 확인을 동시에 돌릴 때 나눈다) | 9334 |
