@@ -1,13 +1,13 @@
 {
-  "_설명": "학생 캐릭터 구상(docs/art.md). desc는 그림 생성 프롬프트의 {{desc}}에 들어간다. 화면에 보일 이름은 교사가 정한다.",
+  "_설명": "학생 캐릭터 구상(docs/art.md). desc는 그림 생성 프롬프트의 {{desc}}에 들어간다. 화면 이름은 정해지지 않아 theme(주제 이름)을 임시로 쓴다. 피부색은 8명이 고르게 다양하도록 임시로 정했다(desc 맨 앞).",
   "characters": [
-    { "id": "char-01", "theme": "실험실", "desc": "white lab coat over a light blue shirt, safety goggles pushed up on the forehead, short black hair, dark pants" },
-    { "id": "char-02", "theme": "전자기", "desc": "navy hoodie with a small yellow lightning-bolt patch, headphones around the neck, messy brown hair, gray pants" },
-    { "id": "char-03", "theme": "탐험", "desc": "yellow windbreaker, a small round compass on a cord around the neck, hair tied in a low ponytail, khaki pants" },
-    { "id": "char-04", "theme": "관찰", "desc": "green vest over a white shirt, round glasses, a magnifying glass hanging at the hip, dark bob-cut hair, brown pants" },
-    { "id": "char-05", "theme": "운동", "desc": "red track suit with white side stripes, a stopwatch on a cord around the neck, short spiky hair, white sneakers" },
-    { "id": "char-06", "theme": "교복", "desc": "school uniform with a white shirt, dark blue blazer and striped tie, neat side-parted hair, square glasses, dark gray pants" },
-    { "id": "char-07", "theme": "천문", "desc": "purple cardigan with a small star pin, long dark hair with a star hair clip, navy pants" },
-    { "id": "char-08", "theme": "메이커", "desc": "orange workshop apron over a gray t-shirt, a small wrench in the apron pocket, curly hair under a teal headband" }
+    { "id": "char-01", "theme": "실험실", "desc": "light skin, white lab coat over a light blue shirt, safety goggles pushed up on the forehead, short black hair, dark pants" },
+    { "id": "char-02", "theme": "전자기", "desc": "medium brown skin, navy hoodie with a small yellow lightning-bolt patch, headphones around the neck, messy brown hair, gray pants" },
+    { "id": "char-03", "theme": "탐험", "desc": "light tan skin, yellow windbreaker, a small round compass on a cord around the neck, hair tied in a low ponytail, khaki pants" },
+    { "id": "char-04", "theme": "관찰", "desc": "dark brown skin, green vest over a white shirt, round glasses, a magnifying glass hanging at the hip, dark bob-cut hair, brown pants" },
+    { "id": "char-05", "theme": "운동", "desc": "medium skin, red track suit with white side stripes, a stopwatch on a cord around the neck, short spiky hair, white sneakers" },
+    { "id": "char-06", "theme": "교복", "desc": "fair skin, school uniform with a white shirt, dark blue blazer and striped tie, neat side-parted hair, square glasses, dark gray pants" },
+    { "id": "char-07", "theme": "천문", "desc": "olive skin, purple cardigan with a small star pin, long dark hair with a star hair clip, navy pants" },
+    { "id": "char-08", "theme": "메이커", "desc": "deep brown skin, orange workshop apron over a gray t-shirt, a small wrench in the apron pocket, curly hair under a teal headband" }
   ]
 }

@@ -5,5 +5,5 @@
   "_models": "GPT 그림 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst 10크레딧, gpt-image-2.5-flare 10크레딧(2026-11-11 문서 기준)",
   "userAgent": "delta-field-art/0.1",
   "size": "1024x1024",
-  "body": {}
+  "body": { "background": "opaque" }
 }

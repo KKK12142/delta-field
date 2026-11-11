@@ -70,7 +70,8 @@
 | public/assets/icons/<아이템 id>.png | 아이템 아이콘(locker-key …) | 넣음 |
 
 ## 캐릭터 구상(8가지, 교사 확인 전)
-공통: 고등학생, 2.5등신. 성별은 정하지 않고 머리 모양과 옷으로 구분한다. 화면에 보일 이름과 피부색은 교사가 정한다.
+공통: 고등학생, 2.5등신. 성별은 정하지 않고 머리 모양과 옷으로 구분한다. 교사가 8가지 구상을 그대로 쓰기로 했다(2026-11-11).
+화면에 보일 이름은 정해지지 않아 주제 이름(실험실, 전자기 …)을 임시로 쓴다. 피부색은 8명이 고르게 다양하도록 임시로 정해 프롬프트(desc 맨 앞)에 넣었다.
 생성 프롬프트에 들어가는 영어 설명은 scripts/art/characters.json에 있다.
 
 | id | 주제 | 모습 |
@@ -136,7 +137,9 @@
   본문: model, prompt, number_of_images, size, quality(low·medium·high), background(auto·opaque, 투명 없음), input_images(GPT 10장까지, 요청 25MB까지).
   응답: data[].url(임시 https 주소 또는 data URL, 바로 받아 둔다), credits_charged. Fal 모델은 operation_id를 주고 `GET …/generate/{operation_id}/?model=`로 기다린다.
   인증 Authorization: Bearer, User-Agent가 비면 403이라 delta-field-art/0.1을 넣는다.
-- GPT 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst·gpt-image-2.5-flare 10크레딧(2026-11-11).
+- GPT 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst·gpt-image-2.5-flare 10크레딧(문서). 모델 목록(`pnpm art:models gpt-image`)에는 2.6-sunburst·2.6-flare도 있다.
+  실제로 쓴 값: gpt-image-2.6-sunburst, quality high, 1024×1024 한 장 54.17크레딧(2026-11-11). 교사가 정한 한도는 하루 5,000크레딧.
+- 미리 값을 보는 /estimate는 주소를 찾지 못했다(images/generate/estimate/는 405·404).
 - 설정은 scripts/art/baze.json(url, model, userAgent, size, body). model은 비워 두었고, 모델이 정해지지 않으면(설정 또는 --model) 부르지 않는다.
 - 받을 때마다 쓴 크레딧을 화면에 보이고 art/raw/credits.log에 한 줄씩 남긴다(시각, 이름, 모델, 장 수, 크레딧, id).
 - API 키는 환경 변수 BAZE_API_KEY로만 읽는다. 화면·로그·파일에 쓰지 않고, 응답이나 오류에 키가 섞여 오면 ***로 가린다.
@@ -163,6 +166,9 @@
    - 프레임 맞추기: `--frame`보다 크면 모든 그림을 같은 비율로 줄이고(이때는 손볼 곳이 늘어난다), 아래 가운데(`--anchor bottom`)에 놓는다.
    - 색 묶기: 차이가 16 이하인 색을 하나로 묶는다(`--merge`). 비슷한 어두운 색 둘(외곽선과 신발 등)이 묶이면 `--merge 8`로 줄인다. `--colors 12`로 색 수를 정할 수도 있다.
    - 바닥 타일은 `--full --frame 16x16`(그림 전체를 한 칸으로 보고 16×16으로 나눈다).
+   - 실제 생성 그림(2.6-sunburst)은 "도트" 크기가 고르지 않아 격자 찾기가 잘 맞지 않았다. 이때는 `--px frame`으로 가장 큰 그림의 높이를 프레임 높이(또는 `--height`)로 나눠 옮긴다.
+     구석의 "AI" 표시처럼 멀리 떨어진 작은 조각은 지운다.
+   - 여러 그림을 한 장으로 늘어놓아 비교하려면 `pnpm art:board --out <판.png> --cols 4 --height 240 <그림> ...`.
 2. 도트 시트 → 글자판: `pnpm art:grid to-txt art/work/char-01.png art/src/characters/char-01.txt --frame 16x24 --names down-a,down,down-b`
 3. 글자판을 고친다: 걸음 프레임 만들기, 어긋난 도트 고치기, 팔레트 맞추기, 겹 이름 달기.
 4. 글자판 → 게임 그림: `pnpm art:grid to-png art/src/characters/char-01.txt public/assets/characters/char-01.png`
