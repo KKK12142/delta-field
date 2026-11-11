@@ -20,7 +20,7 @@ function endpoint() {
 }
 
 export type Entry =
-  | { role: 'student'; nickname: string; character: string; code: string }
+  | { role: 'student'; nickname: string; character: string; classGroup: string; code: string }
   | { role: 'teacher'; nickname: string; character: string; password: string; code: string };
 
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'closed';
@@ -152,7 +152,7 @@ export async function connect(entry: Entry): Promise<Net> {
   const client = new Client(endpoint());
   let room: Room<any, ClassState>;
   if (entry.role === 'student') {
-    const options: JoinOptions = { nickname: entry.nickname, character: entry.character };
+    const options: JoinOptions = { nickname: entry.nickname, character: entry.character, classGroup: entry.classGroup };
     room = await client.joinById<ClassState>(entry.code, options);
   } else {
     const options: JoinOptions = { nickname: entry.nickname, character: entry.character, password: entry.password };

@@ -4,6 +4,7 @@ import { el, uiRoot } from './dom';
 interface Row {
   node: HTMLButtonElement;
   name: HTMLElement;
+  className: HTMLElement;
   progress: HTMLElement;
   doing: HTMLElement;
 }
@@ -25,6 +26,7 @@ export class CctvPanel {
   private readonly list = el('div', 'df-cctv-list');
   private readonly detail = el('div', 'df-cctv-detail');
   private readonly detailName = el('strong', 'df-cctv-name');
+  private readonly detailClass = el('span', 'df-text');
   private readonly detailDoing = el('span', 'df-text');
   private readonly detailProgress = el('span', 'df-text');
   private readonly detailItems = el('span', 'df-text');
@@ -48,6 +50,8 @@ export class CctvPanel {
         'df-muted df-cctv-hint',
         touch ? '따라가는 중입니다. 전체 보기를 누르면 돌아갑니다.' : '따라가는 중입니다. Esc나 전체 보기를 누르면 돌아갑니다.',
       ),
+      el('span', 'df-muted', '반'),
+      this.detailClass,
       el('span', 'df-muted', '지금 하는 일'),
       this.detailDoing,
       el('span', 'df-muted', '진행'),
@@ -71,8 +75,9 @@ export class CctvPanel {
     return this.node.getBoundingClientRect().left;
   }
 
-  setInfo(code: string, studentCount: number) {
-    setText(this.info, `방 코드 ${code} · 학생 ${studentCount}명`);
+  /** 머리글: 방 코드, 학생 수, 반마다 학생 수 */
+  setInfo(code: string, studentCount: number, perClass: string) {
+    setText(this.info, `방 코드 ${code} · 학생 ${studentCount}명\n${perClass}`);
   }
 
   /** 전체 보기: 학생 목록(이미 정렬한 순서대로) */
@@ -85,6 +90,7 @@ export class CctvPanel {
       seen.add(s.id);
       const row = this.rows.get(s.id) ?? this.addRow(s.id);
       setText(row.name, s.nickname);
+      setText(row.className, s.className);
       setText(row.progress, s.progress);
       setText(row.doing, s.doing);
     }
@@ -106,6 +112,7 @@ export class CctvPanel {
     this.empty.hidden = true;
     this.detail.hidden = false;
     setText(this.detailName, s.nickname);
+    setText(this.detailClass, s.className || '없음');
     setText(this.detailDoing, s.doing);
     setText(this.detailProgress, s.progress);
     setText(this.detailItems, s.items.length ? s.items.join(', ') : '없음');
@@ -122,10 +129,13 @@ export class CctvPanel {
     const row: Row = {
       node,
       name: el('strong', 'df-cctv-row-name'),
+      className: el('span', 'df-muted df-cctv-row-class'),
       progress: el('span', 'df-muted'),
       doing: el('span', 'df-cctv-row-doing'),
     };
-    node.append(row.name, row.progress, row.doing);
+    const head = el('span', 'df-cctv-row-head');
+    head.append(row.name, row.className);
+    node.append(head, row.progress, row.doing);
     this.rows.set(id, row);
     return row;
   }

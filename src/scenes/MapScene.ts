@@ -387,6 +387,7 @@ export abstract class MapScene extends Scene {
             nickname: p.nickname,
             role: p.role,
             character: p.character,
+            classGroup: p.classGroup,
             map: p.map,
             col: p.col,
             row: p.row,
