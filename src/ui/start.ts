@@ -1,9 +1,62 @@
 import { CODE_LENGTH, MAX_NICKNAME } from '../../shared/protocol.ts';
+import characters from '../data/characters.json';
 import type { Entry } from '../net/connection';
+import { characterSheet } from '../scenes/avatar';
 import { el, uiRoot } from './dom';
 
+/** 이 기기에서 마지막으로 고른 캐릭터를 기억해 두는 곳(다음에 들어올 때 미리 골라 둔다) */
+const CHARACTER_KEY = 'df-character';
+
+function rememberedCharacter(): string {
+  try {
+    const id = localStorage.getItem(CHARACTER_KEY);
+    if (id && characters.some((c) => c.id === id)) return id;
+  } catch {
+    // 저장소를 쓸 수 없는 창(사생활 보호 등)이면 기억하지 않는다.
+  }
+  // 처음이면 아무거나 골라 두어 모두 같은 캐릭터가 되지 않게 한다.
+  return characters[Math.floor(Math.random() * characters.length)].id;
+}
+
+function rememberCharacter(id: string) {
+  try {
+    localStorage.setItem(CHARACTER_KEY, id);
+  } catch {
+    // 기억하지 못해도 들어가는 데는 상관없다.
+  }
+}
+
+/** 캐릭터 고르기: 앞모습 서기 프레임과 이름을 단추로 늘어놓는다. 고른 id는 selected() */
+function characterPicker() {
+  let selected = rememberedCharacter();
+  const label = el('p', 'df-muted', '캐릭터');
+  label.id = 'df-character-label';
+  const grid = el('div', 'df-chars');
+  grid.setAttribute('role', 'group');
+  grid.setAttribute('aria-labelledby', label.id);
+  const buttons = characters.map((c) => {
+    const button = el('button', 'df-char');
+    button.type = 'button';
+    button.dataset.id = c.id;
+    const face = el('span', 'df-char-face');
+    face.style.backgroundImage = `url("${characterSheet(c.id)}")`;
+    button.append(face, el('span', 'df-char-name', c.name));
+    button.addEventListener('click', () => {
+      selected = c.id;
+      render();
+    });
+    grid.append(button);
+    return button;
+  });
+  const render = () => {
+    for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.id === selected));
+  };
+  render();
+  return { label, grid, selected: () => selected };
+}
+
 /**
- * 첫 화면. 학생은 닉네임과 방 코드, 선생님은 닉네임과 비밀번호(방 코드는 비우면 새 방)를 넣는다.
+ * 첫 화면. 학생은 닉네임과 방 코드, 선생님은 닉네임과 비밀번호(방 코드는 비우면 새 방)를 넣고, 모두 캐릭터를 고른다.
  * tryEnter가 실패하면 그 까닭을 보여 주고 다시 입력받는다. 성공하면 tryEnter의 결과를 돌려준다.
  */
 export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeError: (e: unknown, entry: Entry) => string): Promise<T> {
@@ -38,6 +91,8 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     code.placeholder = `숫자 ${CODE_LENGTH}자리`;
     codeLabel.htmlFor = code.id;
 
+    const picker = characterPicker();
+
     const error = el('p', 'df-error');
     error.hidden = true;
     const row = el('div', 'df-row df-row-split');
@@ -47,7 +102,7 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     submit.type = 'submit';
     row.append(switchRole, submit);
 
-    form.append(title, intro, nickLabel, nickname, passLabel, password, codeLabel, code, error, row);
+    form.append(title, intro, nickLabel, nickname, passLabel, password, codeLabel, code, picker.label, picker.grid, error, row);
     wrap.append(form);
     uiRoot().append(wrap);
 
@@ -85,13 +140,15 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       if (teacher && roomCode && !codeOk) return showError(`방 코드는 숫자 ${CODE_LENGTH}자리이거나 비어 있어야 합니다.`, code);
       if (teacher && !password.value) return showError('선생님 비밀번호를 입력합니다.', password);
 
+      const character = picker.selected();
       const entry: Entry = teacher
-        ? { role: 'teacher', nickname: nick, password: password.value, code: roomCode }
-        : { role: 'student', nickname: nick, code: roomCode };
+        ? { role: 'teacher', nickname: nick, character, password: password.value, code: roomCode }
+        : { role: 'student', nickname: nick, character, code: roomCode };
       submit.disabled = true;
       submit.textContent = '들어가는 중';
       try {
         const result = await tryEnter(entry);
+        rememberCharacter(character);
         wrap.remove();
         resolve(result);
       } catch (err) {

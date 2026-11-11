@@ -3,9 +3,11 @@
 import { Room, ServerError, matchMaker, type Client } from '@colyseus/core';
 import school from '../src/data/school.json' with { type: 'json' };
 import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
+import characters from '../src/data/characters.json' with { type: 'json' };
 import { GB_LIVES, activeZones, judge, zoneAt, type Zones } from '../shared/goldenbell.ts';
 import {
   CODE_LENGTH,
+  DEFAULT_CHARACTER,
   MAX_CLIENTS,
   RECONNECT_SECONDS,
   RejectCode,
@@ -28,6 +30,7 @@ const ITEM_IDS = new Set(Object.keys(school.items));
 /** 살펴볼 수 있는(action이 있는) 사물 id. 연 문도 마친 사물(done)로 받는다. */
 const ACTION_IDS = new Set(school.objects.filter((o) => 'action' in o).map((o) => o.id));
 const GB_ZONES: Zones = goldenbellMap.zones;
+const CHARACTER_IDS = new Set(characters.map((c) => c.id));
 /** 골든벨 맵에서 학생의 발밑을 처음 세우는 곳(방 데이터에서 벽과 구역에 닿지 않게 띄워 둔 네모) */
 const GB_SPAWN = goldenbellMap.spawn;
 
@@ -125,6 +128,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     const player = new Player();
     player.nickname = nickname;
     player.role = teacher ? 'teacher' : 'student';
+    // 모르는 캐릭터면 기본 캐릭터로 받는다(거절하지 않는다).
+    const character = options?.character;
+    player.character = typeof character === 'string' && CHARACTER_IDS.has(character) ? character : DEFAULT_CHARACTER;
     player.col = school.start.col;
     player.row = school.start.row;
     // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.

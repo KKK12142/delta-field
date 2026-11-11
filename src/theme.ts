@@ -14,9 +14,6 @@ export const color = {
     wall: { top: 0xa59a8c, face: 0x8a7f72 },
     fence: { top: 0x7e8a68, face: 0x66714f },
   },
-  avatar: 0x3b6ea8, // 나
-  remoteAvatar: 0x8fa9c4, // 다른 학생
-  teacherAvatar: 0xc0603a, // 선생님
   avatarShadow: 0x000000,
   highlight: 0xf2b134,
   label: '#3a3a3a',
@@ -70,6 +67,7 @@ export const uiColor = {
   buttonDisabled: '#b9c4d1',
   choice: '#f1ebe0',
   choiceHover: '#e6dccb',
+  charSelected: '#3b6ea8', // 첫 화면에서 고른 캐릭터의 테두리
   correct: '#2e7d4f',
   wrong: '#b23b3b',
   badge: '#f2b134',
@@ -85,19 +83,23 @@ export const size = {
   tile: 48, // 바닥 한 칸의 한 변(픽셀)
   floorLine: 1,
   viewTiles: 12, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
-  zoomSnap: 3, // 따라가기 확대 배율을 1/zoomSnap 단위로 맞춘다(3이면 1, 4/3, 5/3, 2…: 도트 3배 그림이 고르게 보임). 0이면 맞추지 않는다
-  wallFace: 18, // 벽 앞면 높이(픽셀). 아래가 바닥인 벽 칸의 아래쪽을 앞면으로 칠한다. 칸 전체(48)로 하면 그 벽 칸이 통째로 앞면이 된다
+  zoomSnap: 2, // 따라가기 확대 배율을 1/zoomSnap 단위로 맞춘다(2면 1, 1.5, 2…: 도트 2배 그림의 도트 하나가 정수 픽셀). 0이면 맞추지 않는다
+  wallFace: 48, // 벽 앞면 높이(픽셀). 아래가 바닥인 벽 칸의 아래쪽을 앞면으로 칠한다. 칸 전체(48)면 그 벽 칸이 통째로 앞면이다
   highlightLine: 3,
-  avatarWidth: 26,
-  avatarHeight: 34,
-  avatarShadowWidth: 28,
-  avatarShadowHeight: 11,
+  // 캐릭터: 시트의 프레임 30×60도트를 2배로 그린다(docs/art.md). 발 위치가 프레임 아래 가운데다.
+  charFrameWidth: 30,
+  charFrameHeight: 60,
+  charScale: 2,
+  avatarHeight: 120, // 발에서 머리 꼭대기까지(픽셀) = charFrameHeight × charScale. 몸통 가운데는 그 절반
+  avatarHitWidth: 44, // 아바타를 누를 때 몸으로 치는 너비(픽셀)
+  avatarShadowWidth: 40,
+  avatarShadowHeight: 14,
   avatarFeet: 0.3, // 발밑 충돌 반경(칸)
   reach: 0.8, // 사물과 이 거리(칸) 안이면 살펴볼 수 있다
   spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
   labelFont: '15px',
   nicknameFont: '14px',
-  nicknameGap: 6,
+  nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
   viewMargin: 0.92, // 맵 전체를 화면에 맞출 때(골든벨, CCTV 전체 보기) 남기는 비율
   zoomMin: 0.15,
@@ -109,8 +111,10 @@ export const size = {
   tagPadY: 2,
   tagGap: 3, // 닉네임과 지금 하는 일 표시 사이(픽셀)
   followLerp: 0.15, // 화면이 따라가는 아바타(나, CCTV로 고른 학생)를 쫓는 빠르기(0~1, 클수록 바로)
-  cctvMarkScale: 0.8, // CCTV 전체 보기에서 학생 아바타·글이 적어도 이 확대 배율일 때만큼 크게 보이게 키운다
-  pickRadius: 30, // 학생을 누를 때 아바타 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다
+  // CCTV 전체 보기는 지도가 작아(배율 0.35쯤) 학생 캐릭터는 적어도 cctvAvatarZoom, 닉네임·표시는 적어도 cctvTextZoom 배율일 때만큼 크게 보인다.
+  cctvAvatarZoom: 0.4,
+  cctvTextZoom: 0.8,
+  pickRadius: 24, // 학생을 누를 때 아바타 몸 밖이라도 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다(작게 보일 때)
   // 골든벨
   reserveGap: 12, // 문제 카드와 지도 사이(픽셀)
   zoneLabelFont: '56px',
@@ -144,6 +148,12 @@ export const uiSize = {
   cctvWidth: '300px',
   cctvRowPad: '8px 10px',
   gbQuestionFont: '20px',
+  // 첫 화면 캐릭터 고르기: 시트(90×240)의 앞모습 서기 프레임(30×60, 왼쪽에서 30)을 2배로 보인다.
+  charFaceWidth: '60px',
+  charFaceHeight: '120px',
+  charSheetSize: '180px 480px',
+  charFacePosition: '-60px 0',
+  charMin: '72px', // 캐릭터 단추 하나의 가장 작은 너비
 } as const;
 
 /** 글꼴(게임 화면과 HTML에 함께 쓴다) */
@@ -164,6 +174,9 @@ export const alpha = {
 export const motion = {
   speed: 4, // 칸/초
   joystickDeadZone: 0.15,
+  walkFps: 8, // 걷기 애니메이션 빠르기(프레임/초)
+  facingKeep: 0.7, // 대각선으로 갈 때 지금 보는 쪽의 성분이 다른 쪽의 이 비율 이상이면 방향을 바꾸지 않는다(깜빡임 막기)
+  remoteWalkGap: 3, // 다른 사람 아바타가 서버 위치와 이 거리(픽셀) 넘게 떨어져 있으면 걷는 중으로 본다
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
   gbFadeMs: 2000, // 골든벨 문제가 시작되면 다른 학생이 이 시간(ms) 동안 흐려지다 사라진다(학생 화면만)
 } as const;

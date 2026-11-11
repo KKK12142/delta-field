@@ -78,6 +78,40 @@
   border: var(--df-border) solid var(--df-panel-border);
   border-radius: var(--df-radius);
 }
+/* 첫 화면 캐릭터 고르기 */
+.df-chars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--df-char-min), 1fr));
+  gap: var(--df-gap);
+}
+.df-char {
+  font: inherit;
+  font-size: var(--df-font-small);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--df-hud-gap);
+  padding: var(--df-button-pad-small);
+  border: var(--df-choice-border) solid transparent;
+  border-radius: var(--df-radius);
+  background: var(--df-choice);
+  color: var(--df-text);
+  cursor: pointer;
+}
+.df-char:hover {
+  background: var(--df-choice-hover);
+}
+.df-char[aria-pressed='true'] {
+  border-color: var(--df-char-selected);
+}
+.df-char-face {
+  width: var(--df-char-face-width);
+  height: var(--df-char-face-height);
+  background-size: var(--df-char-sheet-size);
+  background-position: var(--df-char-face-position);
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
 .df-error {
   margin: 0;
   color: var(--df-wrong);

@@ -20,8 +20,8 @@ function endpoint() {
 }
 
 export type Entry =
-  | { role: 'student'; nickname: string; code: string }
-  | { role: 'teacher'; nickname: string; password: string; code: string };
+  | { role: 'student'; nickname: string; character: string; code: string }
+  | { role: 'teacher'; nickname: string; character: string; password: string; code: string };
 
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'closed';
 
@@ -35,6 +35,8 @@ export class Net {
     readonly room: Room<any, ClassState>,
     readonly role: Role,
     readonly nickname: string,
+    /** 고른 캐릭터(서버가 받은 값은 me().character) */
+    readonly character: string,
   ) {
     room.onDrop(() => this.emit('reconnecting'));
     room.onReconnect(() => this.emit('connected'));
@@ -150,16 +152,16 @@ export async function connect(entry: Entry): Promise<Net> {
   const client = new Client(endpoint());
   let room: Room<any, ClassState>;
   if (entry.role === 'student') {
-    const options: JoinOptions = { nickname: entry.nickname };
+    const options: JoinOptions = { nickname: entry.nickname, character: entry.character };
     room = await client.joinById<ClassState>(entry.code, options);
   } else {
-    const options: JoinOptions = { nickname: entry.nickname, password: entry.password };
+    const options: JoinOptions = { nickname: entry.nickname, character: entry.character, password: entry.password };
     room = entry.code
       ? await client.joinById<ClassState>(entry.code, options)
       : await client.create<ClassState>(ROOM_NAME, options);
   }
   await firstState(room);
-  return new Net(room, entry.role, entry.nickname);
+  return new Net(room, entry.role, entry.nickname, entry.character);
 }
 
 /** 들어가지 못한 까닭을 화면에 보일 문장으로 바꾼다. */
