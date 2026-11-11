@@ -1,6 +1,6 @@
 import { Input } from 'phaser';
 import type { ActivityKind } from '../../shared/protocol.ts';
-import type { RoomObject } from '../data/room';
+import { areaAt, type RoomObject } from '../data/room';
 import { byNickname, describeStudent } from '../game/cctv';
 import { formatDuration, RunState } from '../game/state';
 import { CctvPanel } from '../ui/cctv';
@@ -19,18 +19,23 @@ interface Cctv {
 /** 닫은 키가 곧바로 다시 살펴보기로 이어지지 않게 두는 틈(ms) */
 const REOPEN_GUARD = 250;
 
-/** 교실: 돌아다니며 사물을 살펴보는 방탈출. 선생님은 CCTV 모드로 학생을 지켜보고 골든벨을 시작한다. */
+/**
+ * 학교: 교실, 복도, 실험실, 운동장이 이어진 맵을 돌아다니며 사물을 살펴보는 방탈출. 장소 사이 문은 잠겨 있다가 열면 지나갈 수 있다.
+ * 화면은 내 아바타를 따라간다. 선생님은 CCTV 모드로 학생을 지켜보고 골든벨을 시작한다.
+ */
 export class RoomScene extends MapScene {
-  readonly mapId = 'classroom';
+  readonly mapId = 'school';
   private hud!: Hud;
   private highlight!: Phaser.GameObjects.Graphics;
   private target: RoomObject | null = null;
   private busy = false;
   private studentCount = -1;
   private cctv: Cctv | null = null;
+  /** 지금 서 있는 장소 이름(안내에 보인 것) */
+  private place = '';
 
   constructor() {
-    super('classroom');
+    super('school');
   }
 
   private get state(): RunState {
@@ -43,6 +48,7 @@ export class RoomScene extends MapScene {
     this.busy = false;
     this.studentCount = -1;
     this.cctv = null;
+    this.place = '';
     // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
     ctx.state.activity = { kind: '', object: '' };
   }
@@ -52,8 +58,11 @@ export class RoomScene extends MapScene {
     this.highlight = this.add.graphics().setDepth(Number.MAX_SAFE_INTEGER);
 
     const teacher = this.net.role === 'teacher';
-    this.hud = new Hud(this.room.name, this.room.goal, this.touch, teacher);
+    this.hud = new Hud(this.room.goal, this.touch, teacher);
     this.hud.setRoomCode(this.net.code);
+    this.updatePlace();
+    // 골든벨에 다녀왔으면 연 문이 그대로 열려 있다.
+    for (const o of this.room.objects) if (this.isOpenDoor(o)) this.objectViews.get(o.id)?.setOpen(true);
     // 골든벨에 다녀왔으면 가진 물건이 그대로 있다.
     this.hud.setItems([...this.state.items].map((id) => this.room.items[id]));
     this.hud.onAction(this.onActionButton);
@@ -75,6 +84,7 @@ export class RoomScene extends MapScene {
 
     this.exposeDevHooks({
       items: () => [...this.state.items],
+      place: () => this.place,
       target: () => this.target?.id ?? null,
       escaped: () => this.state.escapedAt !== null,
       cctv: () => {
@@ -93,14 +103,31 @@ export class RoomScene extends MapScene {
 
   /** 골든벨에서 돌아왔으면 떠날 때 서 있던 자리에, 아니면 시작 위치 둘레에 선다. */
   protected startPoint() {
-    const back = this.ctx.classroomPos;
-    this.ctx.classroomPos = null;
+    const back = this.ctx.schoolPos;
+    this.ctx.schoolPos = null;
     if (back && this.free(back.col, back.row)) return back;
     return this.spawnPoint();
   }
 
   protected beforeLeave() {
-    this.ctx.classroomPos = { ...this.pos };
+    this.ctx.schoolPos = { ...this.pos };
+  }
+
+  /** 연 문은 지나갈 수 있다(나만). */
+  protected objectBlocks(o: RoomObject) {
+    return !this.isOpenDoor(o);
+  }
+
+  private isOpenDoor(o: RoomObject) {
+    return o.action?.type === 'open' && this.state.done.has(o.id);
+  }
+
+  /** 지금 장소 이름을 안내에 보인다(바뀌었을 때만). */
+  private updatePlace() {
+    const name = areaAt(this.room, this.pos.col, this.pos.row)?.name ?? this.room.name;
+    if (name === this.place) return;
+    this.place = name;
+    this.hud.setPlace(name);
   }
 
   protected setConnectionText(text: string | null) {
@@ -124,6 +151,7 @@ export class RoomScene extends MapScene {
     if (this.dialog.isOpen() || this.busy) return;
 
     this.moveByInput(delta);
+    this.updatePlace();
     this.updateTarget();
 
     // 두 키의 눌림 표시를 함께 지운다.
@@ -136,29 +164,34 @@ export class RoomScene extends MapScene {
 
   // ---- 화면 맞추기 ----
 
-  /** CCTV 모드에서는 아래쪽 조이스틱이 감춰지고 오른쪽을 CCTV 창이 쓴다. */
+  /** CCTV 모드에서는 오른쪽을 CCTV 창이 쓴다. */
   protected reserved(): Reserved {
     const cam = this.cameras.main;
     return {
       top: size.reserveTop,
-      bottom: this.touch && !this.cctv ? size.reserveBottomTouch : 0,
+      bottom: 0,
       right: this.cctv ? Math.max(0, cam.width - this.cctv.panel.left) : 0,
     };
   }
 
-  /** CCTV 모드에서 학생을 따라갈 때는 그 학생을 크게 보며 따라간다. */
+  /**
+   * 평소에는 내 아바타를 따라간다(맵 밖은 비추지 않는다). CCTV 전체 보기는 학교 맵 전체를 맞추고,
+   * 학생을 고르면 그 학생을 내 화면과 같은 배율로 따라간다(그 학생이 가운데에 오게, 맵 밖도 비춘다).
+   */
   protected fitCamera() {
-    const following = this.cctv?.following ? this.remotes.get(this.cctv.following) : undefined;
-    if (!following) {
-      super.fitCamera();
+    if (!this.cctv) {
+      this.followCamera(this.avatar, true);
       return;
     }
-    const cam = this.cameras.main;
-    const r = this.reserved();
-    const zoom = Math.min(size.followZoomMax, this.fitZoom(r) * size.followZoomScale);
-    cam.setZoom(zoom);
-    // 따라가는 학생의 몸통이 가리는 것 없는 자리의 가운데에 오게 한다(카메라 가운데 = 대상 - offset).
-    cam.startFollow(following.avatar, false, size.followLerp, size.followLerp, -r.right / 2 / zoom, size.avatarHeight / 2 + r.top / 2 / zoom);
+    const following = this.cctv.following ? this.remotes.get(this.cctv.following) : undefined;
+    if (following) this.followCamera(following.avatar, false);
+    else super.fitCamera();
+  }
+
+  /** CCTV 전체 보기에서는 작은 지도 위에서도 학생이 보이게 아바타와 글을 키운다. */
+  protected remoteScale() {
+    if (!this.cctv || this.cctv.following) return 1;
+    return Math.max(1, size.cctvMarkScale / this.cameras.main.zoom);
   }
 
   // ---- 골든벨 시작(선생님) ----
@@ -279,17 +312,18 @@ export class RoomScene extends MapScene {
     else cctv.panel.showList(students);
   }
 
-  /** 화면 좌표에서 가장 가까운 학생(아바타 몸통 가운데에서 pickRadius 안) */
+  /** 화면 좌표에서 가장 가까운 학생(아바타 몸통 가운데에서 pickRadius 안. 키운 아바타는 그만큼 넓게) */
   private pickStudent(screenX: number, screenY: number): string | null {
     const cam = this.cameras.main;
     const p = cam.getWorldPoint(screenX, screenY);
     let best: string | null = null;
-    let bestDist = size.pickRadius / cam.zoom;
+    let bestDist = Infinity;
     for (const [id] of this.net.students(this.mapId)) {
       const r = this.remotes.get(id);
       if (!r) continue;
-      const d = Math.hypot(p.x - r.avatar.x, p.y - (r.avatar.y - size.avatarHeight / 2));
-      if (d <= bestDist) {
+      const scale = r.avatar.scaleY;
+      const d = Math.hypot(p.x - r.avatar.x, p.y - (r.avatar.y - (size.avatarHeight / 2) * scale));
+      if (d <= (size.pickRadius / cam.zoom) * scale && d < bestDist) {
         best = id;
         bestDist = d;
       }
@@ -315,7 +349,8 @@ export class RoomScene extends MapScene {
     let best: RoomObject | null = null;
     let bestDist: number = size.reach;
     for (const o of this.room.objects) {
-      if (!o.action) continue;
+      // 연 문은 지나가는 길이므로 살펴볼 대상에서 뺀다.
+      if (!o.action || this.isOpenDoor(o)) continue;
       const nx = Math.max(o.col, Math.min(this.pos.col, o.col + o.w));
       const ny = Math.max(o.row, Math.min(this.pos.row, o.row + o.h));
       const d = Math.hypot(this.pos.col - nx, this.pos.row - ny);
@@ -371,6 +406,16 @@ export class RoomScene extends MapScene {
           }
           break;
         }
+        case 'open': {
+          if (action.quiz && !(await this.dialog.quiz(o.name, this.room.quizzes[action.quiz]))) return;
+          this.state.done.add(o.id);
+          this.objectViews.get(o.id)?.setOpen(true);
+          this.target = null;
+          this.highlight.clear();
+          this.hud.setTarget(null);
+          await this.dialog.message(o.name, `${action.quiz ? '맞았습니다. ' : ''}${o.name}${objectParticle(o.name)} 열었습니다. 지나갈 수 있습니다.`);
+          break;
+        }
         case 'exit': {
           if (action.quiz && !(await this.dialog.quiz(o.name, this.room.quizzes[action.quiz]))) return;
           await this.escape();
@@ -388,7 +433,7 @@ export class RoomScene extends MapScene {
     const a = o.action;
     if (!a || this.state.done.has(o.id)) return false;
     if (o.requires && !this.state.items.has(o.requires)) return false;
-    return a.type === 'quiz' || (a.type === 'exit' && a.quiz !== undefined);
+    return a.type === 'quiz' || ((a.type === 'exit' || a.type === 'open') && a.quiz !== undefined);
   }
 
   /** 지금 하는 일. 서버로는 tick()에서 보낸다. */
@@ -413,7 +458,7 @@ export class RoomScene extends MapScene {
       '다시 하기',
     );
     this.ctx.state = new RunState(this.state.nickname);
-    this.ctx.classroomPos = null;
+    this.ctx.schoolPos = null;
     this.scene.restart(this.ctx);
   }
 }

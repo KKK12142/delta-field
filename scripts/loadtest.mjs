@@ -1,6 +1,6 @@
 // 학생 35명이 한꺼번에 들어와 움직일 때 서버와 화면이 버티는지 잰다.
 // 가짜 학생(봇)은 Node에서 Colyseus SDK로 붙고, 선생님 1명과 학생 1명은 헤드리스 크롬 화면으로 들어와 CCTV와 그리기 빠르기를 본다.
-// 교실에서는 봇이 모두 쉬지 않고 움직인다(실제 수업보다 무거운 경우). 골든벨은 확인용 문제(3초 7문제)로 한 판 한다.
+// 학교 맵에서는 봇이 모두 바닥 칸 아무 데로나 쉬지 않고 움직인다(실제 수업보다 무거운 경우). 골든벨은 확인용 문제(3초 7문제)로 한 판 한다.
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell로 켠다.
 // 사용: DF_TEACHER_PASSWORD=... pnpm loadtest [화면 주소] [게임 서버 주소] [학생 수]
 //   기본값: http://localhost:5173/  http://localhost:2567  35
@@ -109,7 +109,7 @@ const pingLoop = setInterval(() => {
   for (const b of live) b.ping();
 }, 2000);
 
-// ---- 교실: 모두 쉬지 않고 움직이는 30초 ----
+// ---- 학교 맵: 모두 쉬지 않고 움직이는 30초 ----
 for (const b of live) b.wander = true;
 await wait(1000);
 const classCpu = cpuMeter(pid);
@@ -130,7 +130,7 @@ const seconds = (performance.now() - t0) / 1000;
 const cpuClass = classCpu();
 const perDevice = (bytesIn() - bytes0) / live.length / seconds;
 const movesPerSec = (live.reduce((n, b) => n + b.sent, 0) - sent0) / seconds;
-measure('서버 CPU(교실, 모두 움직임)', cpuClass == null ? '재지 못함' : `코어 1개의 ${cpuClass.toFixed(0)}%`);
+measure('서버 CPU(학교 맵, 모두 움직임)', cpuClass == null ? '재지 못함' : `코어 1개의 ${cpuClass.toFixed(0)}%`);
 measure('서버 메모리', pid ? `${rssMb(pid)?.toFixed(0)} MB` : '재지 못함');
 measure('서버가 받은 위치 메시지', `초당 ${movesPerSec.toFixed(0)}개`);
 measure('기기 1대가 받는 데이터', `초당 ${(perDevice / 1024).toFixed(1)} KB(${((perDevice * 8) / 1e6).toFixed(2)} Mbps), ${students + 1}대 합 ${(((perDevice * 8) / 1e6) * (students + 1)).toFixed(1)} Mbps`);
@@ -178,8 +178,8 @@ check(`골든벨 결과: 순위 ${students}줄`, ranks === students, `${ranks}�
 await teacher.shot('gb-end');
 await teacher.js(`[...document.querySelectorAll('.df-gb-panel button')].find((b) => b.textContent === '골든벨 끝내기').click()`);
 await wait(1500);
-const back = await teacher.js(`__df.others().filter((o) => o.role === 'student' && o.map === 'classroom').length`);
-check(`골든벨 끝: 학생 ${students}명 모두 교실로`, back === students, `${back}명`);
+const back = await teacher.js(`__df.others().filter((o) => o.role === 'student' && o.map === 'school').length`);
+check(`골든벨 끝: 학생 ${students}명 모두 학교 맵으로`, back === students, `${back}명`);
 
 stopBots();
 clearInterval(pingLoop);

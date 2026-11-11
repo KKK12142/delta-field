@@ -11,7 +11,7 @@ export const Player = schema(
     col: t.float32(),
     row: t.float32(),
     /** 지금 있는 맵(MapId) */
-    map: t.string().default('classroom'),
+    map: t.string().default('school'),
     /** 연결이 끊겨 다시 붙기를 기다리는 동안 false */
     online: t.boolean().default(true),
     // 아래는 학생의 방탈출 진행 상태(shared/protocol.ts의 StatusMessage). 선생님의 CCTV 모드에 쓴다.

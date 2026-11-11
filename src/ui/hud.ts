@@ -3,9 +3,10 @@ import { el, uiRoot } from './dom';
 /** 터치로 누른 뒤 이 시간(ms) 안에 오는 click은 같은 누름으로 보고 버린다. */
 const TOUCH_CLICK_GUARD = 800;
 
-/** 위쪽 안내(방 이름, 목표, 조작 방법 / 방 코드, 접속 상태, 가진 물건)와 오른쪽 아래 살펴보기 단추 */
+/** 위쪽 안내(지금 장소, 목표, 조작 방법 / 방 코드, 접속 상태, 가진 물건)와 오른쪽 아래 살펴보기 단추 */
 export class Hud {
   private readonly top = el('div', 'df-hud');
+  private readonly place = el('strong', '');
   private readonly right = el('div', 'df-hud-box');
   private readonly help = el('span', 'df-muted');
   private readonly items = el('span', 'df-text');
@@ -18,10 +19,10 @@ export class Hud {
   readonly goldenbell = el('button', 'df-button df-button-small', '골든벨 시작');
   private readonly touch: boolean;
 
-  constructor(roomName: string, goal: string, touch: boolean, teacher: boolean) {
+  constructor(goal: string, touch: boolean, teacher: boolean) {
     this.touch = touch;
     const left = el('div', 'df-hud-box');
-    left.append(el('strong', '', roomName), el('span', 'df-text', goal), this.help);
+    left.append(this.place, el('span', 'df-text', goal), this.help);
     this.people.hidden = true;
     this.status.hidden = true;
     this.cctv.hidden = this.goldenbell.hidden = !teacher;
@@ -39,6 +40,11 @@ export class Hud {
     uiRoot().append(this.top, this.action);
     this.setItems([]);
     this.setCctv(false);
+  }
+
+  /** 지금 서 있는 장소 이름(교실, 복도 등) */
+  setPlace(name: string) {
+    this.place.textContent = name;
   }
 
   setItems(names: string[]) {

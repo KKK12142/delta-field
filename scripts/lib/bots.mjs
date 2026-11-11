@@ -1,6 +1,8 @@
 // 가짜 학생(봇). Node에서 Colyseus SDK로 서버에 붙어 화면처럼 위치와 진행 상태를 보낸다.
 // scripts/loadtest.mjs(35명 시험)와 scripts/bots.mjs(선생님 방에 봇만 넣기)가 함께 쓴다.
 import goldenbellMap from '../../src/data/goldenbell.json' with { type: 'json' };
+import school from '../../src/data/school.json' with { type: 'json' };
+import { isFloor } from '../../src/data/room.ts';
 import { activeZones } from '../../shared/goldenbell.ts';
 import { MOVE_INTERVAL_MS } from '../../shared/protocol.ts';
 import { motion } from '../../src/theme.ts';
@@ -22,16 +24,22 @@ const { Client } = await import('@colyseus/sdk');
 export const bytesIn = () => received;
 
 const randomIn = (col, row, w, h) => ({ col: col + Math.random() * w, row: row + Math.random() * h });
-/** 교실 바닥 안쪽(벽에서 띄움). 봇은 충돌을 따지지 않는다(서버도 따지지 않는다). */
-const randomClassroom = () => randomIn(1.5, 1.5, 11, 7);
+/** 학교 맵에서 사물이 없는 바닥 칸 [열, 행] */
+const covered = (c, r) => school.objects.some((o) => c >= o.col && c < o.col + o.w && r >= o.row && r < o.row + o.h);
+const floorTiles = school.layout.flatMap((line, r) => [...line].flatMap((ch, c) => (isFloor(ch) && !covered(c, r) ? [[c, r]] : [])));
+/** 학교 맵의 걸을 수 있는 바닥 칸 아무 데나. 봇은 그 자리로 곧장 가며 벽과 문을 따지지 않는다(서버도 따지지 않는다). */
+const randomSchool = () => {
+  const [c, r] = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+  return randomIn(c + 0.2, r + 0.2, 0.6, 0.6);
+};
 
 export class Bot {
   constructor(i, gameUrl) {
     this.gameUrl = gameUrl;
     this.nickname = `봇${String(i + 1).padStart(2, '0')}`;
-    this.map = 'classroom';
-    this.pos = randomClassroom();
-    this.target = randomClassroom();
+    this.map = 'school';
+    this.pos = randomIn(school.start.col - 1.5, school.start.row - 1.5, 3, 1.5);
+    this.target = { ...this.pos };
     this.wander = false;
     this.answered = -1;
     this.sent = 0;
@@ -69,7 +77,7 @@ export class Bot {
         this.target = randomIn(z.col + 0.6, z.row + 0.6, z.w - 1.2, z.h - 1.2);
       }
     } else if (this.wander && Math.hypot(this.target.col - this.pos.col, this.target.row - this.pos.row) < 0.05) {
-      this.target = randomClassroom();
+      this.target = randomSchool();
     }
     const dx = this.target.col - this.pos.col;
     const dy = this.target.row - this.pos.row;
@@ -81,7 +89,7 @@ export class Bot {
     this.sent++;
   }
 
-  /** 교실에서 가끔 사물을 살펴보는 것처럼 진행 상태를 보낸다(CCTV에 보인다). */
+  /** 학교 맵에서 가끔 사물을 살펴보는 것처럼 진행 상태를 보낸다(CCTV에 보인다). */
   sendStatus() {
     const pick = [
       { activity: '', object: '' },
@@ -103,7 +111,7 @@ export function runBots(bots) {
     for (const b of bots) b.step(MOVE_INTERVAL_MS / 1000);
   }, MOVE_INTERVAL_MS);
   const status = setInterval(() => {
-    for (const b of bots) if (b.map === 'classroom' && Math.random() < 0.2) b.sendStatus();
+    for (const b of bots) if (b.map === 'school' && Math.random() < 0.2) b.sendStatus();
   }, 1000);
   return () => {
     clearInterval(loop);

@@ -12,9 +12,9 @@ export const MOVE_INTERVAL_MS = 66;
 
 export type Role = 'student' | 'teacher';
 
-/** 맵 id. 방 데이터 JSON(src/data/)의 id와 같다. */
-export type MapId = 'classroom' | 'goldenbell';
-export const MAP_IDS: MapId[] = ['classroom', 'goldenbell'];
+/** 맵 id. 맵 데이터 JSON(src/data/)의 id와 같다. 'school'은 교실·복도·실험실·운동장이 이어진 방탈출 맵 */
+export type MapId = 'school' | 'goldenbell';
+export const MAP_IDS: MapId[] = ['school', 'goldenbell'];
 
 export interface JoinOptions {
   nickname: string;
