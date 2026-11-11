@@ -1,171 +1,244 @@
-// 헤드리스 크롬으로 교실 방탈출 한 판을 자동으로 해 본다(개발 서버가 켜져 있어야 한다).
-// 사용: pnpm playtest [주소] [캡처 폴더]  기본값: http://localhost:5173/  .run/playtest
+// 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 교실 방탈출을 해 본다.
+// 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버의 선생님 비밀번호를 DF_TEACHER_PASSWORD로 넘긴다.
+// 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 개발 모드에서만 있는 window.__df로 위치를 옮기고 상태를 읽는다.
 // 퀴즈 답 번호와 사물 위치는 src/data/classroom.json에 맞춰 두었다. 방 데이터를 바꾸면 함께 고친다.
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
+const password = process.env.DF_TEACHER_PASSWORD;
+if (!password) {
+  console.error('DF_TEACHER_PASSWORD(게임 서버의 선생님 비밀번호)를 넘겨야 합니다.');
+  process.exit(2);
+}
+rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 const port = 9334;
 const chrome = spawn('google-chrome', [
-  '--headless=new', '--no-sandbox', `--remote-debugging-port=${port}`,
-  '--window-size=1280,800', `--user-data-dir=${outDir}/profile`, 'about:blank',
+  '--headless=new', '--no-sandbox', `--remote-debugging-port=${port}`, '--window-size=1280,800',
+  '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+  `--user-data-dir=${outDir}/profile`, 'about:blank',
 ], { stdio: 'ignore' });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-let targets;
-for (let i = 0; i < 40 && !targets; i++) {
-  try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await wait(250); }
+
+let version;
+for (let i = 0; i < 40 && !version; i++) {
+  try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await wait(250); }
 }
-const ws = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
-await new Promise((r) => ws.addEventListener('open', r));
-let id = 0;
-const pending = new Map();
+
+/** CDP 연결 하나 */
+async function cdp(wsUrl) {
+  const ws = new WebSocket(wsUrl);
+  await new Promise((r) => ws.addEventListener('open', r));
+  let id = 0;
+  const pending = new Map();
+  const handlers = [];
+  ws.addEventListener('message', (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && pending.has(m.id)) { pending.get(m.id)(m.result ?? { error: m.error }); pending.delete(m.id); }
+    else if (m.method) for (const h of handlers) h(m);
+  });
+  return {
+    send: (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); }),
+    on: (h) => handlers.push(h),
+    close: () => ws.close(),
+  };
+}
+
+const browser = await cdp(version.webSocketDebuggerUrl);
 const consoleErrors = [];
-ws.addEventListener('message', (e) => {
-  const m = JSON.parse(e.data);
-  if (m.id && pending.has(m.id)) { pending.get(m.id)(m.result ?? m.error); pending.delete(m.id); }
-  if (m.method === 'Runtime.exceptionThrown') consoleErrors.push(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text);
-  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') consoleErrors.push(m.params.args.map((a) => a.value ?? a.description).join(' '));
-});
-const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-const js = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.value;
-let shotN = 0;
-const shot = async (name) => {
-  const r = await send('Page.captureScreenshot', { format: 'png' });
-  writeFileSync(`${outDir}/${String(++shotN).padStart(2, '0')}-${name}.png`, Buffer.from(r.data, 'base64'));
-};
 const KEYS = {
   Space: [' ', 'Space', 32], Enter: ['Enter', 'Enter', 13], Escape: ['Escape', 'Escape', 27],
   ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37], ArrowRight: ['ArrowRight', 'ArrowRight', 39],
   ArrowUp: ['ArrowUp', 'ArrowUp', 38], ArrowDown: ['ArrowDown', 'ArrowDown', 40],
   1: ['1', 'Digit1', 49], 2: ['2', 'Digit2', 50], 3: ['3', 'Digit3', 51], 4: ['4', 'Digit4', 52],
 };
-async function press(name, holdMs = 80) {
-  const [key, code, vk] = KEYS[name];
-  const text = key.length === 1 ? key : key === 'Enter' ? '\r' : undefined;
-  await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, text });
-  await wait(holdMs);
-  await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
-  await wait(300);
+
+/** 따로 떨어진 창(쿠키·저장소를 나누지 않음) 하나를 연다. */
+async function openPage(name, url, { touch = false } = {}) {
+  const { browserContextId } = await browser.send('Target.createBrowserContext');
+  const { targetId } = await browser.send('Target.createTarget', { url: 'about:blank', browserContextId, newWindow: true });
+  const page = await cdp(`ws://127.0.0.1:${port}/devtools/page/${targetId}`);
+  page.on((m) => {
+    if (m.method === 'Runtime.exceptionThrown') consoleErrors.push(`[${name}] ${m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text}`);
+    if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') {
+      consoleErrors.push(`[${name}] ${m.params.args.map((a) => a.value ?? a.description).join(' ')}`);
+    }
+  });
+  await page.send('Page.enable');
+  await page.send('Runtime.enable');
+  if (touch) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await page.send('Page.navigate', { url });
+  await wait(2000);
+  let shotN = 0;
+  const p = {
+    name,
+    js: async (expr) => (await page.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.value,
+    shot: async (label) => {
+      const r = await page.send('Page.captureScreenshot', { format: 'png' });
+      writeFileSync(`${outDir}/${name}-${String(++shotN).padStart(2, '0')}-${label}.png`, Buffer.from(r.data, 'base64'));
+    },
+    press: async (key, holdMs = 80) => {
+      const [k, code, vk] = KEYS[key];
+      const text = k.length === 1 ? k : k === 'Enter' ? '\r' : undefined;
+      await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code, windowsVirtualKeyCode: vk, text });
+      await wait(holdMs);
+      await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, windowsVirtualKeyCode: vk });
+      await wait(300);
+    },
+    touch: (type, points) => page.send('Input.dispatchTouchEvent', { type, touchPoints: points }),
+    dialogText: () => p.js(`document.querySelector('.df-dialog')?.innerText ?? null`),
+    error: () => p.js(`(() => { const e = document.querySelector('.df-error'); return e && !e.hidden ? e.textContent : null; })()`),
+    /** 첫 화면에 입력하고 들어가기를 누른다. teacher면 선생님 화면으로 바꾼다. */
+    enter: async ({ teacher = false, nickname, code = '', pw = '' }) => {
+      await p.js(`(() => {
+        const sw = document.querySelector('.df-link');
+        if (${teacher} !== sw.textContent.includes('학생')) sw.click();
+        const set = (id, v) => { const i = document.getElementById(id); i.value = v; };
+        set('df-nickname', ${JSON.stringify(nickname)});
+        set('df-code', ${JSON.stringify(code)});
+        set('df-password', ${JSON.stringify(pw)});
+        document.querySelector('.df-start form').requestSubmit();
+      })()`);
+      await wait(1500);
+    },
+    close: () => browser.send('Target.closeTarget', { targetId }),
+  };
+  return p;
 }
-const dialogText = () => js(`document.querySelector('.df-dialog')?.innerText ?? null`);
+
 const results = [];
 function check(name, ok, detail = '') { results.push(`${ok ? '통과' : '실패'}  ${name}${detail ? '  (' + detail + ')' : ''}`); }
+const fmt = (s) => s?.replace(/\n+/g, ' / ');
 
-await send('Page.enable');
-await send('Runtime.enable');
-await send('Page.navigate', { url: baseUrl });
-await wait(2000);
-await shot('nickname');
+// ---- 선생님: 새 방 만들기 ----
+const teacher = await openPage('teacher', baseUrl);
+await teacher.enter({ teacher: true, nickname: '선생님', pw: 'wrong-password' });
+check('선생님 비밀번호가 틀리면 안내', /비밀번호가 맞지 않습니다/.test((await teacher.error()) ?? ''), await teacher.error());
+await teacher.enter({ teacher: true, nickname: '선생님', pw: password });
+const code = await teacher.js(`window.__df?.code()`);
+check('선생님이 방을 만들고 방 코드를 받음', /^\d{4}$/.test(code ?? ''), code);
+check('선생님 화면에 방 코드가 보임', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes(`방 코드 ${code}`));
+await teacher.shot('room-created');
 
-// 빈 닉네임
-await js(`document.querySelector('.df-start button').click()`);
-await wait(200);
-check('빈 닉네임이면 오류 문구', (await js(`document.querySelector('.df-error')?.hidden === false`)) === true);
-await js(`(() => { const i = document.getElementById('df-nickname'); i.value = '테스트'; i.form.requestSubmit(); })()`);
-await wait(1500);
-check('닉네임 입력 뒤 방에 들어감', (await js(`!!window.__df`)) === true);
-await shot('room');
+// ---- 학생: 잘못된 입력 ----
+const a = await openPage('student-a', baseUrl);
+await a.enter({ nickname: '', code });
+check('빈 닉네임이면 안내', /닉네임을 입력해야/.test((await a.error()) ?? ''));
+await a.enter({ nickname: '가람', code: '12' });
+check('방 코드가 4자리가 아니면 안내', /숫자 4자리/.test((await a.error()) ?? ''));
+const wrongCode = code === '0000' ? '0001' : '0000';
+await a.enter({ nickname: '가람', code: wrongCode });
+check('없는 방 코드면 안내', /인 방이 없습니다/.test((await a.error()) ?? ''), await a.error());
+await a.enter({ nickname: '선생님', code });
+check('겹치는 닉네임이면 안내', /같은 닉네임/.test((await a.error()) ?? ''), await a.error());
+await a.shot('nickname-taken');
+await a.enter({ nickname: '가람', code });
+check('학생 A가 방 코드로 들어감', (await a.js(`window.__df?.code()`)) === code);
 
-// 벽 충돌: 왼쪽 위 구석에서 왼쪽, 위로 민다
-await js(`__df.teleport(1.5, 1.5)`);
-await press('ArrowLeft', 600);
-await press('ArrowUp', 600);
-const p = await js(`__df.pos()`);
-check('벽을 뚫고 나가지 않음', p.col >= 1.29 && p.row >= 1.29, `col ${p.col.toFixed(2)}, row ${p.row.toFixed(2)}`);
-
-// 책상 충돌: 책상(2~4, 4) 위에서 아래로
-await js(`__df.teleport(3, 3.5)`);
-await press('ArrowDown', 600);
-const pd = await js(`__df.pos()`);
-check('책상을 지나가지 않음', pd.row <= 3.71, `row ${pd.row.toFixed(2)}`);
-
-// 잠긴 문
-await js(`__df.teleport(11, 8.6)`);
-await wait(100);
-check('문 앞에서 문이 살펴볼 대상', (await js(`__df.target()`)) === 'door');
-check('살펴보기 단추가 켜짐', (await js(`document.querySelector('.df-action').disabled`)) === false);
-await press('Space');
-const locked = await dialogText();
-check('열쇠 없이 문: 잠김 안내', /잠겨/.test(locked ?? ''), locked?.replace(/\n/g, ' / '));
-await shot('door-locked');
-await press('Enter');
-check('Enter로 닫힘', (await dialogText()) === null);
-await wait(400);
-check('닫은 뒤 다시 열리지 않음', (await dialogText()) === null);
-
-// 칠판 단서
-await js(`__df.teleport(6.5, 1.5)`);
-await press('Space');
-check('칠판 단서', /교탁/.test((await dialogText()) ?? ''));
-await shot('blackboard');
-await press('Space');
-
-// 교탁 퀴즈: 틀린 답 뒤 맞는 답
-await js(`__df.teleport(7, 3.5)`);
-await press('Space');
-check('교탁 퀴즈가 뜸', /가속도/.test((await dialogText()) ?? ''));
-await press('1');
-check('틀린 답 안내', /틀렸습니다/.test((await dialogText()) ?? ''));
-await shot('quiz-wrong');
-await press('2');
-const got = await dialogText();
-check('맞힌 뒤 사물함 열쇠를 얻음', /사물함 열쇠를 얻었습니다/.test(got ?? ''), got?.replace(/\n/g, ' / '));
-await press('Enter');
-check('가진 물건에 사물함 열쇠', (await js(`document.querySelector('.df-hud').innerText`)).includes('사물함 열쇠'));
-await shot('got-locker-key');
-
-// 사물함 퀴즈
-await js(`__df.teleport(11.5, 3.5)`);
-await press('Space');
-check('사물함 퀴즈가 뜸', /중력 가속도/.test((await dialogText()) ?? ''));
-await press('3');
-check('교실 문 열쇠를 얻음', /교실 문 열쇠를 얻었습니다/.test((await dialogText()) ?? ''));
-await press('Enter');
-await press('Space');
-check('다시 살펴보면 doneText', /비어 있습니다/.test((await dialogText()) ?? ''));
-await press('Escape');
-
-// 문 퀴즈와 탈출
-await js(`__df.teleport(11, 8.6)`);
-await press('Space');
-check('문 퀴즈가 뜸', /전류/.test((await dialogText()) ?? ''));
-await press('1');
-const fin = await dialogText();
-check('탈출 화면', /탈출했습니다/.test(fin ?? '') && /걸린 시간/.test(fin ?? ''), fin?.replace(/\n/g, ' / '));
-check('escaped 상태', (await js(`__df.escaped()`)) === true);
-await shot('escaped');
-await js(`document.querySelector('.df-dialog button').click()`);
-await wait(800);
-check('다시 하기: 물건이 비워짐', (await js(`__df.items().length`)) === 0);
-await shot('restart');
-
-// 터치: 조이스틱
-await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-await send('Page.navigate', { url: baseUrl + '?touch=1' });
-await wait(2000);
-await js(`(() => { const i = document.getElementById('df-nickname'); i.value = '터치'; i.form.requestSubmit(); })()`);
-await wait(1500);
-const box = await js(`(() => { const r = document.querySelector('.df-joystick').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; })()`);
-check('조이스틱이 보임', !!box);
-await shot('touch');
-const before = await js(`__df.pos()`);
-await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x, y: box.y }] });
-await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.r, y: box.y }] });
+// ---- 학생 B(태블릿) ----
+const b = await openPage('student-b', baseUrl + '?touch=1', { touch: true });
+await b.enter({ nickname: '나래', code });
+check('학생 B가 들어감', (await b.js(`window.__df?.code()`)) === code);
 await wait(500);
-await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-await wait(200);
-const after = await js(`__df.pos()`);
-check('조이스틱을 오른쪽으로 밀면 오른쪽으로 감', after.col - before.col > 1 && Math.abs(after.row - before.row) < 0.1,
-  `col ${before.col.toFixed(2)} → ${after.col.toFixed(2)}, row ${before.row.toFixed(2)} → ${after.row.toFixed(2)}`);
+check('선생님 화면: 학생 2명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 2명 접속'));
+const seenByTeacher = await teacher.js(`__df.others().map((o) => o.nickname).sort().join(',')`);
+check('선생님이 두 학생을 봄', seenByTeacher === '가람,나래', seenByTeacher);
+check('학생 A가 선생님과 학생 B를 봄', (await a.js(`__df.others().map((o) => o.nickname).sort().join(',')`)) === '나래,선생님');
+
+// ---- 학생 B가 조이스틱으로 움직이면 다른 화면에 보임 ----
+const box = await b.js(`(() => { const r = document.querySelector('.df-joystick').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }; })()`);
+const bBefore = await b.js(`__df.pos()`);
+await b.touch('touchStart', [{ x: box.x, y: box.y }]);
+await b.touch('touchMove', [{ x: box.x + box.r, y: box.y }]);
+await wait(500);
+await b.touch('touchEnd', []);
+await wait(500);
+const bAfter = await b.js(`__df.pos()`);
+check('학생 B가 조이스틱으로 오른쪽으로 감', bAfter.col - bBefore.col > 1, `col ${bBefore.col.toFixed(2)} → ${bAfter.col.toFixed(2)}`);
+const bOnTeacher = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
+check('선생님 화면의 학생 B 위치가 따라옴', Math.abs(bOnTeacher.col - bAfter.col) < 0.05, `서버 ${bOnTeacher.col.toFixed(2)}, B ${bAfter.col.toFixed(2)}`);
+const drawn = await teacher.js(`__df.drawn()`);
+check('선생님 화면에 다른 사람 아바타 2개가 그려짐', drawn.length === 2);
+await teacher.shot('sees-students');
+await b.shot('touch');
+
+// ---- 학생 A: 방탈출 한 판 ----
+await a.js(`__df.teleport(1.5, 1.5)`);
+await a.press('ArrowLeft', 600);
+await a.press('ArrowUp', 600);
+const p = await a.js(`__df.pos()`);
+check('벽을 뚫고 나가지 않음', p.col >= 1.29 && p.row >= 1.29, `col ${p.col.toFixed(2)}, row ${p.row.toFixed(2)}`);
+await a.js(`__df.teleport(3, 3.5)`);
+await a.press('ArrowDown', 600);
+check('책상을 지나가지 않음', (await a.js(`__df.pos().row`)) <= 3.71);
+
+await a.js(`__df.teleport(11, 8.6)`);
+await a.press('Space');
+check('열쇠 없이 문: 잠김 안내', /잠겨/.test((await a.dialogText()) ?? ''));
+await a.press('Enter');
+await wait(400);
+check('닫은 뒤 다시 열리지 않음', (await a.dialogText()) === null);
+
+await a.js(`__df.teleport(6.5, 1.5)`);
+await a.press('Space');
+check('칠판 단서', /교탁/.test((await a.dialogText()) ?? ''));
+await a.press('Space');
+
+await a.js(`__df.teleport(7, 3.5)`);
+await a.press('Space');
+check('교탁 퀴즈가 뜸', /가속도/.test((await a.dialogText()) ?? ''));
+await a.press('1');
+check('틀린 답 안내', /틀렸습니다/.test((await a.dialogText()) ?? ''));
+await a.shot('quiz-wrong');
+await a.press('2');
+check('맞힌 뒤 사물함 열쇠를 얻음', /사물함 열쇠를 얻었습니다/.test((await a.dialogText()) ?? ''));
+await a.press('Enter');
+check('가진 물건에 사물함 열쇠', (await a.js(`document.querySelector('.df-hud').innerText`)).includes('사물함 열쇠'));
+
+await a.js(`__df.teleport(11.5, 3.5)`);
+await a.press('Space');
+check('사물함 퀴즈가 뜸', /중력 가속도/.test((await a.dialogText()) ?? ''));
+await a.press('3');
+check('교실 문 열쇠를 얻음', /교실 문 열쇠를 얻었습니다/.test((await a.dialogText()) ?? ''));
+await a.press('Enter');
+
+await a.js(`__df.teleport(11, 8.6)`);
+await a.press('Space');
+check('문 퀴즈가 뜸', /전류/.test((await a.dialogText()) ?? ''));
+await a.press('1');
+const fin = await a.dialogText();
+check('탈출 화면', /탈출했습니다/.test(fin ?? '') && /걸린 시간/.test(fin ?? ''), fmt(fin));
+await a.shot('escaped');
+await a.js(`document.querySelector('.df-dialog button').click()`);
+await wait(800);
+check('다시 하기: 물건이 비워짐', (await a.js(`__df.items().length`)) === 0);
+check('다시 하기 뒤에도 방에 남아 있음', (await a.js(`__df.code()`)) === code);
 await wait(300);
-const still = await js(`__df.pos()`);
-check('손을 떼면 멈춤', Math.abs(still.col - after.col) < 0.01);
+const aOnTeacher = await teacher.js(`__df.others().find((o) => o.nickname === '가람')`);
+const aPos = await a.js(`__df.pos()`);
+check('다시 하기 뒤 시작 둘레로 돌아가고 선생님 화면에 반영',
+  Math.abs(aPos.col - 2.5) <= 1.5 && Math.abs(aPos.row - 8.5) <= 1.5 &&
+  Math.abs(aOnTeacher.col - aPos.col) < 0.05 && Math.abs(aOnTeacher.row - aPos.row) < 0.05,
+  `A ${aPos.col.toFixed(2)}, ${aPos.row.toFixed(2)} / 선생님 화면 ${aOnTeacher.col.toFixed(2)}, ${aOnTeacher.row.toFixed(2)}`);
+
+// ---- 학생 B가 창을 닫으면 다시 붙기 시간(20초)이 지난 뒤 사라짐 ----
+await b.close();
+await wait(1000);
+check('창을 닫은 직후에는 다시 붙기를 기다림(남아 있음)', (await teacher.js(`__df.others().length`)) === 2);
+await wait(21000);
+check('20초 뒤 선생님 화면에서 사라짐', (await teacher.js(`__df.others().map((o) => o.nickname).join(',')`)) === '가람');
+check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 1명 접속'));
+
+// ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
+const teacher2 = await openPage('teacher2', baseUrl);
+await teacher2.enter({ teacher: true, nickname: '선생님2', code, pw: password });
+check('선생님이 방 코드로 기존 방에 다시 들어감', (await teacher2.js(`window.__df?.role()`)) === 'teacher' && (await teacher2.js(`__df.code()`)) === code);
 
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));
 console.log(`캡처: ${outDir}`);
-ws.close();
+browser.close();
 chrome.kill();
 process.exit(results.some((r) => r.startsWith('실패')) ? 1 : 0);

@@ -79,7 +79,28 @@
   display: flex;
   gap: var(--df-gap);
   justify-content: flex-end;
+  align-items: center;
   flex-wrap: wrap;
+}
+.df-row-split {
+  justify-content: space-between;
+}
+.df-link {
+  font: inherit;
+  font-size: var(--df-font-small);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--df-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.df-room-code {
+  font-size: var(--df-font);
+}
+.df-status {
+  color: var(--df-status);
+  font-size: var(--df-font-small);
 }
 
 /* 대화상자 */

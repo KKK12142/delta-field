@@ -9,12 +9,16 @@ export const color = {
   floorLine: 0xcfc3ad,
   wall: 0x8a7f72,
   wallTop: 0xa59a8c,
-  avatar: 0x3b6ea8,
+  avatar: 0x3b6ea8, // 나
+  remoteAvatar: 0x8fa9c4, // 다른 학생
+  teacherAvatar: 0xc0603a, // 선생님
   avatarShadow: 0x000000,
   highlight: 0xf2b134,
   label: '#3a3a3a',
   labelOnDark: '#ffffff',
   nickname: '#24476e',
+  remoteNickname: '#5b6b7c',
+  teacherNickname: '#8a3d1f',
   // 사물 종류별 색(단순 도형 단계)
   object: {
     blackboard: 0x2f5d4a,
@@ -41,6 +45,8 @@ export const uiColor = {
   wrong: '#b23b3b',
   badge: '#f2b134',
   badgeText: '#3a2a00',
+  link: '#3b6ea8',
+  status: '#b23b3b',
   joystickBase: 'rgba(59, 110, 168, 0.18)',
   joystickKnobColor: 'rgba(59, 110, 168, 0.75)',
 } as const;
@@ -57,6 +63,7 @@ export const size = {
   avatarShadowHeight: 11,
   avatarFeet: 0.3, // 발밑 충돌 반경(칸)
   reach: 0.8, // 사물과 이 거리(칸) 안이면 살펴볼 수 있다
+  spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
   labelFont: '15px',
   nicknameFont: '14px',
   nicknameGap: 6,
@@ -101,6 +108,7 @@ export const alpha = {
 export const motion = {
   speed: 4, // 칸/초
   joystickDeadZone: 0.15,
+  remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
 } as const;
 
 /** uiColor, uiSize를 CSS 변수(--df-이름)로 넣는다. */

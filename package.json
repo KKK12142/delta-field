@@ -15,9 +15,16 @@
     "share": "bash scripts/share.sh on",
     "share:off": "bash scripts/share.sh off",
     "share:status": "bash scripts/share.sh status",
-    "playtest": "node scripts/playtest.mjs"
+    "playtest": "node scripts/playtest.mjs",
+    "dev:server": "node --watch --env-file-if-exists=.env server/main.ts",
+    "start": "pnpm build && NODE_ENV=production node --env-file-if-exists=.env server/main.ts"
   },
   "dependencies": {
+    "@colyseus/core": "0.18.23",
+    "@colyseus/schema": "5.0.42",
+    "@colyseus/sdk": "0.18.8",
+    "@colyseus/ws-transport": "0.18.4",
+    "express": "5.3.0",
     "phaser": "4.2.1"
   },
   "devDependencies": {

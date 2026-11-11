@@ -11,8 +11,9 @@
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src", "shared"]
 }
