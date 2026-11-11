@@ -93,7 +93,7 @@ export class RoomScene extends MapScene {
         const following = this.cctv.following ? this.net.room.state.players.get(this.cctv.following) : undefined;
         return {
           following: following?.nickname ?? null,
-          zoom: cam.zoom,
+          zoom: cam.zoom / this.dpr,
           center: { col: cam.midPoint.x / size.tile, row: cam.midPoint.y / size.tile },
           tags: [...this.remotes.values()].filter((r) => r.avatar.tag?.visible).map((r) => r.avatar.tag!.text),
         };
@@ -168,9 +168,9 @@ export class RoomScene extends MapScene {
   protected reserved(): Reserved {
     const cam = this.cameras.main;
     return {
-      top: size.reserveTop,
+      top: this.css(size.reserveTop),
       bottom: 0,
-      right: this.cctv ? Math.max(0, cam.width - this.cctv.panel.left) : 0,
+      right: this.cctv ? Math.max(0, cam.width - this.css(this.cctv.panel.left)) : 0,
     };
   }
 
@@ -191,7 +191,7 @@ export class RoomScene extends MapScene {
   /** CCTV 전체 보기에서는 작은 지도 위에서도 학생이 보이게 캐릭터와 글을 따로 키운다. */
   protected remoteScale() {
     if (!this.cctv || this.cctv.following) return { sprite: 1, text: 1 };
-    const zoom = this.cameras.main.zoom;
+    const zoom = this.cameras.main.zoom / this.dpr;
     return { sprite: Math.max(1, size.cctvAvatarZoom / zoom), text: Math.max(1, size.cctvTextZoom / zoom) };
   }
 
@@ -326,7 +326,7 @@ export class RoomScene extends MapScene {
       if (!a) continue;
       const d = Math.hypot(p.x - a.x, p.y - (a.y - a.bodyOffset));
       const hit = a.hit(p.x, p.y);
-      if (!hit && d > size.pickRadius / cam.zoom) continue;
+      if (!hit && d > this.css(size.pickRadius) / cam.zoom) continue;
       const better = !best || (hit && !best.hit) || (hit === best.hit && (hit ? a.y > best.y : d < best.d));
       if (better) best = { id, hit, y: a.y, d };
     }

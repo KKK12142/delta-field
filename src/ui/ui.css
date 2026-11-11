@@ -377,3 +377,16 @@
   flex-direction: column;
   gap: var(--df-hud-gap);
 }
+
+/* 확인 표시(?fps=1, src/render.ts): 왼쪽 아래 */
+#ui > .df-render-info {
+  position: absolute;
+  left: var(--df-margin);
+  bottom: calc(var(--df-margin) + env(safe-area-inset-bottom, 0px));
+  padding: var(--df-badge-pad);
+  border-radius: var(--df-radius);
+  background: var(--df-render-info);
+  color: var(--df-render-info-text);
+  font-size: var(--df-font-small);
+  pointer-events: none;
+}

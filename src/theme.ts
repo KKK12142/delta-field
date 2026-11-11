@@ -76,15 +76,19 @@ export const uiColor = {
   status: '#b23b3b',
   joystickBase: 'rgba(59, 110, 168, 0.18)',
   joystickKnobColor: 'rgba(59, 110, 168, 0.75)',
+  renderInfo: 'rgba(46, 42, 38, 0.78)', // ?fps=1 확인 표시 바탕
+  renderInfoText: '#ffffff',
 } as const;
 
 /** 게임 화면 크기. 길이는 픽셀, 칸 좌표의 크기는 칸 단위 */
 export const size = {
-  tile: 48, // 바닥 한 칸의 한 변(픽셀)
+  tile: 60, // 바닥 한 칸의 한 변(픽셀). 타일 그림 30도트를 2배로 그린다(docs/art.md). 캐릭터(60×120)는 1×2칸
   floorLine: 1,
-  viewTiles: 12, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
-  zoomSnap: 2, // 따라가기 확대 배율을 1/zoomSnap 단위로 맞춘다(2면 1, 1.5, 2…: 도트 2배 그림의 도트 하나가 정수 픽셀). 0이면 맞추지 않는다
-  wallFace: 48, // 벽 앞면 높이(픽셀). 아래가 바닥인 벽 칸의 아래쪽을 앞면으로 칠한다. 칸 전체(48)면 그 벽 칸이 통째로 앞면이다
+  viewTiles: 15, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
+  zoomSnap: 2, // 따라가기 확대 배율(기기 픽셀 기준)을 1/zoomSnap 단위로 맞춘다(2면 0.5, 1, 1.5…: 도트 2배 그림의 도트 하나가 기기 픽셀 정수). 0이면 맞추지 않는다(?render=free도 맞추지 않음, src/render.ts)
+  canvasMaxLong: 2732, // dpr 방식에서 캔버스(기기 픽셀) 긴 쪽·짧은 쪽의 상한. 넘으면 그리는 비율을 낮춘다(src/render.ts)
+  canvasMaxShort: 2048,
+  wallFace: 60, // 벽 앞면 높이(픽셀). 아래가 바닥인 벽 칸의 아래쪽을 앞면으로 칠한다. 칸 전체(tile)면 그 벽 칸이 통째로 앞면이다
   highlightLine: 3,
   // 캐릭터: 시트의 프레임 30×60도트를 2배로 그린다(docs/art.md). 발 위치가 프레임 아래 가운데다.
   charFrameWidth: 30,
@@ -102,7 +106,7 @@ export const size = {
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
   viewMargin: 0.92, // 맵 전체를 화면에 맞출 때(골든벨, CCTV 전체 보기) 남기는 비율
-  zoomMin: 0.15,
+  zoomMin: 0.15, // 화면(CSS) 배율
   zoomMax: 2,
   reserveTop: 100, // 위쪽 안내 자리(픽셀)
   // CCTV 모드
@@ -114,12 +118,13 @@ export const size = {
   // CCTV 전체 보기는 지도가 작아(배율 0.35쯤) 학생 캐릭터는 적어도 cctvAvatarZoom, 닉네임·표시는 적어도 cctvTextZoom 배율일 때만큼 크게 보인다.
   cctvAvatarZoom: 0.4,
   cctvTextZoom: 0.8,
-  pickRadius: 24, // 학생을 누를 때 아바타 몸 밖이라도 몸통 가운데에서 이 거리(화면 픽셀) 안이면 그 학생을 고른다(작게 보일 때)
+  pickRadius: 24, // 학생을 누를 때 아바타 몸 밖이라도 몸통 가운데에서 이 거리(화면 CSS 픽셀) 안이면 그 학생을 고른다(작게 보일 때)
   // 골든벨
   reserveGap: 12, // 문제 카드와 지도 사이(픽셀)
-  zoneLabelFont: '56px',
-  zoneTextFont: '20px',
-  zoneTextPad: 10,
+  // 골든벨 맵은 화면에 전체를 맞추므로 구역 글자는 칸 크기에 견주어 정한다(칸 60px 기준).
+  zoneLabelFont: '70px',
+  zoneTextFont: '25px',
+  zoneTextPad: 12,
   livesFont: '13px',
   livesStroke: 3, // 하트 테두리 두께(픽셀)
 } as const;

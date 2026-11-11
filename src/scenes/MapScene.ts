@@ -8,6 +8,7 @@ import type { RunState } from '../game/state';
 import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
 import { Joystick } from '../ui/joystick';
+import { snapZoom } from '../render';
 import { color, motion, size } from '../theme';
 import { Avatar, loadCharacters, prepareCharacters, type TagStyle } from './avatar';
 import { MapPainter, type ObjectView } from './painter';
@@ -142,9 +143,19 @@ export abstract class MapScene extends Scene {
     for (const o of this.room.objects) this.objectViews.set(o.id, painter.object(o));
   }
 
-  /** 가리는 것이 없을 때의 화면 비움. 이어받는 장면이 안내 크기에 맞춰 바꾼다. */
+  /** 화면(CSS) 픽셀 하나가 캔버스 픽셀 몇 개인지(src/render.ts의 renderRatio. dpr 방식이면 보통 devicePixelRatio) */
+  protected get dpr() {
+    return 1 / this.scale.zoom;
+  }
+
+  /** 화면(CSS) 픽셀 길이를 캔버스 픽셀로. 카메라와 장면 안의 화면 좌표는 캔버스 픽셀이다. */
+  protected css(px: number) {
+    return px * this.dpr;
+  }
+
+  /** 가리는 것이 없을 때의 화면 비움(캔버스 픽셀). 이어받는 장면이 안내 크기에 맞춰 바꾼다. */
   protected reserved(): Reserved {
-    return { top: size.reserveTop, bottom: 0, right: 0 };
+    return { top: this.css(size.reserveTop), bottom: 0, right: 0 };
   }
 
   /** 맵 크기(픽셀) */
@@ -158,17 +169,21 @@ export abstract class MapScene extends Scene {
     const cam = this.cameras.main;
     const map = this.mapPixels();
     return Math.min(
-      size.zoomMax,
-      Math.max(size.zoomMin, Math.min((cam.width - right) / map.w, (cam.height - top - bottom) / map.h) * size.viewMargin),
+      this.css(size.zoomMax),
+      Math.max(this.css(size.zoomMin), Math.min((cam.width - right) / map.w, (cam.height - top - bottom) / map.h) * size.viewMargin),
     );
   }
 
-  /** 아바타를 따라갈 때의 확대 배율: 화면 짧은 쪽에 viewTiles칸쯤 보이게 하고, zoomSnap이 있으면 1/zoomSnap 단위로 맞춘다. */
+  /**
+   * 아바타를 따라갈 때의 확대 배율(캔버스 픽셀 기준): 화면 짧은 쪽에 viewTiles칸쯤 보이게 하고,
+   * 그리는 방식(src/render.ts)이 맞추라고 하면 가장 가까운 1/zoomSnap 단위(가장 작게 1/zoomSnap)로 맞춰 도트 하나가 캔버스 픽셀 정수가 되게 한다.
+   * 화면(CSS) 배율로는 캔버스 비율 1이면 0.5 단위, 2면 0.25 단위다.
+   */
   protected viewZoom() {
     const cam = this.cameras.main;
     let zoom = Math.min(cam.width, cam.height) / (size.viewTiles * size.tile);
-    if (size.zoomSnap > 0) zoom = Math.max(1, Math.round(zoom * size.zoomSnap)) / size.zoomSnap;
-    return Math.min(size.zoomMax, Math.max(size.zoomMin, zoom));
+    if (snapZoom) zoom = Math.max(1, Math.round(zoom * size.zoomSnap)) / size.zoomSnap;
+    return Math.min(this.css(size.zoomMax), Math.max(this.css(size.zoomMin), zoom));
   }
 
   /** 맵 전체를 가리는 것 없는 자리의 가운데에 맞춘다(골든벨, CCTV 전체 보기). */
@@ -347,12 +362,12 @@ export abstract class MapScene extends Scene {
     return true;
   }
 
-  /** 아바타 몸통 가운데의 화면 좌표(아바타 크기 배율을 따진다) */
+  /** 확인용: 아바타 몸통 가운데의 화면(CSS) 좌표(아바타 크기 배율을 따진다) */
   protected bodyOnScreen(avatar: Avatar) {
     const cam = this.cameras.main;
     return {
-      x: cam.x + (avatar.x - cam.worldView.x) * cam.zoom,
-      y: cam.y + (avatar.y - avatar.bodyOffset - cam.worldView.y) * cam.zoom,
+      x: (cam.x + (avatar.x - cam.worldView.x) * cam.zoom) / this.dpr,
+      y: (cam.y + (avatar.y - avatar.bodyOffset - cam.worldView.y) * cam.zoom) / this.dpr,
     };
   }
 
@@ -390,8 +405,8 @@ export abstract class MapScene extends Scene {
           })),
         drawn: () =>
           [...this.remotes.values()].map((r) => ({ x: r.avatar.x, y: r.avatar.y, ...r.avatar.look() })),
-        /** 내 아바타: 캐릭터, 걷기 애니메이션(멈췄으면 null), 프레임 번호, 몸 높이(화면 픽셀) */
-        avatar: () => ({ ...this.avatar.look(), height: this.avatar.sprite.displayHeight * this.cameras.main.zoom }),
+        /** 내 아바타: 캐릭터, 걷기 애니메이션(멈췄으면 null), 프레임 번호, 몸 높이(화면 CSS 픽셀) */
+        avatar: () => ({ ...this.avatar.look(), height: (this.avatar.sprite.displayHeight * this.cameras.main.zoom) / this.dpr }),
         teleport: (col: number, row: number) => {
           this.pos = { col, row };
           this.placeAvatar();
@@ -402,22 +417,23 @@ export abstract class MapScene extends Scene {
           const r = id ? this.remotes.get(id) : undefined;
           return r ? this.bodyOnScreen(r.avatar) : null;
         },
-        /** 카메라: 확대 배율, 비추는 곳(칸), 내 아바타 몸통의 화면 좌표, 맵 전체의 화면 네모 */
+        /**
+         * 카메라: 화면(CSS) 확대 배율, 기기 픽셀 확대 배율(deviceZoom), DPR, 비추는 곳(칸),
+         * 내 아바타 몸통의 화면 좌표, 맵 전체의 화면 네모(모두 CSS 픽셀)
+         */
         camera: () => {
           const cam = this.cameras.main;
           const v = cam.worldView;
           const map = this.mapPixels();
           const t = size.tile;
+          const z = cam.zoom / this.dpr;
           return {
-            zoom: cam.zoom,
+            zoom: z,
+            deviceZoom: cam.zoom,
+            dpr: this.dpr,
             view: { col: v.x / t, row: v.y / t, w: v.width / t, h: v.height / t },
             me: this.bodyOnScreen(this.avatar),
-            map: {
-              x: cam.x + (0 - v.x) * cam.zoom,
-              y: cam.y + (0 - v.y) * cam.zoom,
-              w: map.w * cam.zoom,
-              h: map.h * cam.zoom,
-            },
+            map: { x: (cam.x - v.x * cam.zoom) / this.dpr, y: (cam.y - v.y * cam.zoom) / this.dpr, w: map.w * z, h: map.h * z },
           };
         },
         ...extra,
