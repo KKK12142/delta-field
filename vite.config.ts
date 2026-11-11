@@ -11,6 +11,8 @@ export default defineConfig({
     strictPort: true,
     // Tailscale serve(https://<기기>.<망>.ts.net)로 맥·태블릿에서 열 수 있게 한다.
     allowedHosts: ['.ts.net'],
+    // .run/에는 서버 기록과 확인용 크롬의 기록 폴더가 있다. 바뀔 때마다 화면을 새로 고치면 확인이 끊기므로 지켜보지 않는다.
+    watch: { ignored: ['**/.run/**'] },
     // 게임 서버(pnpm dev:server)로 넘긴다. 수업용(pnpm start)에서는 서버가 화면까지 함께 내어 준다.
     proxy: {
       '/colyseus': {
