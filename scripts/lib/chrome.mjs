@@ -49,8 +49,11 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
   const browser = await cdp(version.webSocketDebuggerUrl);
   const consoleErrors = [];
 
-  /** 따로 떨어진 창(쿠키·저장소를 나누지 않음) 하나를 연다. */
-  async function openPage(name, url, { touch = false } = {}) {
+  /**
+   * 따로 떨어진 창(쿠키·저장소를 나누지 않음) 하나를 연다. dpr을 주면(기본은 DF_DPR) 그 devicePixelRatio의 화면처럼 연다
+   * (레티나 태블릿·맥은 2). size를 주면 화면(CSS) 크기를 그만큼으로 한다(기본 1280×800).
+   */
+  async function openPage(name, url, { touch = false, dpr = Number(process.env.DF_DPR ?? 0), size = null } = {}) {
     const { browserContextId } = await browser.send('Target.createBrowserContext');
     const { targetId } = await browser.send('Target.createTarget', { url: 'about:blank', browserContextId, newWindow: true });
     const page = await cdp(`ws://127.0.0.1:${port}/devtools/page/${targetId}`);
@@ -63,6 +66,10 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
     await page.send('Page.enable');
     await page.send('Runtime.enable');
     if (touch) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    if (dpr || size) {
+      const { width = 1280, height = 800 } = size ?? {};
+      await page.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: dpr || 1, mobile: false });
+    }
     await page.send('Page.navigate', { url });
     await wait(2000);
     let shotN = 0;

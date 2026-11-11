@@ -4,6 +4,7 @@
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 퀴즈 답 번호와 사물 위치는 src/data/school.json에 맞춰 두었다. 맵 데이터를 바꾸면 함께 고친다.
 import { mkdirSync, rmSync } from 'node:fs';
+import { size } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
@@ -22,6 +23,8 @@ function check(name, ok, detail = '') { results.push(`${ok ? '통과' : '실패'
 const fmt = (s) => s?.replace(/\n+/g, ' / ');
 
 // ---- 선생님: 새 방 만들기 ----
+// 터치 화면은 주소에 touch=1을 붙인다(baseUrl에 ?render= 같은 것이 있어도 된다).
+const touchUrl = new URL(baseUrl).href.replace(/(\?|$)/, (m) => (m ? '?touch=1&' : '?touch=1'));
 const teacher = await openPage('teacher', baseUrl);
 await teacher.enter({ teacher: true, nickname: '선생님', pw: 'wrong-password' });
 check('선생님 비밀번호가 틀리면 안내', /비밀번호가 맞지 않습니다/.test((await teacher.error()) ?? ''), await teacher.error());
@@ -57,7 +60,7 @@ await a.enter({ nickname: '가람', code, character: 'char-03' });
 check('학생 A가 방 코드로 들어감', (await a.js(`window.__df?.code()`)) === code);
 
 // ---- 학생 B(태블릿) ----
-const b = await openPage('student-b', baseUrl + '?touch=1', { touch: true });
+const b = await openPage('student-b', touchUrl, { touch: true });
 await b.enter({ nickname: '나래', code, character: 'char-05' });
 check('학생 B가 들어감', (await b.js(`window.__df?.code()`)) === code);
 await wait(500);
@@ -150,14 +153,16 @@ const c2 = await camAt(32, 14.5);
 check('카메라: 내 아바타를 따라감(복도 두 곳 모두 가운데)', centered(c1) && centered(c2) && Math.abs(c2.view.col - c1.view.col - 16) < 0.1,
   `화면 ${c1.me.x.toFixed(0)},${c1.me.y.toFixed(0)} / ${c2.me.x.toFixed(0)},${c2.me.y.toFixed(0)}, 비추는 곳 ${c1.view.col.toFixed(1)} → ${c2.view.col.toFixed(1)}열`);
 const shortSide = Math.min(c1.view.w, c1.view.h);
-// 확대는 짧은 쪽에 12칸이 보이는 배율에 가장 가까운 1/2 단위(1, 1.5, 2)다.
-const idealZoom = Math.min(aw, ah) / (12 * 48);
-check('카메라: 확대는 짧은 쪽 12칸 배율에 가장 가까운 1/2 단위', Math.abs(c1.zoom * 2 - Math.round(c1.zoom * 2)) < 1e-9 && Math.abs(c1.zoom - Math.max(1, idealZoom)) <= 0.25,
-  `짧은 쪽 ${shortSide.toFixed(1)}칸, 확대 ${c1.zoom.toFixed(3)}(12칸이면 ${idealZoom.toFixed(2)})`);
+// 확대는 캔버스 픽셀 기준으로 짧은 쪽에 viewTiles칸이 보이는 배율에 가장 가까운 1/2 단위(0.5, 1, 1.5…)다(?render=free면 맞추지 않음).
+const idealDevice = (Math.min(aw, ah) * c1.dpr) / (size.viewTiles * size.tile);
+const freeRender = new URL(baseUrl).searchParams.get('render') === 'free';
+const wantDevice = freeRender ? idealDevice : Math.max(1, Math.round(idealDevice * 2)) / 2;
+check(`카메라: 확대는 짧은 쪽 ${size.viewTiles}칸 배율에${freeRender ? ' 맞춤' : ' 가장 가까운 캔버스 픽셀 1/2 단위'}`, Math.abs(c1.deviceZoom - wantDevice) < 1e-6,
+  `짧은 쪽 ${shortSide.toFixed(1)}칸, 확대 ${c1.zoom.toFixed(3)}(캔버스 ${c1.deviceZoom}, 비율 ${c1.dpr.toFixed(2)}, ${size.viewTiles}칸이면 ${(idealDevice / c1.dpr).toFixed(2)})`);
 await a.shot('camera-hall');
 const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽은 안내 자리만큼)',
-  Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row + 100 / c3.zoom / 48) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
+  Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row + size.reserveTop / c3.zoom / size.tile) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
 const c4 = await camAt(46.5, 35.5);
 check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 48) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
@@ -531,7 +536,7 @@ await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
 check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 1명 접속'));
 
 // ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
-const teacher2 = await openPage('teacher2', baseUrl + '?touch=1', { touch: true });
+const teacher2 = await openPage('teacher2', touchUrl, { touch: true });
 await teacher2.enter({ teacher: true, nickname: '선생님2', code, pw: password });
 check('선생님이 방 코드로 기존 방에 다시 들어감', (await teacher2.js(`window.__df?.role()`)) === 'teacher' && (await teacher2.js(`__df.code()`)) === code);
 
