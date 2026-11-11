@@ -1,4 +1,5 @@
-// 화면을 그리는 방식. 주소 끝에 ?render=dpr|free|css를 붙여 바꿔 볼 수 있다(기본 dpr, 교사가 기기에서 견줘 보려고 둠).
+// 화면을 그리는 방식. 주소 끝에 ?render=dpr|free|css를 붙여 바꿔 볼 수 있다.
+// 기본은 css: 교사가 태블릿에서 견줘 보니 dpr과 캐릭터 크기는 같고 css가 초당 20프레임쯤 더 나왔다(2026-11-12 교사 결정).
 // - dpr: 캔버스를 기기 픽셀(devicePixelRatio) 해상도로 그린다. 캔버스가 canvasMax를 넘으면 그 안에 들도록 비율을 낮춘다.
 //        따라가기 확대 배율은 캔버스 픽셀 기준 1/zoomSnap 단위로 맞춘다(도트 하나가 캔버스 픽셀 정수).
 // - free: 화면(CSS) 픽셀로 그리고, 따라가기 확대 배율을 단위에 맞추지 않는다(도트 크기가 조금씩 고르지 않을 수 있다).
@@ -12,7 +13,7 @@ export type RenderMode = 'dpr' | 'free' | 'css';
 
 const params = new URLSearchParams(location.search);
 const asked = params.get('render');
-export const renderMode: RenderMode = asked === 'free' || asked === 'css' ? asked : 'dpr';
+export const renderMode: RenderMode = asked === 'free' || asked === 'dpr' ? asked : 'css';
 
 /** 따라가기 확대 배율을 1/zoomSnap 단위로 맞추는지 */
 export const snapZoom = renderMode !== 'free' && size.zoomSnap > 0;
