@@ -39,6 +39,9 @@ function variantAt(col: number, row: number, count: number) {
   return ((h ^ (h >>> 16)) >>> 0) % count;
 }
 
+/** 순서 맞추기 번호의 깊이: 사물·아바타(깊이 = 아래 끝 y 픽셀)보다 위 */
+const MARK_DEPTH = 900_000;
+
 /** 칸 하나의 도트 수(바닥을 구울 때 칸 하나의 픽셀) */
 const DOT_TILE = size.tile / size.dotScale;
 
@@ -52,6 +55,10 @@ export interface ObjectView {
   setHidden(hidden: boolean): void;
   /** 켜짐 그림(<이름>-on.png)이 있으면 켜짐·꺼짐을 바꾼다(전구). 없으면 아무 일도 하지 않는다. */
   setLit(lit: boolean): void;
+  /** 이름표 글을 바꾼다(자료 파일의 labels). 이름표가 없는 사물이면 아무 일도 하지 않는다. */
+  setName(name: string): void;
+  /** 순서 맞추기: 몇째로 맞게 눌렀는지 사물 위에 번호로 보인다. 0이면 감춘다. */
+  setMark(n: number): void;
 }
 
 export class MapPainter {
@@ -226,10 +233,15 @@ export class MapPainter {
           .setOrigin(0.5)
           .setDepth(depth + 1)
       : null;
+    let mark: GameObjects.Text | null = null;
+    const scene = this.scene;
     return {
       setOpen(open: boolean) {
         const a = open ? alpha.openDoor : 1;
         label?.setAlpha(a);
+        // 연 문은 지나가는 길이므로 그 위에 선 캐릭터(깊이 = 발 y)보다 뒤에 그린다(문의 위 끝을 깊이로).
+        body.setDepth(open ? y : depth);
+        label?.setDepth(open ? y + 1 : depth + 1);
         // 열린 그림이 있으면 바꿔 끼우고, 없으면 닫힌 모양을 흐리게 그린다.
         if (hasOpen && body instanceof GameObjects.Image) body.setTexture(open ? openName : name);
         else body.setAlpha(a);
@@ -240,6 +252,29 @@ export class MapPainter {
       },
       setLit(lit: boolean) {
         if (hasOn && body instanceof GameObjects.Image) body.setTexture(lit ? onName : name);
+      },
+      setName(text: string) {
+        if (label && label.text !== text) label.setText(text);
+      },
+      setMark(n: number) {
+        if (!n) {
+          mark?.setVisible(false);
+          return;
+        }
+        // 사물 그림의 위 끝 바로 위(그림이 없으면 차지 칸의 위 끝)에 둔다. 캐릭터에 가려지지 않게 이름표보다 위에 그린다.
+        const top = Math.min(y, body instanceof GameObjects.Image ? body.y - body.displayHeight : y);
+        mark ??= scene.add
+          .text(x + (o.w * t) / 2, top, '', {
+            fontFamily,
+            fontSize: size.stepMarkFont,
+            color: color.stepMark,
+            backgroundColor: color.stepMarkBackground,
+            padding: { x: size.stepMarkPad, y: size.stepMarkPad / 2 },
+            resolution: size.textResolution,
+          })
+          .setOrigin(0.5, 1)
+          .setDepth(MARK_DEPTH);
+        mark.setText(String(n)).setVisible(true);
       },
     };
   }

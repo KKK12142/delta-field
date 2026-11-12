@@ -5,7 +5,8 @@ import type { ActivityKind, StatusMessage } from '../../shared/protocol.ts';
 export class RunState {
   readonly nickname: string;
   readonly startedAt = performance.now();
-  escapedAt: number | null = null;
+  /** 1부를 마친 시각(걸린 시간을 멈춘다) */
+  finishedAt: number | null = null;
   /** 지금 하는 일과 그 사물 id */
   activity: { kind: ActivityKind; object: string } = { kind: '', object: '' };
 
@@ -14,7 +15,7 @@ export class RunState {
   }
 
   elapsedMs() {
-    return (this.escapedAt ?? performance.now()) - this.startedAt;
+    return (this.finishedAt ?? performance.now()) - this.startedAt;
   }
 
   /** 서버에 보낼 모양 */

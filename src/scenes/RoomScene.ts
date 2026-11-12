@@ -43,10 +43,6 @@ export class RoomScene extends MapScene {
   private gatherShown = -1;
   /** 화면에 맞춰 둔 방탈출 진행(자료 버전, 잠긴 문, 마친 미션, 물건, 힌트). 서버 값이 바뀌면 문 모양과 안내를 고친다. */
   private escapeShown = '';
-  /** 순서 맞추기에서 지금 차례까지 바르게 살펴본 사물 id(켜짐 그림이 있으면 켜 보인다. 틀리면 그 미션 것을 끈다) */
-  private lit = new Set<string>();
-  /** 화면에 맞춰 둔 방탈출 자료 버전(바뀌면 켜 둔 것을 끈다) */
-  private escapeVersion = -1;
 
   constructor() {
     super('school');
@@ -65,8 +61,6 @@ export class RoomScene extends MapScene {
     this.place = '';
     this.gatherShown = -1;
     this.escapeShown = '';
-    this.lit = new Set();
-    this.escapeVersion = -1;
     // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
     ctx.state.activity = { kind: '', object: '' };
   }
@@ -117,8 +111,15 @@ export class RoomScene extends MapScene {
       picked: () => this.room.objects.filter((o) => this.isPicked(o)).map((o) => o.id),
       /** 내 화면에서 감춘 사물 id(주운 물건, 아직 열리지 않은 2부 사물) */
       hidden: () => this.room.objects.filter((o) => this.isHidden(o)).map((o) => o.id),
-      /** 켜 보이는 사물 id(순서 맞추기, 마친 미션) */
-      lit: () => [...this.lit],
+      /** 켜 보이는 사물 id(순서 맞추기에서 맞게 누름, 마친 미션) */
+      lit: () => this.room.objects.filter((o) => this.isLit(o)).map((o) => o.id),
+      /** 순서 맞추기 번호: 사물 id → 몇째로 맞게 눌렀는지 */
+      marks: () => Object.fromEntries(this.room.objects.map((o) => [o.id, this.markOf(o)]).filter(([, n]) => n)),
+      /** 사물 이름표(자료 파일의 labels를 따른다) */
+      nameOf: (id: string) => {
+        const o = this.room.objects.find((x) => x.id === id);
+        return o ? this.nameOf(o) : null;
+      },
       /** 미니맵: 보이는지, 큰 지도가 열렸는지 */
       minimap: () => ({
         shown: !!document.querySelector('.df-minimap') && !document.querySelector<HTMLElement>('.df-minimap')!.hidden,
@@ -127,7 +128,7 @@ export class RoomScene extends MapScene {
       escapeFile: () => this.net.escape.file,
       place: () => this.place,
       target: () => this.target?.id ?? null,
-      escaped: () => this.state.escapedAt !== null,
+      finished: () => this.state.finishedAt !== null,
       cctv: () => {
         if (!this.cctv) return null;
         const cam = this.cameras.main;
@@ -170,19 +171,22 @@ export class RoomScene extends MapScene {
     return !!o.mission && this.net.escape.pickups.includes(o.mission) && this.hasDone(o.mission);
   }
 
-  /** 켜 보일 사물: 순서 맞추기에서 바르게 살펴봤거나, 미션을 마친 것 */
+  /** 켜 보일 사물: 순서 맞추기에서 맞게 눌렀거나, 미션을 마친 것 */
   private isLit(o: RoomObject) {
-    return this.lit.has(o.id) || (!!o.mission && this.hasDone(o.mission));
+    return this.markOf(o) > 0 || (!!o.mission && this.hasDone(o.mission));
   }
 
-  /** 순서 맞추기 한 걸음: 맞으면 그 사물을 켜고, 틀리면 같은 미션의 사물을 모두 끈다. */
-  private markStep(o: RoomObject, wrong: boolean) {
-    if (wrong) {
-      for (const x of this.room.objects) if (x.mission === o.mission) this.lit.delete(x.id);
-    } else {
-      this.lit.add(o.id);
-    }
-    for (const x of this.room.objects) if (x.mission === o.mission) this.objectViews.get(x.id)?.setLit(this.isLit(x));
+  /** 순서 맞추기: 지금 시도에서 이 사물을 몇째로 맞게 눌렀는지(누르지 않았으면 0). 서버의 Player.pressed를 따른다. */
+  private markOf(o: RoomObject) {
+    const pressed = [...(this.net.me()?.pressed ?? [])];
+    if (!o.mission || !pressed.includes(o.id)) return 0;
+    const same = new Set(this.room.objects.filter((x) => x.mission === o.mission).map((x) => x.id));
+    return pressed.filter((id) => same.has(id)).indexOf(o.id) + 1;
+  }
+
+  /** 사물 이름: 자료 파일에 이름표(labels)가 있으면 그것, 없으면 맵의 이름 */
+  private nameOf(o: RoomObject) {
+    return this.net.escape.labels.get(o.id) ?? o.name;
   }
 
   /** 화면에서 감춘 사물: 주운 물건, 아직 열리지 않은 2부의 문 아닌 사물 */
@@ -221,18 +225,18 @@ export class RoomScene extends MapScene {
     const e = this.net.escape;
     const me = this.net.me();
     const items = [...(me?.items ?? [])];
-    const key = [this.net.part, e.version, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, me?.hints.length ?? 0, e.hintTotal].join('|');
+    const key = [
+      this.net.part, e.version, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, [...(me?.pressed ?? [])], me?.hints.length ?? 0, e.hintTotal,
+    ].join('|');
     if (key === this.escapeShown) return;
     this.escapeShown = key;
-    if (e.version !== this.escapeVersion) {
-      this.escapeVersion = e.version;
-      this.lit.clear();
-    }
     for (const o of this.room.objects) {
       const view = this.objectViews.get(o.id);
       view?.setOpen(this.isOpenDoor(o));
       view?.setHidden(this.isHidden(o));
       view?.setLit(this.isLit(o));
+      view?.setMark(this.markOf(o));
+      view?.setName(this.nameOf(o));
     }
     this.hud.setItems(items.map((id) => e.items.get(id) ?? id));
     this.hud.setHints(me?.hints.length ?? 0, e.hintTotal);
@@ -403,6 +407,12 @@ export class RoomScene extends MapScene {
     if (this.dialog.isOpen() || this.busy || this.cctv || this.net.part >= 2) return;
     this.busy = true;
     try {
+      const sure = await this.dialog.confirm(
+        '2부 열기',
+        '2부(수학실·도서관·옥상 천문대)를 모든 학생에게 엽니다. 연 뒤에는 다시 닫을 수 없습니다.',
+        '2부 열기',
+      );
+      if (!sure) return;
       const reply = await this.net.openPart(2);
       if (reply.error) await this.dialog.message('2부 열기', reply.error);
     } catch {
@@ -582,7 +592,7 @@ export class RoomScene extends MapScene {
         .lineStyle(size.highlightLine, color.highlight, 1)
         .strokeRect(best.col * t, best.row * t, best.w * t, best.h * t);
     }
-    this.hud.setTarget(best?.name ?? null);
+    this.hud.setTarget(best ? this.nameOf(best) : null);
   }
 
   private onActionButton = () => {
@@ -592,6 +602,7 @@ export class RoomScene extends MapScene {
   /** 미션을 단 사물을 살펴본다. 서버가 단서·문제를 보내고, 답을 채점한다. */
   private async interact(o: RoomObject) {
     if (!o.mission) return;
+    const name = this.nameOf(o);
     this.busy = true;
     this.setActivity('look', o.id);
     let reward: MissionReward | null = null;
@@ -608,36 +619,32 @@ export class RoomScene extends MapScene {
         case 'none':
         case 'locked':
         case 'done':
-          await this.dialog.message(o.name, view.text);
+          await this.dialog.message(name, view.text);
           break;
-        case 'clue':
-          if (view.text) await this.dialog.message(o.name, view.text);
-          await this.reward(o, view.reward, '');
+        case 'clue': {
+          // 줍기는 글 하나로 알린다(글이 없으면 "○○을(를) 주웠습니다."). 얻은 물건 안내를 따로 띄우지 않는다.
+          const r = view.reward;
+          const text = view.text || (r.picked && r.item ? `${r.item}${objectParticle(r.item)} 주웠습니다.` : '');
+          if (text) await this.dialog.message(name, text);
+          await this.reward(o, r, '', r.picked);
           break;
+        }
         case 'quiz':
           this.setActivity('quiz', o.id);
-          if ((await this.dialog.quiz(o.name, view, check)) && reward) await this.reward(o, reward, '맞았습니다. ');
+          if ((await this.dialog.quiz(name, view, check)) && reward) await this.reward(o, reward, '맞았습니다. ');
           break;
         case 'code':
           this.setActivity('quiz', o.id);
-          if ((await this.dialog.code(o.name, view.text, view.digits, view.example, check)) && reward) {
+          if ((await this.dialog.code(name, view.text, view.digits, view.example, check)) && reward) {
             await this.reward(o, reward, '번호가 맞았습니다. ');
           }
           break;
-        case 'step': {
-          this.markStep(o, view.wrong);
-          const lead = view.text ? `${view.text}\n` : '';
-          if (view.wrong) await this.dialog.message(o.name, `${lead}순서가 맞지 않습니다. 처음부터 다시 합니다.`);
-          else if (!view.reward) await this.dialog.message(o.name, `${lead}순서 ${view.step}/${view.total}`);
-          else {
-            await this.dialog.message(o.name, `${lead}순서를 모두 맞혔습니다.`);
-            await this.reward(o, view.reward, '');
-          }
+        case 'order':
+          await this.order(o, name, view);
           break;
-        }
       }
     } catch {
-      await this.dialog.message(o.name, '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 살펴봅니다.');
+      await this.dialog.message(name, '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 살펴봅니다.');
     } finally {
       this.busy = false;
       this.setActivity('', '');
@@ -649,32 +656,47 @@ export class RoomScene extends MapScene {
     this.state.activity = { kind, object };
   }
 
-  /** 미션을 마치고 얻은 것을 알린다: 문 열림, 아이템, 힌트 카드(글을 바로 보이고 수첩에 넣는다), 탈출 */
-  private async reward(o: RoomObject, r: MissionReward, prefix: string) {
-    // 서버가 바꾼 진행(연 문, 물건)이 오기 전에 화면을 먼저 맞추지 않는다. 문 모양은 syncEscape()가 맞춘다.
-    if (r.escaped) {
-      await this.escape();
+  /**
+   * 순서 맞추기 사물: 살펴보면 글과 지금 순서만 보이고, "누르기"를 눌러야 순서에 든다(살펴보기만으로는 순서가 바뀌지 않는다).
+   * 이미 맞게 누른 사물이면 몇째로 눌렀는지만 알린다.
+   */
+  private async order(o: RoomObject, name: string, view: { text: string; step: number; total: number; pressedAt: number }) {
+    const lead = view.text ? `${view.text}\n\n` : '';
+    if (view.pressedAt) {
+      await this.dialog.message(name, `${lead}이 사물은 ${view.pressedAt}번째로 눌렀습니다. (순서 ${view.step}/${view.total})`);
       return;
     }
-    if (r.picked) {
-      this.objectViews.get(o.id)?.setHidden(true);
+    const press = await this.dialog.confirm(name, `${lead}지금 순서 ${view.step}/${view.total}. 차례가 맞으면 누릅니다.`, '누르기', '닫기', true);
+    if (!press) return;
+    const r = await this.net.missionPress(o.id);
+    if (r.error) await this.dialog.message(name, r.error);
+    else if (r.reward) await this.reward(o, r.reward, '순서를 모두 맞혔습니다. ');
+    else if (!r.wrong) await this.dialog.message(name, `눌렀습니다. 순서 ${r.step}/${r.total}`);
+    else await this.dialog.message(name, `순서가 맞지 않습니다. 처음부터 다시 합니다. (순서 0/${r.total})`);
+  }
+
+  /** 미션을 마치고 얻은 것을 알린다: 문 열림, 아이템, 힌트 카드(글을 바로 보이고 수첩에 넣는다), 1부 완료. skipItem이면 얻은 물건 안내를 띄우지 않는다(줍기). */
+  private async reward(o: RoomObject, r: MissionReward, prefix: string, skipItem = false) {
+    const name = this.nameOf(o);
+    // 서버가 바꾼 진행(연 문, 물건)이 오기 전에 화면을 먼저 맞추지 않는다. 문 모양은 syncEscape()가 맞춘다.
+    if (r.picked || r.opened) {
+      if (r.picked) this.objectViews.get(o.id)?.setHidden(true);
+      else this.objectViews.get(o.id)?.setOpen(true);
       this.target = null;
       this.highlight.clear();
       this.hud.setTarget(null);
     }
     if (r.opened) {
-      this.objectViews.get(o.id)?.setOpen(true);
-      this.target = null;
-      this.highlight.clear();
-      this.hud.setTarget(null);
-      await this.dialog.message(o.name, `${prefix}${o.name}${objectParticle(o.name)} 열었습니다. 지나갈 수 있습니다.`);
-    } else if (r.item) {
-      await this.dialog.message(o.name, `${prefix}${r.item}${objectParticle(r.item)} 얻었습니다.`);
-    } else if (prefix) {
-      await this.dialog.message(o.name, prefix.trim());
+      await this.dialog.message(name, `${prefix}${name}${objectParticle(name)} 열었습니다. 지나갈 수 있습니다.`);
+    } else if (r.item && !skipItem) {
+      await this.dialog.message(name, `${prefix}${r.item}${objectParticle(r.item)} 얻었습니다.`);
+    } else if (prefix && !r.finished) {
+      // 끝 지점(교문)은 "맞았습니다" 없이 바로 1부 완료를 알린다.
+      await this.dialog.message(name, prefix.trim());
     }
-    if (r.after) await this.dialog.message(o.name, r.after);
+    if (r.after) await this.dialog.message(name, r.after);
     if (r.hint) await this.dialog.message(`힌트 카드: ${r.hint.title}`, r.hint.text, '수첩에 넣기');
+    if (r.finished) await this.finishPart();
   }
 
   // ---- 미니맵 ----
@@ -733,12 +755,23 @@ export class RoomScene extends MapScene {
           : '이 방에서 쓸 방탈출 자료(미션, 문제, 힌트 카드)를 고릅니다. 나중에 "방탈출 자료" 단추로 바꿀 수 있습니다.',
         files.map((f) => ({
           label: f.error ? f.file : `${f.title} (미션 ${f.missions}개, 힌트 카드 ${f.hints}장)`,
-          detail: f.error ?? (f.file === now.file ? `${f.file} · 지금 쓰는 자료` : f.file),
+          detail: f.error ?? (f.file === now.file ? `${f.file} · 지금 쓰는 자료(다시 골라도 바뀌지 않습니다)` : f.file),
           disabled: f.error !== null,
         })),
       );
       if (picked === null) return;
-      const reply = await this.net.escapeLoad(files[picked].file);
+      const file = files[picked];
+      // 지금 쓰는 자료를 다시 고르면 아무 일도 하지 않는다(진행이 지워지지 않게).
+      if (file.file === now.file) return;
+      if (now.file) {
+        const sure = await this.dialog.confirm(
+          '방탈출 자료 바꾸기',
+          `"${file.title}"(으)로 바꿉니다. 모든 학생의 방탈출 진행(가진 물건, 마친 미션, 힌트 카드)이 지워지고 처음으로 돌아갑니다.`,
+          '바꾸기',
+        );
+        if (!sure) return;
+      }
+      const reply = await this.net.escapeLoad(file.file);
       if (reply.error) await this.dialog.message('방탈출 자료', reply.error);
     } catch {
       await this.dialog.message('방탈출 자료', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
@@ -747,22 +780,13 @@ export class RoomScene extends MapScene {
     }
   }
 
-  private async escape() {
-    this.state.escapedAt = performance.now();
+  /** 끝 지점(교문)을 마쳤을 때: 1부 완료와 걸린 시간을 알린다. 진행은 그대로 두고 계속 돌아다닌다. */
+  private async finishPart() {
+    this.state.finishedAt ??= performance.now();
     const time = formatDuration(this.state.elapsedMs());
     await this.dialog.message(
-      '탈출했습니다',
-      `${this.state.nickname}님이 ${this.room.name}${objectParticle(this.room.name)} 탈출했습니다.\n걸린 시간: ${time}`,
-      '다시 하기',
+      '1부 완료',
+      `${this.state.nickname}님이 1부를 마쳤습니다.\n걸린 시간: ${time}\n선생님이 2부를 열 때까지 학교를 둘러보며 남은 미션과 힌트 카드를 모을 수 있습니다.`,
     );
-    // 서버의 진행(물건, 마친 미션, 탈출)을 처음으로 돌린다. 얻은 힌트 카드는 수첩에 남는다.
-    try {
-      await this.net.escapeRestart();
-    } catch {
-      // 연결이 잠깐 끊겼으면 진행은 그대로 두고 자리만 처음으로 돌아간다.
-    }
-    this.ctx.state = new RunState(this.state.nickname);
-    this.ctx.schoolPos = null;
-    this.scene.restart(this.ctx);
   }
 }

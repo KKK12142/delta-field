@@ -59,7 +59,7 @@ export class GoldenBellScene extends MapScene {
     if (teacher) {
       this.panel = new GbPanel({
         next: () => void this.ask(() => this.net.gbNext()),
-        end: () => void this.ask(() => this.net.gbEnd()),
+        end: () => void this.confirmEnd(),
         accept: (key, accept) => void this.ask(() => this.net.gbAccept(key, accept)),
       });
     }
@@ -248,6 +248,15 @@ export class GoldenBellScene extends MapScene {
     } catch {
       await this.dialog.message('힌트 수첩', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
     }
+  }
+
+  /** 골든벨 끝내기는 되돌릴 수 없으니 한 번 더 묻는다(바로 옆 "다음 문제"와 헷갈려 누르지 않게). */
+  private async confirmEnd() {
+    if (this.waiting || this.dialog.isOpen()) return;
+    const gb = this.net.goldenbell;
+    const left = gb.phase === 'end' ? '' : ` 아직 ${Math.max(0, gb.total - gb.index - 1)}문제가 남아 있습니다.`;
+    const sure = await this.dialog.confirm('골든벨 끝내기', `골든벨을 끝내고 모두 학교로 돌려보냅니다.${left}`, '끝내기');
+    if (sure) await this.ask(() => this.net.gbEnd());
   }
 
   /** 선생님 요청을 보내고, 거절되면 그 까닭을 보인다. 답을 받을 때까지 단추를 잠근다. */

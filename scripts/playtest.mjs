@@ -414,13 +414,15 @@ await pressA('Enter');
 check('신발장 힌트 카드', await dialogHas(/힌트 카드: 운동량/));
 await pressA('Enter');
 
-// 물건 가져다주기: 복도의 센서 부품을 줍는다(전선 부품은 나중에).
+// 물건 가져다주기: 복도의 흙 습도 센서를 줍는다(물 펌프는 나중에).
 await a.js(`__df.teleport(29.5, 14.6)`);
 await pressA('Space');
-check('줍기: 센서 부품을 주움', await dialogHas(/센서 부품을 얻었습니다/), fmt(await a.dialogText()));
+check('줍기: 흙 습도 센서를 주움(맵 이름과 자료 이름이 같음)', (await dialogHas(/흙 습도 센서를 주웠습니다/)) && (await a.js(`__df.nameOf('part-a')`)) === '흙 습도 센서',
+  fmt(await a.dialogText()));
 await pressA('Enter');
+check('줍기: 안내는 한 번만(얻었습니다 창이 따로 뜨지 않음)', (await a.dialogText()) === null, fmt(await a.dialogText()));
 check('줍기: 주운 물건은 사라지고(살펴볼 수 없음) 가진 물건에 들어감', (await a.js(`__df.target()`)) === null &&
-  (await hudA()).includes('센서 부품'), `${await a.js(`__df.target()`)} | ${fmt(await hudA())}`);
+  (await hudA()).includes('흙 습도 센서'), `${await a.js(`__df.target()`)} | ${fmt(await hudA())}`);
 await a.press('ArrowDown', 400);
 check('줍기: 주운 물건 자리를 지나갈 수 있음', (await a.js(`__df.pos().row`)) > 15.2, `row ${(await a.js(`__df.pos().row`)).toFixed(2)}`);
 check('줍기: 다른 학생 화면에는 물건이 그대로', (await b.js(`__df.picked()`)).length === 0 && (await a.js(`__df.picked()`)).join(',') === 'part-a');
@@ -453,30 +455,59 @@ await pressA('Enter');
 check('반 자물쇠 힌트 카드(파동과 수)', await dialogHas(/힌트 카드: 파동과 수/), fmt(await a.dialogText()));
 await pressA('Enter');
 
-// 순서 맞추기: 얼음 비커 → 물 비커 → 수증기 플라스크. 틀리면 처음부터.
+// 순서 맞추기: 얼음 비커 → 물 비커 → 수증기 플라스크. 살펴보면 글만 보이고 "누르기"를 눌러야 순서에 든다. 틀리면 처음부터.
 const BENCH = { steam: [28.5, 9.4], ice: [35.5, 9.4], water: [42.5, 9.4] };
 const lookBench = async (name) => {
   await a.js(`__df.teleport(${BENCH[name]})`);
   await pressA('Space');
 };
+/** 순서 맞추기 창의 "누르기" 단추를 누르고 결과 창을 기다린다. */
+const pressButton = async () => {
+  await clickText(a, '.df-dialog .df-button', '누르기');
+  await wait(400);
+};
+const marks = () => a.js(`JSON.stringify(__df.marks())`);
+check('순서 맞추기: 이름표는 자료 파일의 labels', (await a.js(`__df.nameOf('bench-4')`)) === '비커(얼음)' && (await a.js(`__df.nameOf('bench-3')`)) === '플라스크(수증기)');
 await lookBench('steam');
-check('순서 맞추기: 처음부터 틀리면 다시', (await dialogHas(/수증기/)) && (await dialogHas(/순서가 맞지 않습니다/)), fmt(await a.dialogText()));
+check('순서 맞추기: 살펴보면 글과 지금 순서, 누르기 단추', (await dialogHas(/수증기/)) && (await dialogHas(/지금 순서 0\/3/)) &&
+  (await a.js(`[...document.querySelectorAll('.df-dialog .df-button')].map((b) => b.textContent).join(',')`)) === '닫기,누르기', fmt(await a.dialogText()));
+await clickText(a, '.df-dialog .df-button', '닫기');
+await wait(300);
+check('순서 맞추기: 살펴보고 닫기만 하면 순서에 들지 않음', (await marks()) === '{}', await marks());
+await lookBench('steam');
+await pressButton();
+check('순서 맞추기: 처음부터 틀리게 누르면 다시', await dialogHas(/순서가 맞지 않습니다. 처음부터 다시 합니다/), fmt(await a.dialogText()));
 await pressA('Enter');
 await lookBench('ice');
-check('순서 맞추기: 첫째(1/3)', await dialogHas(/순서 1\/3/), fmt(await a.dialogText()));
+await pressButton();
+check('순서 맞추기: 첫째(1/3)와 사물 위 번호 1', (await dialogHas(/순서 1\/3/)) && (await marks()) === '{"bench-4":1}', `${fmt(await a.dialogText())} ${await marks()}`);
+await pressA('Enter');
+await lookBench('ice');
+check('순서 맞추기: 이미 누른 사물은 몇째인지만 알림(누르기 단추 없음)', (await dialogHas(/1번째로 눌렀습니다/)) &&
+  !(await a.js(`[...document.querySelectorAll('.df-dialog .df-button')].some((b) => b.textContent === '누르기')`)), fmt(await a.dialogText()));
+await pressA('Enter');
+await a.shot('order-mark');
+await lookBench('steam');
+await pressButton();
+check('순서 맞추기: 중간에 틀리면 처음부터(번호가 사라짐)', (await dialogHas(/순서가 맞지 않습니다/)) && (await marks()) === '{}', `${fmt(await a.dialogText())} ${await marks()}`);
+await pressA('Enter');
+await lookBench('water');
+await pressButton();
+await pressA('Enter');
+await lookBench('ice');
+await pressButton();
+check('순서 맞추기: 다시 처음부터 첫째(1/3)', (await dialogHas(/순서 1\/3/)) && (await marks()) === '{"bench-4":1}', `${fmt(await a.dialogText())} ${await marks()}`);
+await pressA('Enter');
+await lookBench('water');
+await pressButton();
+check('순서 맞추기: 둘째(2/3)', (await dialogHas(/순서 2\/3/)) && (await marks()) === '{"bench-4":1,"bench-5":2}', `${fmt(await a.dialogText())} ${await marks()}`);
 await pressA('Enter');
 await lookBench('steam');
-check('순서 맞추기: 중간에 틀리면 처음부터', await dialogHas(/순서가 맞지 않습니다/), fmt(await a.dialogText()));
+await pressButton();
+check('순서 맞추기: 모두 맞히면 마침, 현관 열쇠를 얻음', (await dialogHas(/순서를 모두 맞혔습니다/)) && (await dialogHas(/현관 열쇠를 얻었습니다/)),
+  fmt(await a.dialogText()));
 await pressA('Enter');
-for (const n of ['ice', 'water']) {
-  await lookBench(n);
-  await pressA('Enter');
-}
-await lookBench('steam');
-check('순서 맞추기: 모두 맞히면 마침', await dialogHas(/순서를 모두 맞혔습니다/), fmt(await a.dialogText()));
-await pressA('Enter');
-check('순서 맞추기: 현관 열쇠를 얻음', await dialogHas(/현관 열쇠를 얻었습니다/), fmt(await a.dialogText()));
-await pressA('Enter');
+check('순서 맞추기: 마치면 번호는 사라지고 켜짐으로', (await marks()) === '{}' && (await a.js(`__df.lit()`)).includes('bench-3'), await marks());
 
 // 가져다주기: 부품 하나만 들고 가면 모자람, 둘 다 들고 가면 내려놓음
 await a.js(`__df.teleport(28.5, 3.4)`);
@@ -485,7 +516,7 @@ check('가져다주기: 모자라면 가져온 수(1/2)', await dialogHas(/가�
 await pressA('Enter');
 await a.js(`__df.teleport(43.5, 13.6)`);
 await pressA('Space');
-check('줍기: 전선 부품', await dialogHas(/전선 부품을 얻었습니다/), fmt(await a.dialogText()));
+check('줍기: 물 펌프(자료에 글이 없으면 "주웠습니다")', await dialogHas(/물 펌프를 주웠습니다/), fmt(await a.dialogText()));
 await pressA('Enter');
 await a.js(`__df.teleport(28.5, 3.4)`);
 await pressA('Space');
@@ -493,9 +524,9 @@ check('가져다주기: 부품을 모두 내려놓음', await dialogHas(/화분 
 await pressA('Enter');
 check('가져다주기: 힌트 카드(에너지)', await dialogHas(/힌트 카드: 에너지/), fmt(await a.dialogText()));
 await pressA('Enter');
-check('가져다주기: 내려놓은 부품은 가진 물건에서 빠짐', !(await hudA()).includes('부품') && (await hudA()).includes('현관 열쇠'), fmt(await hudA()));
+check('가져다주기: 내려놓은 부품은 가진 물건에서 빠짐', !/흙 습도 센서|물 펌프/.test(await hudA()) && (await hudA()).includes('현관 열쇠'), fmt(await hudA()));
 
-// 현관문을 열고 운동장으로, 교문에서 탈출
+// 현관문을 열고 운동장으로, 교문에서 1부 완료
 await a.js(`__df.teleport(24, 16.5)`);
 await a.press('ArrowDown', 500);
 const beforeEntrance = await a.js(`__df.pos().row`);
@@ -510,28 +541,20 @@ await pressA('Space');
 check('교문 퀴즈가 뜸', await dialogHas(/운동 에너지/));
 await pressA('3');
 const fin = await a.dialogText();
-check('탈출 화면', /학교를 탈출했습니다/.test(fin ?? '') && /걸린 시간/.test(fin ?? ''), fmt(fin));
-await a.shot('escaped');
+check('교문: 1부 완료와 걸린 시간', /1부 완료/.test(fin ?? '') && /1부를 마쳤습니다/.test(fin ?? '') && /걸린 시간/.test(fin ?? ''), fmt(fin));
+await a.shot('part1-done');
+await pressA('Enter');
 await wait(300);
-check('CCTV: 탈출 완료, 힌트 4/4', /탈출 완료/.test((await cctvText()) ?? '') && /힌트 4\/4/.test((await cctvText()) ?? ''), fmt(await cctvText()));
-await teacher.shot('cctv-escaped');
+check('CCTV: 1부 완료, 힌트 4/4', /1부 완료/.test((await cctvText()) ?? '') && /힌트 4\/4/.test((await cctvText()) ?? ''), fmt(await cctvText()));
+await teacher.shot('cctv-part1-done');
 await clickText(teacher, '.df-cctv button', '전체 보기');
 check('CCTV: 전체 보기 단추로 돌아감', (await cctv()).following === null && Math.abs((await cctv()).zoom - overviewZoom) < 0.01);
-
-await a.js(`document.querySelector('.df-dialog button').click()`);
-await wait(800);
-await wait(400);
-check('다시 하기: 물건이 비워지고(서버) 힌트 카드는 남음', (await a.js(`__df.items().length`)) === 0 && (await a.js(`__df.hints().length`)) === 4);
-check('다시 하기 뒤에도 방에 남아 있음', (await a.js(`__df.code()`)) === code);
-await wait(300);
-const aOnTeacher = await teacher.js(`__df.others().find((o) => o.nickname === '가람')`);
-const aPos = await a.js(`__df.pos()`);
-check('다시 하기 뒤 시작 둘레로 돌아가고 선생님 화면에 반영',
-  Math.abs(aPos.col - 11.5) <= 1.5 && Math.abs(aPos.row - 9.5) <= 1.5 &&
-  Math.abs(aOnTeacher.col - aPos.col) < 0.05 && Math.abs(aOnTeacher.row - aPos.row) < 0.05,
-  `A ${aPos.col.toFixed(2)}, ${aPos.row.toFixed(2)} / 선생님 화면 ${aOnTeacher.col.toFixed(2)}, ${aOnTeacher.row.toFixed(2)}`);
-check('CCTV: 다시 하기 뒤 돌아다니는 중, 힌트 카드는 그대로(4/4)',
-  /힌트 4\/4/.test((await rowText('가람')) ?? '') && /돌아다니는 중/.test((await rowText('가람')) ?? ''), fmt(await rowText('가람')));
+check('1부 완료 뒤에도 진행은 그대로(자리, 마친 미션, 힌트 카드)', (await a.js(`__df.finished()`)) === true && (await a.js(`__df.hints().length`)) === 4 &&
+  (await a.js(`__df.pos().row`)) > 34);
+await a.js(`__df.teleport(24, 35.5)`);
+await pressA('Space');
+check('교문을 다시 살펴보면 이미 마쳤다는 안내', await dialogHas(/이미 1부를 마쳤습니다/), fmt(await a.dialogText()));
+await pressA('Enter');
 
 // ---- 힌트 수첩: 얻은 카드를 다시 본다 ----
 await clickText(a, '.df-hud button', '힌트 수첩 4/4');
@@ -545,9 +568,6 @@ await wait(500);
 check('힌트 수첩: 카드가 없는 학생 B', /힌트 수첩 \(0\/4\)/.test((await b.dialogText()) ?? '') && /아직 얻은 힌트 카드가 없습니다/.test((await b.dialogText()) ?? ''),
   fmt(await b.dialogText()));
 await b.js(`[...document.querySelectorAll('.df-dialog .df-button')].find((x) => x.textContent === '닫기').click()`);
-await a.js(`__df.teleport(22, 10.5)`);
-await a.press('ArrowDown', 600);
-check('다시 하기 뒤 교실 문이 다시 잠김', (await a.js(`__df.pos().row`)) <= 10.71);
 
 // ---- 선생님: CCTV 끄고 다시 돌아다니기 ----
 await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
@@ -558,7 +578,7 @@ await teacher.press('ArrowRight', 400);
 check('CCTV를 끄면 선생님이 다시 움직임', (await teacher.js(`__df.pos().col`)) - tPos3.col > 0.5);
 
 // ---- 골든벨 ----
-// 학생 A는 교실에서 칠판을 본 뒤(진행 1/11) 골든벨에 갔다가 같은 자리, 같은 진행으로 돌아와야 한다.
+// 학생 A는 교실에서 칠판을 본 뒤 골든벨에 갔다가 같은 자리, 같은 진행으로 돌아와야 한다.
 await a.js(`__df.teleport(9, 2.5)`);
 await pressA('Space');
 await pressA('Space');
@@ -573,6 +593,14 @@ check('2부 열기 전: 복도의 2부 문을 지나가지 못하고 2부 사물
   (await a.js(`__df.pos().col`)) <= 64.71 && (await hiddenA()).includes('apparatus') && (await hiddenA()).includes('bulb-1'),
   `col ${(await a.js(`__df.pos().col`)).toFixed(2)}, 감춤 ${(await hiddenA()).join(',')}`);
 await clickText(teacher, '.df-hud button', '2부 열기');
+await wait(400);
+check('2부 열기: 되돌릴 수 없다는 확인 창(취소하면 그대로)', /다시 닫을 수 없습니다/.test((await teacher.dialogText()) ?? ''), fmt(await teacher.dialogText()));
+await clickText(teacher, '.df-dialog .df-button', '취소');
+await wait(300);
+check('2부 열기: 취소하면 1부 그대로', (await a.js(`__df.part()`)) === 1);
+await clickText(teacher, '.df-hud button', '2부 열기');
+await wait(400);
+await clickText(teacher, '.df-dialog .df-button', '2부 열기');
 await wait(500);
 check('2부 열기: 서버 상태가 2부, 단추는 "2부 열림"으로 잠김',
   (await a.js(`__df.part()`)) === 2 &&
@@ -812,6 +840,14 @@ check('골든벨 중에 들어온 학생 C는 골든벨 맵에서 시작', (awai
   `${await c.js(`__df?.map()`)}`);
 
 await clickText(teacher, '.df-gb-panel button', '골든벨 끝내기');
+await wait(400);
+check('골든벨 끝내기: 확인 창이 뜨고 취소하면 그대로', /골든벨을 끝내고 모두 학교로/.test((await teacher.dialogText()) ?? ''), fmt(await teacher.dialogText()));
+await clickText(teacher, '.df-dialog .df-button', '취소');
+await wait(300);
+check('골든벨 끝내기: 취소하면 골든벨 맵에 그대로', (await maps()) === 'goldenbell,goldenbell,goldenbell', await maps());
+await clickText(teacher, '.df-gb-panel button', '골든벨 끝내기');
+await wait(400);
+await clickText(teacher, '.df-dialog .df-button', '끝내기');
 await wait(1200);
 check('골든벨 끝: 모두 학교 맵으로 돌아옴', (await maps()) === 'school,school,school' && (await c.js(`__df.map()`)) === 'school', await maps());
 const aAfter = await a.js(`__df.pos()`);
@@ -862,16 +898,26 @@ const oddClass = await teacher2.js(`__df.others().find((o) => o.nickname === '�
 check('반을 넣지 않고 들어오면 반 없음(\'\')으로 받음', oddClass === '', JSON.stringify(oddClass));
 await odd.leave();
 
-// ---- 선생님이 방탈출 자료를 다시 고르면 모두의 진행이 처음으로 ----
+// ---- 선생님이 지금 자료를 다시 고르면 아무 일도 없고, 다른 자료로 바꾸면(확인 창) 모두의 진행이 처음으로 ----
 await clickText(teacher2, '.df-hud button', '방탈출 자료');
 await wait(800);
 check('방탈출 자료 다시 고르기: 지금 자료와 처음으로 돌아간다는 안내', /지금 자료: 예시 방탈출\(학교\)/.test((await teacher2.dialogText()) ?? '') &&
   /지금 쓰는 자료/.test((await teacher2.dialogText()) ?? ''), fmt(await teacher2.dialogText()));
 await teacher2.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('예시 방탈출')).click()`);
 await wait(600);
+check('방탈출 자료: 지금 자료를 다시 고르면 아무 일도 없음(진행 그대로)', (await teacher2.dialogText()) === null &&
+  (await teacher2.js(`__df.others().find((o) => o.nickname === '가람')`)).done.length > 0 && (await a.js(`__df.hints().length`)) === 4);
+await clickText(teacher2, '.df-hud button', '방탈출 자료');
+await wait(800);
+await teacher2.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 두 번째')).click()`);
+await wait(400);
+check('방탈출 자료 바꾸기: 진행이 지워진다는 확인 창', /모든 학생의 방탈출 진행/.test((await teacher2.dialogText()) ?? '') && /바꾸기/.test((await teacher2.dialogText()) ?? ''),
+  fmt(await teacher2.dialogText()));
+await clickText(teacher2, '.df-dialog .df-button', '바꾸기');
+await wait(600);
 const aReset = await teacher2.js(`__df.others().find((o) => o.nickname === '가람')`);
-check('방탈출 자료를 다시 고르면 학생 진행(마친 미션, 힌트 카드)이 처음으로', aReset.done.length === 0 && (await a.js(`__df.hints().length`)) === 0 &&
-  /힌트 수첩 0\/4/.test((await a.js(`document.querySelector('.df-hud').innerText`)) ?? ''), JSON.stringify(aReset.done));
+check('방탈출 자료를 바꾸면 학생 진행(마친 미션, 힌트 카드, 1부 완료)이 처음으로', aReset.done.length === 0 && !aReset.finished && (await a.js(`__df.hints().length`)) === 0 &&
+  /힌트 수첩 0\/0/.test((await a.js(`document.querySelector('.df-hud').innerText`)) ?? ''), JSON.stringify(aReset.done));
 
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));
