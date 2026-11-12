@@ -417,17 +417,53 @@ await a.press('Space');
 await wait(300);
 const aBefore = await a.js(`__df.pos()`);
 
-await clickText(teacher, '.df-hud button', '골든벨 시작');
-await wait(800);
-const pick = (await teacher.dialogText()) ?? '';
-check('골든벨: 문제 파일 목록(틀린 파일은 까닭과 함께 막힘)',
-  /확인용 골든벨 \(9문제\)/.test(pick) && /broken\.yaml/.test(pick) && /1번 문제: OX 문제의 answer는 O 또는 X로 씁니다/.test(pick) &&
-  (await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('broken')).disabled`)) === true,
+// ---- 2부 열기(지금은 서버 상태와 단추만) ----
+check('학생 화면에는 2부 열기 단추가 없음', (await a.js(`[...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '2부 열기').hidden`)) === true);
+await clickText(teacher, '.df-hud button', '2부 열기');
+await wait(500);
+check('2부 열기: 서버 상태가 2부, 단추는 "2부 열림"으로 잠김',
+  (await a.js(`__df.part()`)) === 2 &&
+    (await teacher.js(`(() => { const b = [...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '2부 열림'); return !!b && b.disabled; })()`)) === true);
+
+// ---- 강당으로 모으기: 문제 파일과 시간을 고르면 남은 시간이 모두에게 보이고, 0이 되면 골든벨 맵으로 ----
+/** 선생님이 강당으로 모으기를 누르고 확인용 골든벨 파일을 고른 뒤 시간(단추 글)을 고른다. */
+async function gather(when) {
+  await clickText(teacher, '.df-hud button', '강당으로 모으기');
+  await wait(800);
+  const files = (await teacher.dialogText()) ?? '';
+  await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 골든벨')).click()`);
+  await wait(300);
+  const times = (await teacher.dialogText()) ?? '';
+  await clickText(teacher, '.df-dialog .df-choice span', when);
+  await wait(800);
+  return { files, times };
+}
+const notice = (pg) => pg.js(`(() => { const n = document.querySelector('.df-hud-notice'); return n && !n.hidden ? n.innerText : null; })()`);
+const { files: pick, times } = await gather('1분 뒤');
+check('강당으로 모으기: 문제 파일 목록(틀린 파일은 까닭과 함께 막힘)',
+  /확인용 골든벨 \(12문제\)/.test(pick) && /broken\.yaml/.test(pick) && /1번 문제: OX 문제의 answer는 O 또는 X로 씁니다/.test(pick) &&
+    /3번 문제: nonsense\(넌센스 문제\)는 true 또는 false로 씁니다/.test(pick),
   fmt(pick));
-await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 골든벨')).click()`);
+check('강당으로 모으기: 시간 고르기(바로, 1·3·5분)', /지금 바로 옮기기/.test(times) && /1분 뒤/.test(times) && /3분 뒤/.test(times) && /5분 뒤/.test(times), fmt(times));
+check('강당으로 모으기: 학생 화면에 남은 시간과 안내', /강당으로 모입니다 · 남은 시간 (1분 0초|5\d초)/.test((await notice(a)) ?? '') && /확인용 골든벨/.test((await notice(b)) ?? ''),
+  fmt(await notice(a)));
+check('강당으로 모으기: 선생님 화면에도 안내, 단추는 "모으기 그만두기"',
+  (await notice(teacher)) !== null && (await teacher.js(`[...document.querySelectorAll('.df-hud button')].some((b) => b.textContent === '모으기 그만두기')`)) === true);
+await a.shot('gather');
+const left0 = (await a.js(`__df.gather()`)).left;
+await wait(2100);
+const left1 = (await a.js(`__df.gather()`)).left;
+check('강당으로 모으기: 남은 시간이 줄어듦', left1 < left0 && left1 > 0, `${left0} → ${left1}`);
+await clickText(teacher, '.df-hud button', '모으기 그만두기');
+await wait(500);
+check('모으기 그만두기: 안내가 사라지고 학교 맵에 그대로', (await notice(a)) === null && (await a.js(`__df.map()`)) === 'school' &&
+  (await teacher.js(`[...document.querySelectorAll('.df-hud button')].some((b) => b.textContent === '강당으로 모으기')`)) === true);
+await gather('1분 뒤');
+// 남은 시간이 0이 될 때까지 기다린다(1분).
+for (let i = 0; i < 70 && (await a.js(`__df.map()`)) !== 'goldenbell'; i++) await wait(1000);
 await wait(1200);
 const maps = async () => [await teacher.js(`__df.map()`), await a.js(`__df.map()`), await b.js(`__df.map()`)].join(',');
-check('골든벨: 모두 골든벨 맵으로 옮겨 감', (await maps()) === 'goldenbell,goldenbell,goldenbell', await maps());
+check('강당으로 모으기: 0이 되면 모두 골든벨 맵으로 옮겨 감', (await maps()) === 'goldenbell,goldenbell,goldenbell', await maps());
 const gbCard = (pg) => pg.js(`document.querySelector('.df-gb')?.innerText ?? null`);
 const gbPanel = () => teacher.js(`document.querySelector('.df-gb-panel')?.innerText ?? null`);
 check('골든벨: 시작 안내와 목숨 3개', /선생님이 첫 문제를 내면/.test((await gbCard(a)) ?? '') && /목숨 ♥♥♥/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
@@ -456,7 +492,7 @@ async function gbRound(aZone, bZone, during) {
 const gbOf = async (nick) => teacher.js(`__df.others().find((o) => o.nickname === ${JSON.stringify(nick)})`);
 
 await gbRound('O', '밖', async () => {
-  check('골든벨 1번: 문제와 남은 시간', /1\/9번 문제 · OX · 남은 시간 \d초/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
+  check('골든벨 1번: 문제와 남은 시간', /1\/12번 문제 · OX · 남은 시간 \d초/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
   check('골든벨 1번: 내가 서 있는 곳', /서 있는 곳: O/.test((await gbCard(a)) ?? '') && /서 있는 곳: 구역 밖/.test((await gbCard(b)) ?? ''));
   check('골든벨 1번: 선생님 창에 구역별 인원', /O 1명 · X 0명 · 구역 밖 1명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
   await teacher.shot('gb-question');
@@ -572,7 +608,31 @@ await waitReveal();
 check('골든벨 9번: 쉼표 답은 순서를 바꿔도 맞음', /정답: 가, 나/.test((await gbCard(a)) ?? '') && /내 답: 나,가 · 맞았습니다/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
 check('골든벨 9번: 답을 내지 않으면 틀림', /답을 내지 않아 틀린 것으로 셉니다/.test((await gbCard(b)) ?? '') && /\(답을 내지 않음\)/.test((await answersPanel()) ?? ''),
   fmt(await gbCard(b)));
-check('골든벨 9번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
+check('골든벨 9번: 목숨을 다 잃은 B는 탈락', (await gbOf('나래')).gbOut === true, JSON.stringify(await gbOf('나래')));
+
+// ---- 넌센스(11·12번) ----
+await gbRound('X', 'O');
+check('골든벨 10번: A는 틀려 목숨 2개, 탈락한 B는 맞혀 해골 2개', (await gbOf('가람')).gbLives === 2 && (await looks(b)).me.tag === '💀💀',
+  `${JSON.stringify(await gbOf('가람'))} | ${(await looks(b)).me.tag}`);
+await nextButton();
+await wait(500);
+check('골든벨 11번: 넌센스 문제 안내', /11\/12번 문제 · 단답형 · 넌센스 · 맞히면 하트 \+1/.test((await gbCard(a)) ?? '') && /넌센스/.test((await gbPanel()) ?? ''),
+  fmt(await gbCard(a)));
+await submitShort(a, '관성이요');
+await submitShort(b, '관성이에요');
+await a.shot('gb-nonsense');
+await waitReveal();
+check('골든벨 11번: 말끝을 붙인 답도 맞음, 살아 있는 A는 하트 +1(점수 그대로)',
+  /내 답: 관성이요 · 맞았습니다\. 하트 \+1 · 목숨 3개/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 3 && (await gbOf('가람')).gbScore === 9,
+  `${fmt(await gbCard(a))} | ${JSON.stringify(await gbOf('가람'))}`);
+check('골든벨 11번: 탈락한 B는 부활 1개로 셈(해골 1개, 점수 그대로)',
+  (await looks(b)).me.tag === '💀' && (await gbOf('나래')).gbScore === 2 && /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''),
+  `${fmt(await gbCard(b))} | ${JSON.stringify(await gbOf('나래'))}`);
+await gbRound('O', '밖');
+check('골든벨 12번: 넌센스는 틀려도 목숨을 잃지 않음',
+  /넌센스 문제라 목숨을 잃지 않습니다/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 3 && (await looks(b)).me.tag === '💀',
+  fmt(await gbCard(a)));
+check('골든벨 12번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
 await nextButton();
 await wait(500);
 check('골든벨 결과: 선생님 창에 순위', /1위 가람 9점/.test((await gbPanel()) ?? '') && /2위 나래 2점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));

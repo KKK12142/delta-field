@@ -59,6 +59,8 @@ export const GoldenBell = schema(
     /** GbQuestionType */
     type: t.string().default(''),
     question: t.string().default(''),
+    /** 넌센스 문제(점수에 넣지 않고, 맞히면 하트 +1 또는 부활 1개. shared/goldenbell.ts의 judgeNonsense) */
+    nonsense: t.boolean().default(false),
     choices: t.array('string'),
     /** 남은 시간(초) */
     timeLeft: t.uint16().default(0),
@@ -82,6 +84,12 @@ export const ClassState = schema(
     /** 접속 id → 접속자 */
     players: t.map(Player),
     goldenbell: t.ref(GoldenBell).default(() => new GoldenBell()),
+    /** 지금 열린 방탈출 부(shared/protocol.ts의 PARTS). 2부 장소의 문 잇기는 맵을 넓힐 때 한다. */
+    part: t.uint8().default(1),
+    /** 강당으로 모으기: 골든벨로 옮길 때까지 남은 시간(초). 0이면 모으는 중이 아니다. */
+    gatherLeft: t.uint16().default(0),
+    /** 강당으로 모으기: 시작할 골든벨 이름 */
+    gatherTitle: t.string().default(''),
   },
   'ClassState',
 );

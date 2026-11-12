@@ -72,7 +72,20 @@ export interface GbFileInfo {
   error: string | null;
 }
 
-/** 골든벨 요청(gbStart, gbNext, gbEnd, gbSubmit, gbAccept)의 답. 할 수 없으면 error에 까닭을 적는다. */
+/** 강당으로 모으기(2026-11-12 교사 결정): 선생님이 고르는 남은 시간(초). 0은 바로 옮긴다. */
+export const GATHER_SECONDS = [0, 60, 180, 300] as const;
+
+/** 선생님이 강당으로 모으기를 건다. 남은 시간이 0이 되면 그 문제 파일로 골든벨을 시작한다(모두 골든벨 맵으로 옮김). */
+export interface GatherMessage {
+  file: string;
+  /** GATHER_SECONDS 가운데 하나 */
+  seconds: number;
+}
+
+/** 방탈출 부. 1부 장소로 시작하고, 선생님이 "2부 열기"를 누르면 2가 된다(2부 장소의 문 잇기는 맵을 넓힐 때 한다). */
+export const PARTS = [1, 2] as const;
+
+/** 골든벨 요청(gbStart, gbGather, gbGatherCancel, gbNext, gbEnd, gbSubmit, gbAccept, openPart)의 답. 할 수 없으면 error에 까닭을 적는다. */
 export interface GbReply {
   error: string | null;
 }

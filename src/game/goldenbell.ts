@@ -72,6 +72,9 @@ const RANKING_FOR_STUDENTS = 10;
 
 const typeName = (type: string) => ({ ox: 'OX', choice: '객관식', short: '단답형' })[type] ?? type;
 
+/** 문제 종류 이름. 넌센스 문제면 "단답형 · 넌센스 · 맞히면 하트 +1" */
+const kindText = (gb: GoldenBell) => `${typeName(gb.type)}${gb.nonsense ? ' · 넌센스 · 맞히면 하트 +1' : ''}`;
+
 /** 정답을 사람이 읽는 글로: OX·단답형은 그대로, 객관식은 "2. 3 m/s²" */
 function answerText(gb: GoldenBell) {
   if (gb.type !== 'choice') return gb.answer;
@@ -91,13 +94,13 @@ export function ranking(players: Player[]): string[] {
 
 /** 한 문제의 내 결과. 단답형은 내 답과, 선생님이 인정한 답이면 그것도 앞에 붙인다. */
 function resultOf(gb: GoldenBell, p: Player): { text: string; tone: Tone } {
-  const r = judgedText(p, gb.type === 'short' ? '답을 내지 않아 틀린 것으로 셉니다. ' : '구역 밖에 있어 틀린 것으로 셉니다. ');
+  const r = judgedText(p, gb.type === 'short' ? '답을 내지 않아 틀린 것으로 셉니다. ' : '구역 밖에 있어 틀린 것으로 셉니다. ', gb.nonsense);
   if (gb.type !== 'short' || !p.gbAnswer || !r.text) return r;
   const accepted = gb.accepted.includes(answerKey(p.gbAnswer)) ? '선생님이 정답으로 인정했습니다. ' : '';
   return { ...r, text: `내 답: ${p.gbAnswer} · ${accepted}${r.text}` };
 }
 
-function judgedText(p: Player, noAnswer: string): { text: string; tone: Tone } {
+function judgedText(p: Player, noAnswer: string, nonsense: boolean): { text: string; tone: Tone } {
   const outside = p.gbAnswer === '' ? noAnswer : '';
   const left = GB_REVIVE_CORRECT - p.gbRevive;
   switch (p.gbResult) {
@@ -105,9 +108,12 @@ function judgedText(p: Player, noAnswer: string): { text: string; tone: Tone } {
       return p.gbOut
         ? { text: `맞았습니다. ${left}문제를 더 맞히면 다시 살아납니다.`, tone: 'good' }
         : { text: '맞았습니다. 점수가 1점 올랐습니다.', tone: 'good' };
+    case 'heart':
+      return { text: `맞았습니다. 하트 +1 · 목숨 ${p.gbLives}개(최대 ${GB_LIVES}개)`, tone: 'good' };
     case 'revived':
       return { text: `맞았습니다. 목숨 ${GB_REVIVE_LIVES}개로 다시 살아났습니다.`, tone: 'good' };
     case 'wrong':
+      if (nonsense && !p.gbOut) return { text: `${outside}틀렸습니다. 넌센스 문제라 목숨을 잃지 않습니다.`, tone: 'bad' };
       return p.gbOut
         ? { text: `${outside}틀렸습니다. ${left}문제를 맞히면 다시 살아납니다.`, tone: 'bad' }
         : { text: `${outside}틀렸습니다. 목숨이 ${p.gbLives}개 남았습니다.`, tone: 'bad' };
@@ -132,7 +138,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
         'OX 문제는 O·X 구역으로, 객관식은 1~4 구역으로 걸어가 섭니다. 시간이 끝날 때 서 있는 구역이 내 답입니다. 단답형은 답을 글자로 써서 냅니다.';
       break;
     case 'question':
-      view.head = `${n}/${gb.total}번 문제 · ${typeName(gb.type)} · 남은 시간 ${gb.timeLeft}초`;
+      view.head = `${n}/${gb.total}번 문제 · ${kindText(gb)} · 남은 시간 ${gb.timeLeft}초`;
       view.question = gb.question;
       view.line =
         gb.type === 'short'
@@ -143,7 +149,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
       view.answerBox = gb.type === 'short' && !teacher && me !== undefined;
       break;
     case 'reveal': {
-      view.head = `${n}/${gb.total}번 문제 · 정답 공개`;
+      view.head = `${n}/${gb.total}번 문제 · ${gb.nonsense ? '넌센스 · ' : ''}정답 공개`;
       view.question = gb.question;
       view.line = `정답: ${answerText(gb)}`;
       view.explain = gb.explain ? `해설: ${gb.explain}` : '';
@@ -192,7 +198,7 @@ export function panelView(gb: GoldenBell, players: Player[], zones: Zones): Pane
       view.next = { label: '첫 문제', enabled: true };
       break;
     case 'question': {
-      view.status = `${n}/${gb.total}번 문제 · ${typeName(gb.type)} · 남은 시간 ${gb.timeLeft}초`;
+      view.status = `${n}/${gb.total}번 문제 · ${kindText(gb)} · 남은 시간 ${gb.timeLeft}초`;
       view.next = { label: '다음 문제', enabled: false };
       if (gb.type === 'short') {
         view.counts = [`답을 낸 학생 ${gb.submitted}명 · 내지 않은 학생 ${Math.max(0, list.length - gb.submitted)}명`, survivors];
@@ -207,7 +213,7 @@ export function panelView(gb: GoldenBell, players: Player[], zones: Zones): Pane
       break;
     }
     case 'reveal': {
-      view.status = `${n}/${gb.total}번 정답 공개 · 정답 ${answerText(gb)}`;
+      view.status = `${n}/${gb.total}번 ${gb.nonsense ? '넌센스 ' : ''}정답 공개 · 정답 ${answerText(gb)}`;
       const right = list.filter((p) => isCorrectResult(p.gbResult)).length;
       view.counts = [`맞힌 학생 ${right}명 · 틀린 학생 ${list.length - right}명`, survivors];
       view.next = { label: n >= gb.total ? '결과 보기' : '다음 문제', enabled: true };

@@ -1,6 +1,8 @@
 # pnpm playtest 확인용 문제(제한 시간이 짧다). 서버를 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell로 켤 때만 쓴다.
 # 학생 A는 모두 맞히고, 학생 B는 세 번 틀려 탈락한 뒤 세 번 맞혀 다시 살아나고 7번을 맞힌다.
-# 8·9번은 단답형: A는 답을 고쳐 내고(10 → 10 m/s), 쉼표 답을 순서를 바꿔 낸다. B는 8번에 다른 답을 내 선생님이 인정하고, 9번은 내지 않는다.
+# 8·9번은 단답형: A는 답을 고쳐 내고(10 → 10 m/s), 쉼표 답을 순서를 바꿔 낸다. B는 8번에 다른 답을 내 선생님이 인정하고, 9번은 내지 않아 탈락한다.
+# 10번: A는 틀려 목숨 2개, 탈락한 B는 맞혀 부활 1개. 11·12번은 넌센스: A는 말끝을 붙여(관성이요) 맞혀 하트 +1, 12번은 틀려도 목숨 그대로.
+# B는 11번을 맞혀 부활 2개, 12번은 구역 밖. 넌센스는 점수에 들어가지 않는다.
 title: 확인용 골든벨
 questions:
   - { type: ox, question: 확인 1, answer: O, seconds: 3 }
@@ -12,3 +14,6 @@ questions:
   - { type: ox, question: 확인 7, answer: O, seconds: 3 }
   - { type: short, question: 확인 8, answers: [10 m/s], explain: 해설 8, seconds: 6 }
   - { type: short, question: 확인 9, answers: ['가, 나'], seconds: 3 }
+  - { type: ox, question: 확인 10, answer: O, seconds: 3 }
+  - { type: short, nonsense: true, question: 확인 11, answers: [관성], seconds: 4 }
+  - { type: ox, nonsense: true, question: 확인 12, answer: X, seconds: 3 }
