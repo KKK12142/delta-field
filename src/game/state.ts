@@ -1,11 +1,9 @@
-// 한 판의 진행 상태. 서버로 보내 선생님의 CCTV 모드에 쓴다.
+// 한 판의 진행 상태 가운데 화면이 들고 있는 것(걸린 시간, 지금 하는 일).
+// 가진 물건·마친 미션·힌트 카드는 서버가 채점하며 정한다(Player.items, done, hints).
 import type { ActivityKind, StatusMessage } from '../../shared/protocol.ts';
 
 export class RunState {
   readonly nickname: string;
-  readonly items = new Set<string>();
-  /** action을 마친 사물 id */
-  readonly done = new Set<string>();
   readonly startedAt = performance.now();
   escapedAt: number | null = null;
   /** 지금 하는 일과 그 사물 id */
@@ -21,13 +19,7 @@ export class RunState {
 
   /** 서버에 보낼 모양 */
   toStatus(): StatusMessage {
-    return {
-      activity: this.activity.kind,
-      object: this.activity.object,
-      items: [...this.items],
-      done: [...this.done],
-      escaped: this.escapedAt !== null,
-    };
+    return { activity: this.activity.kind, object: this.activity.object };
   }
 }
 

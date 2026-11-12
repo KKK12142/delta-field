@@ -1,6 +1,6 @@
 // CCTV 모드에서 학생 한 명을 어떻게 적어 보일지 정한다. 서버가 맞춰 준 학생 상태와 방 데이터만 쓴다.
 import { CLASS_GROUPS, classGroupName } from '../../shared/protocol.ts';
-import type { Player } from '../../shared/schema.ts';
+import type { Escape, Player } from '../../shared/schema.ts';
 import { areaAt, type Room } from '../data/room';
 
 export interface StudentView {
@@ -13,18 +13,14 @@ export interface StudentView {
   doing: string;
   /** 지도의 아바타 위에 띄울 짧은 표시. 돌아다니는 중이면 null */
   tag: string | null;
-  /** "진행 2/4" */
+  /** "힌트 2/16"(얻은 힌트 카드 수/전체) */
   progress: string;
   /** 가진 물건 이름 */
   items: string[];
 }
 
-/** 살펴볼 수 있는 사물(단서, 퀴즈, 문, 출구) 수 = 진행의 전체 단계 수 */
-function stepCount(room: Room) {
-  return room.objects.filter((o) => o.action).length;
-}
-
-export function describeStudent(room: Room, id: string, p: Player): StudentView {
+/** escape: 선생님이 고른 방탈출 자료의 공개 정보(아이템 이름, 힌트 카드 수) */
+export function describeStudent(room: Room, escape: Escape, id: string, p: Player): StudentView {
   const object = room.objects.find((o) => o.id === p.activityObject);
   let doing = '돌아다니는 중';
   let tag: string | null = null;
@@ -42,9 +38,6 @@ export function describeStudent(room: Room, id: string, p: Player): StudentView 
   // 연결이 끊긴 학생 말고는 지금 장소를 앞에 붙인다.
   const place = p.online ? areaAt(room, p.col, p.row)?.name : undefined;
   if (place) doing = `${place} · ${doing}`;
-  // 출구(탈출)는 마친 사물에 들어가지 않으므로 탈출했으면 한 단계를 더한다. 연 문은 마친 사물에 들어간다.
-  const steps = stepCount(room);
-  const done = Math.min(steps, p.done.length + (p.escaped ? 1 : 0));
   return {
     id,
     nickname: p.nickname,
@@ -52,8 +45,8 @@ export function describeStudent(room: Room, id: string, p: Player): StudentView 
     className: classGroupName(p.classGroup),
     doing,
     tag,
-    progress: `진행 ${done}/${steps}`,
-    items: [...p.items].map((itemId) => room.items[itemId] ?? itemId),
+    progress: `힌트 ${p.hints.length}/${escape.hintTotal}`,
+    items: [...p.items].map((itemId) => escape.items.get(itemId) ?? itemId),
   };
 }
 

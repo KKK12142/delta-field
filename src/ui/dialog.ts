@@ -1,5 +1,25 @@
-import type { Quiz } from '../data/room';
+import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import { el, uiRoot } from './dom';
+
+/** 미션 문제(정답은 서버만 안다). choices가 비어 있으면 단답형 */
+export interface QuizView {
+  question: string;
+  choices: string[];
+  /** 교사가 바꿔 넣을 예시 문제 */
+  example: boolean;
+}
+
+/** 답을 서버에 보내 채점한 결과: 맞음, 틀림, 또는 낼 수 없는 까닭(글) */
+export type QuizCheck = (answer: string) => Promise<boolean | string>;
+
+/** 창이 뜬 뒤 이 시간(ms) 동안은 키로 누른 것을 받지 않는다. */
+const OPEN_GUARD_MS = 200;
+
+/** 힌트 수첩에 보일 카드 */
+export interface NoteCard {
+  title: string;
+  text: string;
+}
 
 export interface ChoiceOption {
   label: string;
@@ -40,49 +60,133 @@ export class Dialog {
     });
   }
 
-  /** 퀴즈를 보여 준다. 맞히면 true, 닫으면 false. 틀리면 다시 고른다. */
-  quiz(title: string, quiz: Quiz): Promise<boolean> {
+  /**
+   * 미션 문제를 보여 준다. 답은 check(서버 채점)로 맞춰 보고, 맞히면 true, 닫으면 false.
+   * 객관식은 틀린 보기를 지우고 다시 고르고, 단답형은 고쳐 써서 다시 낸다.
+   */
+  quiz(title: string, quiz: QuizView, check: QuizCheck): Promise<boolean> {
     return new Promise((resolve) => {
       const panel = this.panel(title);
       if (quiz.example) panel.append(el('span', 'df-badge', '예시 문제'));
       panel.append(el('p', 'df-text', quiz.question));
-      const list = el('div', 'df-choices');
       const feedback = el('p', 'df-text df-feedback');
       feedback.hidden = true;
-      const buttons = quiz.choices.map((choice, i) => {
-        const b = el('button', 'df-choice', `${i + 1}. ${choice}`);
-        b.addEventListener('click', () => pick(i));
-        list.append(b);
-        return b;
-      });
       const row = el('div', 'df-row');
       const close = el('button', 'df-button', '닫기');
       row.append(close);
-      panel.append(list, feedback, row);
-
+      let busy = false;
       const finish = (correct: boolean) => {
         this.close();
         resolve(correct);
       };
-      const pick = (i: number) => {
-        const b = buttons[i];
-        if (!b || b.disabled) return;
-        if (i === quiz.answer) {
-          finish(true);
-          return;
-        }
-        b.disabled = true;
-        b.classList.add('is-wrong');
-        feedback.textContent = '틀렸습니다. 다른 답을 고릅니다.';
+      const showWrong = (text: string) => {
+        feedback.textContent = text;
         feedback.classList.add('is-wrong');
         feedback.hidden = false;
       };
+      /** 답을 보내고 결과를 기다린다. 틀리면 false */
+      const send = async (answer: string, lock: HTMLButtonElement[]): Promise<boolean> => {
+        busy = true;
+        for (const b of lock) b.disabled = true;
+        try {
+          const result = await check(answer);
+          if (result === true) {
+            finish(true);
+            return true;
+          }
+          showWrong(typeof result === 'string' ? result : quiz.choices.length ? '틀렸습니다. 다른 답을 고릅니다.' : '틀렸습니다. 다시 써서 냅니다.');
+        } catch {
+          showWrong('서버에서 답을 받지 못했습니다. 잠시 뒤 다시 냅니다.');
+        } finally {
+          busy = false;
+        }
+        return false;
+      };
+
+      let pick: (i: number) => void = () => {};
+      if (quiz.choices.length) {
+        const list = el('div', 'df-choices');
+        const buttons = quiz.choices.map((choice, i) => {
+          const b = el('button', 'df-choice', `${i + 1}. ${choice}`);
+          b.addEventListener('click', () => pick(i));
+          list.append(b);
+          return b;
+        });
+        pick = (i) => {
+          const b = buttons[i];
+          if (!b || b.disabled || busy) return;
+          const others = buttons.filter((x) => !x.disabled);
+          void send(String(i + 1), others).then((correct) => {
+            for (const x of others) x.disabled = false;
+            if (correct) return;
+            b.disabled = true;
+            b.classList.add('is-wrong');
+          });
+        };
+        panel.append(list);
+      } else {
+        const form = el('form', 'df-row df-quiz-answer');
+        const input = el('input', 'df-input');
+        input.type = 'text';
+        input.maxLength = GB_MAX_ANSWER;
+        input.placeholder = '답을 씁니다';
+        input.autocomplete = 'off';
+        input.setAttribute('aria-label', '답');
+        // 글을 쓰는 동안 빈칸·방향키를 게임이 가로채지 않게 누름(keydown)만 막는다(Esc는 창을 닫게 둔다).
+        // 뗌(keyup)은 막지 않는다. 막으면 이 창을 연 스페이스바를 게임이 계속 누른 것으로 알아 다음 살펴보기가 되지 않는다.
+        input.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') e.stopPropagation();
+        });
+        const submit = el('button', 'df-button', '내기');
+        submit.type = 'submit';
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const text = input.value.trim();
+          if (!text || busy) return;
+          void send(text, [submit]).then((correct) => {
+            if (correct) return;
+            submit.disabled = false;
+            input.select();
+          });
+        });
+        form.append(input, submit);
+        panel.append(form);
+        queueMicrotask(() => input.focus());
+      }
+      panel.append(feedback, row);
       close.addEventListener('click', () => finish(false));
       this.open(panel, (e) => {
         if (e.key === 'Escape') finish(false);
         const n = Number(e.key);
-        if (Number.isInteger(n) && n >= 1) pick(n - 1);
+        if (quiz.choices.length && Number.isInteger(n) && n >= 1) pick(n - 1);
       });
+    });
+  }
+
+  /** 힌트 수첩: 얻은 힌트 카드를 모두 보인다. */
+  notebook(cards: NoteCard[], total: number): Promise<void> {
+    return new Promise((resolve) => {
+      const panel = this.panel(`힌트 수첩 (${cards.length}/${total})`);
+      if (!cards.length) panel.append(el('p', 'df-muted', '아직 얻은 힌트 카드가 없습니다. 미션을 마치면 카드를 얻습니다.'));
+      const list = el('div', 'df-cards');
+      for (const c of cards) {
+        const card = el('section', 'df-card');
+        card.append(el('strong', '', c.title), el('p', 'df-text', c.text));
+        list.append(card);
+      }
+      const row = el('div', 'df-row');
+      const ok = el('button', 'df-button', '닫기');
+      row.append(ok);
+      panel.append(list, row);
+      const done = () => {
+        this.close();
+        resolve();
+      };
+      ok.addEventListener('click', done);
+      this.open(panel, (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') done();
+      });
+      ok.focus();
     });
   }
 
@@ -131,8 +235,21 @@ export class Dialog {
   private open(panel: HTMLElement, handleKey: (e: KeyboardEvent) => void) {
     const node = el('div', 'df-dialog');
     node.append(panel);
+    // 앞 창을 닫은 Enter가 곧바로 이어 뜬 창의 단추를 누르지 않게(키를 누를 때 keypress·click이 뒤따른다) 잠깐 받지 않는다.
+    const openedAt = performance.now();
+    const settling = () => performance.now() - openedAt < OPEN_GUARD_MS;
+    node.addEventListener(
+      'click',
+      (e) => {
+        if (settling() && e.detail === 0) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      true,
+    );
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat) return;
+      if (e.repeat || settling()) return;
       handleKey(e);
     };
     window.addEventListener('keydown', onKey);

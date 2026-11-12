@@ -39,18 +39,21 @@ export class GbHud {
   private readonly answerSent = el('span', 'df-text');
   private readonly answerError = el('span', 'df-error');
   private readonly explain = el('span', 'df-text df-gb-explain');
+  /** 힌트 수첩(학생): 방탈출에서 얻은 힌트 카드를 골든벨 중에도 본다. */
+  readonly notebook = el('button', 'df-button df-button-small', '힌트 수첩');
   private answerShown = false;
 
-  /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다) */
-  constructor(teacher: boolean, onSubmit: (text: string) => void = () => {}) {
+  /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다), onNotebook: 힌트 수첩 단추를 눌렀을 때 */
+  constructor(teacher: boolean, onSubmit: (text: string) => void = () => {}, onNotebook: () => void = () => {}) {
     const card = el('div', 'df-hud-box df-gb-card');
     this.answerInput.type = 'text';
     this.answerInput.maxLength = GB_MAX_ANSWER;
     this.answerInput.placeholder = '답을 씁니다';
     this.answerInput.autocomplete = 'off';
     this.answerInput.setAttribute('aria-label', '단답형 답');
-    // 글을 쓰는 동안 W·A·S·D, 화살표, 빈칸 키가 캐릭터를 움직이거나 게임이 키를 가로채지 않게 한다.
-    for (const type of ['keydown', 'keyup'] as const) this.answerInput.addEventListener(type, (e) => e.stopPropagation());
+    // 글을 쓰는 동안 W·A·S·D, 화살표, 빈칸 키가 캐릭터를 움직이거나 게임이 키를 가로채지 않게 누름(keydown)을 막는다.
+    // 뗌(keyup)은 막지 않는다(칸에 들어오기 전에 누른 키를 게임이 계속 누른 것으로 알지 않게).
+    this.answerInput.addEventListener('keydown', (e) => e.stopPropagation());
     this.answerButton.type = 'submit';
     this.answerForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -75,7 +78,11 @@ export class GbHud {
       this.ranking,
       this.status,
     );
-    this.mine.append(this.lives, this.score, this.where);
+    this.notebook.addEventListener('click', () => {
+      this.notebook.blur();
+      onNotebook();
+    });
+    this.mine.append(this.lives, this.score, this.where, this.notebook);
     this.mine.hidden = teacher;
     // 선생님은 오른쪽을 골든벨 창이 쓴다.
     this.top.classList.toggle('has-panel', teacher);
@@ -116,6 +123,12 @@ export class GbHud {
 
   setStatus(text: string | null) {
     setText(this.status, text ?? '');
+  }
+
+  /** 힌트 수첩 단추에 얻은 수/전체를 적는다. */
+  setHints(got: number, total: number) {
+    const label = `힌트 수첩 ${got}/${total}`;
+    if (this.notebook.textContent !== label) this.notebook.textContent = label;
   }
 
   /** 서버가 받은 내 단답형 답(빈 글이면 감춘다)과 내지 못한 까닭 */

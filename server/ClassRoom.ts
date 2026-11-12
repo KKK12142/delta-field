@@ -36,15 +36,17 @@ import {
 } from '../shared/protocol.ts';
 import { ClassState, Player } from '../shared/schema.ts';
 import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './questions.ts';
+import { EscapeGame } from './EscapeGame.ts';
+import { listEscapeFiles, loadEscapeSet } from './escape.ts';
+import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionView } from '../shared/escape.ts';
 
 /** 맵 id → 크기(칸) */
 const MAP_SIZES: Record<string, { rows: number; cols: number }> = {
   school: { rows: school.layout.length, cols: school.layout[0].length },
   goldenbell: { rows: goldenbellMap.layout.length, cols: goldenbellMap.layout[0].length },
 };
-const ITEM_IDS = new Set(Object.keys(school.items));
-/** 살펴볼 수 있는(action이 있는) 사물 id. 연 문도 마친 사물(done)로 받는다. */
-const ACTION_IDS = new Set(school.objects.filter((o) => 'action' in o).map((o) => o.id));
+/** 미션을 단(살펴볼 수 있는) 사물 id */
+const MISSION_OBJECT_IDS = new Set(school.objects.filter((o) => 'mission' in o).map((o) => o.id));
 const GB_ZONES: Zones = goldenbellMap.zones;
 const CHARACTER_IDS = new Set(characters.map((c) => c.id));
 /** 골든벨 맵에서 학생의 발밑을 처음 세우는 곳(방 데이터에서 벽과 구역에 닿지 않게 띄워 둔 네모) */
@@ -72,12 +74,6 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
-/** 아는 id만 남기고 겹친 것을 지운다. */
-function knownIds(value: unknown, known: Set<string>): string[] {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((v): v is string => typeof v === 'string' && known.has(v)))];
-}
-
 /** 목록이 달라졌을 때만 바꾼다(바뀐 값만 보내므로). */
 function replaceAll(list: string[] & { clear(): void }, values: string[]) {
   if (list.length === values.length && values.every((v, i) => list[i] === v)) return;
@@ -101,6 +97,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private shortAnswers = new Map<string, string>();
   /** 이번 문제를 채점하기 전의 목숨·점수(선생님이 단답형 답을 정답으로 인정하거나 거둘 때 다시 채점한다) */
   private beforeJudge = new Map<string, GbScore>();
+  private readonly escape = new EscapeGame(this.state);
 
   onCreate(options: Partial<JoinOptions>) {
     checkTeacher(options?.password);
@@ -118,17 +115,38 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       player.row = Math.min(size.rows, Math.max(0, message.row));
     });
 
-    // 학생의 방탈출 진행 상태. 선생님의 CCTV 모드에 보인다.
+    // 학생이 지금 하는 일. 선생님의 CCTV 모드에 보인다.
     this.onMessage('status', (client: Client, message: StatusMessage) => {
       const player = this.state.players.get(client.sessionId);
       if (!player || player.role !== 'student' || !message) return;
       const kind = message.activity === 'look' || message.activity === 'quiz' ? message.activity : '';
-      const object = kind && typeof message.object === 'string' && ACTION_IDS.has(message.object) ? message.object : '';
+      const object = kind && typeof message.object === 'string' && MISSION_OBJECT_IDS.has(message.object) ? message.object : '';
       player.activity = object ? kind : '';
       player.activityObject = object;
-      replaceAll(player.items, knownIds(message.items, ITEM_IDS));
-      replaceAll(player.done, knownIds(message.done, ACTION_IDS));
-      player.escaped = message.escaped === true;
+    });
+
+    // 방탈출: 자료 파일 고르기(선생님), 미션 살펴보기·답 내기·다시 하기·힌트 수첩(모두). 채점은 서버가 한다.
+    this.onMessage('escapeFiles', (client: Client): EscapeFileInfo[] => (this.isTeacher(client) ? listEscapeFiles() : []));
+    this.onMessage('escapeLoad', (client: Client, message: { file?: unknown }) => this.escapeLoad(client, message));
+    this.onMessage('missionOpen', (client: Client, message: { id?: unknown }): MissionView => {
+      const p = this.state.players.get(client.sessionId);
+      if (!p || p.map !== 'school') return { kind: 'none', text: '지금은 살펴볼 수 없습니다.' };
+      return this.escape.open(p, message?.id);
+    });
+    this.onMessage('missionAnswer', (client: Client, message: MissionAnswerMessage): MissionAnswerReply => {
+      const p = this.state.players.get(client.sessionId);
+      if (!p || p.map !== 'school') return { correct: false, reward: null, error: '지금은 답을 낼 수 없습니다.' };
+      return this.escape.answer(p, message?.id, message?.answer);
+    });
+    this.onMessage('escapeRestart', (client: Client): GbReply => {
+      const p = this.state.players.get(client.sessionId);
+      if (!p || !p.escaped) return refuse('탈출한 뒤에 다시 할 수 있습니다.');
+      this.escape.restart(p);
+      return ok;
+    });
+    this.onMessage('myHints', (client: Client): HintCard[] => {
+      const p = this.state.players.get(client.sessionId);
+      return p ? this.escape.hints(p) : [];
     });
 
     // 골든벨(선생님만). 화면은 room.request()로 보내고 돌려준 값을 답으로 받는다.
@@ -209,6 +227,21 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     p.gbRevive = 0;
     p.gbResult = '';
     p.gbAnswer = '';
+  }
+
+  // ---- 방탈출 자료 ----
+
+  /** 선생님이 방탈출 자료 파일을 고른다. 모든 사람의 방탈출 진행이 처음으로 돌아간다. */
+  private escapeLoad(client: Client, message: { file?: unknown }): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 방탈출 자료를 고를 수 있습니다.');
+    try {
+      const set = loadEscapeSet(typeof message?.file === 'string' ? message.file : '');
+      this.escape.load(set);
+      console.log(`방 ${this.roomId}: 방탈출 자료 "${set.title}"(${set.file})을 골랐습니다.`);
+      return ok;
+    } catch (e) {
+      return refuse((e as Error).message);
+    }
   }
 
   /** 문제 파일을 읽는다. 읽지 못하면 까닭을 글로 돌려준다. */

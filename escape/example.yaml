@@ -1,0 +1,127 @@
+# 방탈출 자료 파일 예시(형식 안내용). 이 파일을 본떠 같은 폴더에 새 .yaml 파일을 만듭니다.
+# 정답과 힌트 카드 글이 들어 있어, 선생님이 만든 자료 파일은 공개 저장소에 올라가지 않습니다(.gitignore). 이 예시 파일만 올라갑니다.
+# 선생님은 방을 만든 뒤 "방탈출 자료" 단추로 파일을 고릅니다(방에 하나). 서버만 이 파일을 읽고 채점합니다.
+#
+# title: 고르는 목록에 보이는 이름
+# items: 아이템 id: 이름. 미션을 마치면 주고(gives), 다른 미션을 열 때 씁니다(requires). 학생 화면의 "가진 물건"에 이름이 보입니다.
+# hints: 힌트 카드 id: { title: 제목, text: 글 }. 미션을 마친 학생에게만 글이 가고, 학생은 힌트 수첩에서 언제든(골든벨 중에도) 다시 봅니다.
+#   선생님 CCTV에는 "힌트 얻은 수/전체"가 보입니다. 카드는 여기에 적은 순서로 수첩에 놓입니다.
+# missions: 미션 id: 내용. 미션 id는 맵(src/data/school.json)의 사물에 적힌 mission과 같아야 합니다.
+#   맵에 미션 id가 있어도 이 파일에 없으면 그 사물은 살펴볼 수 없습니다(잠긴 문이면 열린 채로 둡니다).
+#   type: clue(단서 글), quiz(문제), open(문: 맞히면 열려 지나감, 학생마다 따로), exit(출구: 맞히면 탈출)
+#   text: clue의 글
+#   문제(quiz에는 꼭, open·exit에는 쓰면 문제를 맞혀야 열림):
+#     question: 문제 글
+#     객관식: choices: [보기1, 보기2, ...], answer: 정답 보기 번호(1부터). 틀리면 그 보기를 지우고 다시 고릅니다.
+#     단답형: answers: [정답1, 정답2]. 골든벨 단답형과 같은 규칙으로 맞춰 봅니다(빈칸·대소문자·단위 생략·말끝 "~요" 등).
+#     반 자물쇠: question 대신 classes: 아래에 반마다 문제를 씁니다(science: 수과학반, aisw: AI.SW반).
+#       학생은 자기 반 문제를 봅니다. 반이 없는 사람(선생님)은 수과학반, AI.SW반 순서로 처음 있는 문제를 봅니다.
+#   requires: 이 아이템이 있어야 살펴볼 수 있음, locked: 그 아이템이 없을 때 보이는 글
+#   gives: 마치면 주는 아이템 id, hint: 마치면 주는 힌트 카드 id
+#   done: 마친 뒤 다시 살펴볼 때 보이는 글(쓰지 않으면 단서는 같은 글, 문제는 "이미 마쳤습니다.")
+#   example: true면 문제 창에 "예시 문제"가 보입니다(교사가 바꿔 넣을 문제 표시).
+# 글에 콜론(:)이나 #이 들어가면 글 전체를 큰따옴표로 감쌉니다.
+
+title: 예시 방탈출(학교)
+
+items:
+  locker-key: 사물함 열쇠
+  door-key: 교실 문 열쇠
+  lab-key: 실험실 열쇠
+  entrance-key: 현관 열쇠
+
+hints:
+  h-force:
+    title: 힘과 가속도
+    text: 같은 힘이면 질량이 클수록 가속도가 작습니다. 힘을 질량으로 나눠 보세요.
+  h-momentum:
+    title: 운동량
+    text: 운동량은 질량과 속도를 곱한 양입니다. 방향도 함께 가집니다.
+  h-wave:
+    title: 파동과 수
+    text: 1초에 진동하는 횟수와 한 번 진동하는 동안 나아가는 거리를 곱하면 1초에 나아가는 거리가 됩니다.
+
+missions:
+  blackboard:
+    type: clue
+    text: 칠판에 글이 적혀 있습니다. "교탁 위 문제를 풀면 사물함 열쇠를 얻습니다."
+
+  teacher-desk:
+    type: quiz
+    example: true
+    question: 마찰이 없는 수평면에 놓인 질량 2 kg인 물체에 수평 방향으로 6 N의 힘을 가했습니다. 물체의 가속도 크기는 얼마입니까?
+    choices: [2 m/s², 3 m/s², 6 m/s², 12 m/s²]
+    answer: 2
+    gives: locker-key
+    hint: h-force
+    done: 교탁 위 문제는 이미 풀었습니다.
+
+  locker:
+    type: quiz
+    example: true
+    requires: locker-key
+    locked: 사물함이 잠겨 있습니다. 열쇠가 있어야 열 수 있습니다.
+    question: 사물함 안쪽에 문제가 붙어 있습니다. 물체를 가만히 놓아 떨어뜨렸습니다. 공기 저항을 무시하고 중력 가속도를 10 m/s²라 할 때, 2초 뒤 물체의 속력은 얼마입니까?
+    choices: [5 m/s, 10 m/s, 20 m/s, 40 m/s]
+    answer: 3
+    gives: door-key
+    done: 사물함은 비어 있습니다.
+
+  classroom-door:
+    type: open
+    example: true
+    requires: door-key
+    locked: 교실 문이 잠겨 있습니다. 교실 문 열쇠가 있어야 합니다.
+    question: 열쇠로 문을 열었더니 번호 자물쇠가 하나 더 걸려 있습니다. 전압이 12 V인 전원에 4 Ω 저항 하나를 연결했을 때 흐르는 전류의 세기는 얼마입니까?
+    choices: [3 A, 8 A, 16 A, 48 A]
+    answer: 1
+
+  bulletin-board:
+    type: clue
+    text: 게시판에 안내문이 붙어 있습니다. "실험실 열쇠는 현관 옆 신발장에 넣어 두었습니다. 신발장 자물쇠는 문제를 풀어야 열립니다."
+
+  shoe-rack:
+    type: quiz
+    example: true
+    question: 신발장 자물쇠에 문제가 적혀 있습니다. 질량 2 kg인 물체가 3 m/s의 속력으로 직선 운동하고 있습니다. 이 물체의 운동량 크기는 몇 kg·m/s입니까?
+    answers: [6 kg·m/s]
+    gives: lab-key
+    hint: h-momentum
+    done: 신발장은 비어 있습니다.
+
+  lab-door:
+    type: open
+    requires: lab-key
+    locked: 실험실 문이 잠겨 있습니다. 실험실 열쇠가 있어야 합니다.
+
+  cabinet:
+    type: clue
+    text: 약품장 유리문에 쪽지가 붙어 있습니다. "현관 열쇠는 실험대 서랍에 있습니다. 실험대 위 문제를 풀면 서랍이 열립니다."
+
+  lab-bench:
+    type: quiz
+    example: true
+    classes:
+      science:
+        question: 실험대 위에 줄을 흔들어 파동을 만드는 장치가 있습니다. 진동수가 5 Hz이고 파장이 2 m인 파동의 속력은 얼마입니까?
+        choices: [0.4 m/s, 2.5 m/s, 10 m/s, 20 m/s]
+        answer: 3
+      aisw:
+        question: 실험대 위 컴퓨터 화면에 2진수 101이 떠 있습니다. 이 수를 10진수로 바꾸면 얼마입니까?
+        choices: ["3", "4", "5", "6"]
+        answer: 3
+    gives: entrance-key
+    hint: h-wave
+    done: 실험대 서랍은 비어 있습니다.
+
+  entrance:
+    type: open
+    requires: entrance-key
+    locked: 현관문이 잠겨 있습니다. 현관 열쇠가 있어야 합니다.
+
+  gate:
+    type: exit
+    example: true
+    question: 교문 자물쇠에 문제가 적혀 있습니다. 질량 1 kg인 공을 높이 5 m에서 가만히 놓았습니다. 공기 저항을 무시하고 중력 가속도를 10 m/s²라 할 때, 바닥에 닿기 직전 공의 운동 에너지는 얼마입니까?
+    choices: [5 J, 10 J, 50 J, 100 J]
+    answer: 3

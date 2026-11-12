@@ -51,7 +51,11 @@ export class GoldenBellScene extends MapScene {
     super.create();
     this.zoneLayer = this.add.graphics().setDepth(ZONE_DEPTH);
     const teacher = this.net.role === 'teacher';
-    this.hud = new GbHud(teacher, (text) => void this.submit(text));
+    this.hud = new GbHud(
+      teacher,
+      (text) => void this.submit(text),
+      () => void this.openNotebook(),
+    );
     if (teacher) {
       this.panel = new GbPanel({
         next: () => void this.ask(() => this.net.gbNext()),
@@ -164,7 +168,10 @@ export class GoldenBellScene extends MapScene {
       this.focusedIndex = gb.index;
       this.hud.focusAnswer();
     }
-    if (me && !teacher) this.hud.showMine(mineView(gb, me, this.zones));
+    if (me && !teacher) {
+      this.hud.showMine(mineView(gb, me, this.zones));
+      this.hud.setHints(me.hints.length, this.net.escape.hintTotal);
+    }
     this.panel?.show(panelView(gb, players, this.zones), this.waiting);
     this.avatar.setAlpha(me?.gbOut ? alpha.outAvatar : 1);
     if (me && this.avatar.tag) setTag(this.avatar.tag, livesTag(me));
@@ -229,6 +236,17 @@ export class GoldenBellScene extends MapScene {
       this.hud.setSent('', '서버에서 답을 받지 못했습니다. 다시 냅니다.');
     } finally {
       this.hud.setSending(false);
+    }
+  }
+
+  /** 힌트 수첩: 방탈출에서 얻은 힌트 카드를 본다(여는 동안 걷지 않는다). */
+  private async openNotebook() {
+    if (this.dialog.isOpen()) return;
+    try {
+      const cards = await this.net.myHints();
+      if (!this.dialog.isOpen()) await this.dialog.notebook(cards, this.net.escape.hintTotal);
+    } catch {
+      await this.dialog.message('힌트 수첩', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
     }
   }
 

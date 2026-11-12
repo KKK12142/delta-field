@@ -69,7 +69,7 @@ export class MapPainter {
     const y = o.row * t;
     const depth = (o.row + o.h) * t;
     const body = this.scene.add.rectangle(x, y, o.w * t, o.h * t, color.object[o.kind]).setOrigin(0, 0).setDepth(depth);
-    const label = o.action
+    const label = o.mission
       ? this.scene.add
           .text(x + (o.w * t) / 2, y + (o.h * t) / 2, o.name, {
             fontFamily,

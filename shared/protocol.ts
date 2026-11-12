@@ -51,16 +51,11 @@ export interface MoveMessage {
 /** 학생이 지금 하는 일. ''은 돌아다니는 중, 'look'은 사물을 살펴보는 중, 'quiz'는 퀴즈를 푸는 중 */
 export type ActivityKind = '' | 'look' | 'quiz';
 
-/** 학생 화면이 서버에 알리는 방탈출 진행 상태. 선생님의 CCTV 모드에 쓴다. */
+/** 학생 화면이 서버에 알리는 지금 하는 일. 선생님의 CCTV 모드에 쓴다. 가진 물건·마친 미션은 서버가 채점하며 정한다. */
 export interface StatusMessage {
   activity: ActivityKind;
   /** activity가 있을 때 그 사물의 id, 없으면 '' */
   object: string;
-  /** 가진 아이템 id */
-  items: string[];
-  /** 마친 사물 id */
-  done: string[];
-  escaped: boolean;
 }
 
 /** 선생님이 고를 수 있는 골든벨 문제 파일(서버의 goldenbell/ 폴더) */

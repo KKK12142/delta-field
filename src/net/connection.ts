@@ -15,7 +15,8 @@ import {
   type Role,
   type StatusMessage,
 } from '../../shared/protocol.ts';
-import type { ClassState, GoldenBell, Player } from '../../shared/schema.ts';
+import type { ClassState, Escape, GoldenBell, Player } from '../../shared/schema.ts';
+import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionView } from '../../shared/escape.ts';
 
 /** 개발 중에는 Vite가 /colyseus를 서버(2567)로 넘겨 주고, 수업용 서버는 같은 주소에서 바로 받는다. */
 function endpoint() {
@@ -107,12 +108,50 @@ export class Net {
     this.lastSent = { col, row, map };
   }
 
-  /** 방탈출 진행 상태가 바뀌었으면 보낸다. 연결이 끊긴 동안 보낸 것은 다시 붙으면 SDK가 보낸다. */
+  /** 지금 하는 일이 바뀌었으면 보낸다. 연결이 끊긴 동안 보낸 것은 다시 붙으면 SDK가 보낸다. */
   sendStatus(status: StatusMessage) {
     const key = JSON.stringify(status);
     if (key === this.lastStatus) return;
     this.room.send('status', status);
     this.lastStatus = key;
+  }
+
+  // ---- 방탈출. 미션 채점과 진행(물건, 마친 미션, 힌트 카드)은 서버가 맡는다. ----
+
+  /** 선생님이 고른 방탈출 자료에서 모두에게 보이는 것(미션 id, 잠긴 문, 아이템 이름, 힌트 카드 수) */
+  get escape(): Escape {
+    return this.room.state.escape;
+  }
+
+  /** 선생님: 고를 수 있는 방탈출 자료 파일 */
+  escapeFiles(): Promise<EscapeFileInfo[]> {
+    return this.room.request('escapeFiles');
+  }
+
+  /** 선생님: 방탈출 자료를 고른다(모든 사람의 방탈출 진행이 처음으로 돌아간다). */
+  escapeLoad(file: string): Promise<GbReply> {
+    return this.room.request('escapeLoad', { file });
+  }
+
+  /** 미션을 단 사물을 살펴본다. 단서는 이때 마친다. */
+  missionOpen(id: string): Promise<MissionView> {
+    return this.room.request('missionOpen', { id });
+  }
+
+  /** 미션 문제의 답을 낸다(객관식은 1부터의 보기 번호). */
+  missionAnswer(id: string, answer: string): Promise<MissionAnswerReply> {
+    const message: MissionAnswerMessage = { id, answer };
+    return this.room.request('missionAnswer', message);
+  }
+
+  /** 탈출한 뒤 다시 하기(물건, 마친 미션, 탈출을 처음으로. 힌트 카드는 남는다) */
+  escapeRestart(): Promise<GbReply> {
+    return this.room.request('escapeRestart');
+  }
+
+  /** 내가 얻은 힌트 카드(글 포함) */
+  myHints(): Promise<HintCard[]> {
+    return this.room.request('myHints');
   }
 
   // ---- 골든벨(선생님). 서버가 돌려준 값을 답으로 받는다. ----

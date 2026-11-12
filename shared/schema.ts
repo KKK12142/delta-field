@@ -19,16 +19,19 @@ export const Player = schema(
     map: t.string().default('school'),
     /** 연결이 끊겨 다시 붙기를 기다리는 동안 false */
     online: t.boolean().default(true),
-    // 아래는 학생의 방탈출 진행 상태(shared/protocol.ts의 StatusMessage). 선생님의 CCTV 모드에 쓴다.
+    // 아래는 학생의 방탈출 진행 상태. 지금 하는 일(activity)은 화면이 알리고(StatusMessage),
+    // 가진 물건·마친 미션·탈출·힌트 카드는 서버가 채점하며 바꾼다(shared/escape.ts). 선생님의 CCTV 모드에 쓴다.
     /** ActivityKind: '' | 'look' | 'quiz' */
     activity: t.string().default(''),
     /** activity의 사물 id */
     activityObject: t.string().default(''),
     /** 가진 아이템 id */
     items: t.array('string'),
-    /** 마친 사물 id */
+    /** 마친 미션 id(맵 사물의 mission) */
     done: t.array('string'),
     escaped: t.boolean().default(false),
+    /** 얻은 힌트 카드 id(글은 서버가 그 학생에게만 보낸다) */
+    hints: t.array('string'),
     // 골든벨(규칙은 shared/goldenbell.ts)
     gbLives: t.uint8().default(GB_LIVES),
     gbScore: t.uint16().default(0),
@@ -77,6 +80,27 @@ export const GoldenBell = schema(
 );
 export type GoldenBell = SchemaType<typeof GoldenBell>;
 
+/** 방탈출 자료(선생님이 고른 escape/*.yaml)에서 모두에게 보여도 되는 것. 문제·정답·힌트 글은 넣지 않는다. */
+export const Escape = schema(
+  {
+    /** 고른 파일 이름. ''이면 아직 고르지 않았다. */
+    file: t.string().default(''),
+    title: t.string().default(''),
+    /** 파일을 바꿀 때마다 1씩 는다(화면이 진행을 처음으로 돌린다). */
+    version: t.uint16().default(0),
+    /** 자료 파일에 있는 미션 id(이 미션을 단 사물만 살펴볼 수 있다) */
+    missions: t.array('string'),
+    /** 잠긴 문(open 미션) id. 여기에 없는 문은 처음부터 열려 있다. */
+    doors: t.array('string'),
+    /** 아이템 id → 이름 */
+    items: t.map('string'),
+    /** 힌트 카드 수 */
+    hintTotal: t.uint8().default(0),
+  },
+  'Escape',
+);
+export type Escape = SchemaType<typeof Escape>;
+
 export const ClassState = schema(
   {
     /** 방 코드(학생이 입력하는 4자리 숫자) */
@@ -84,6 +108,7 @@ export const ClassState = schema(
     /** 접속 id → 접속자 */
     players: t.map(Player),
     goldenbell: t.ref(GoldenBell).default(() => new GoldenBell()),
+    escape: t.ref(Escape).default(() => new Escape()),
     /** 지금 열린 방탈출 부(shared/protocol.ts의 PARTS). 2부 장소의 문 잇기는 맵을 넓힐 때 한다. */
     part: t.uint8().default(1),
     /** 강당으로 모으기: 골든벨로 옮길 때까지 남은 시간(초). 0이면 모으는 중이 아니다. */

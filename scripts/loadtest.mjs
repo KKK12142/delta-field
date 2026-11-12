@@ -1,7 +1,8 @@
 // 학생 35명이 한꺼번에 들어와 움직일 때 서버와 화면이 버티는지 잰다.
 // 가짜 학생(봇)은 Node에서 Colyseus SDK로 붙고, 선생님 1명과 학생 1명은 헤드리스 크롬 화면으로 들어와 CCTV와 그리기 빠르기를 본다.
 // 학교 맵에서는 봇이 모두 바닥 칸 아무 데로나 쉬지 않고 움직인다(실제 수업보다 무거운 경우). 골든벨은 확인용 문제(3초 7문제)로 한 판 한다.
-// 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell로 켠다.
+// 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell,
+// DF_ESCAPE_DIR=scripts/playtest-escape로 켠다(선생님이 방을 만들면 예시 방탈출 자료를 고른다).
 // 사용: DF_TEACHER_PASSWORD=... pnpm loadtest [화면 주소] [게임 서버 주소] [학생 수]
 //   기본값: http://localhost:5173/  http://localhost:2567  35
 // 결과와 캡처는 .run/loadtest/에 남긴다.
@@ -86,6 +87,10 @@ const teacher = await chrome.openPage('teacher', baseUrl);
 await teacher.enter({ teacher: true, nickname: '선생님', pw: password });
 const code = await teacher.js(`window.__df?.code()`);
 check('선생님 화면이 방을 만듦', /^\d{4}$/.test(code ?? ''), code);
+// 방을 만들면 방탈출 자료를 고르는 창이 뜬다.
+await wait(800);
+await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('예시 방탈출'))?.click()`);
+await wait(500);
 
 const bots = Array.from({ length: students - 1 }, (_, i) => new Bot(i, gameUrl));
 measure('인원', `학생 ${students}명(봇 ${bots.length}명 + 크롬 화면 1명), 선생님 1명(크롬 화면)`);

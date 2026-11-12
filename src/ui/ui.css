@@ -182,6 +182,28 @@
   color: var(--df-badge-text);
   font-size: var(--df-font-small);
 }
+.df-quiz-answer .df-input {
+  flex: 1;
+  min-width: 0;
+}
+/* 힌트 수첩 */
+.df-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-gap);
+}
+.df-card {
+  padding: var(--df-hud-pad);
+  border: var(--df-border) solid var(--df-panel-border);
+  border-radius: var(--df-radius);
+  background: var(--df-choice);
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+.df-card p {
+  margin: 0;
+}
 .df-choices {
   display: flex;
   flex-direction: column;

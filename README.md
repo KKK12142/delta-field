@@ -26,10 +26,11 @@
 
 공유 중인 서버를 그대로 둔 채 확인용 서버를 따로 켤 때는 포트를 바꾼다. 게임 서버는 `DF_PORT`, 화면 서버는 `DF_WEB_PORT`(넘겨 줄 게임 서버는 `DF_PORT`)를 쓴다.
 
-`pnpm playtest`의 골든벨 확인은 제한 시간이 짧은 `scripts/playtest-goldenbell/`의 문제를 쓰므로, 확인용 게임 서버를 `DF_GOLDENBELL_DIR`로 그 폴더를 가리키게 켠다.
+`pnpm playtest`의 골든벨 확인은 제한 시간이 짧은 `scripts/playtest-goldenbell/`의 문제를, 방탈출 확인은 `scripts/playtest-escape/`의 자료(예시 자료와 형식이 틀린 자료)를 쓰므로,
+확인용 게임 서버를 `DF_GOLDENBELL_DIR`, `DF_ESCAPE_DIR`로 그 폴더를 가리키게 켠다.
 
 ```
-DF_PORT=2667 DF_TEACHER_PASSWORD=확인용 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell node server/main.ts
+DF_PORT=2667 DF_TEACHER_PASSWORD=확인용 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell DF_ESCAPE_DIR=scripts/playtest-escape node server/main.ts
 DF_WEB_PORT=5273 DF_PORT=2667 pnpm dev
 DF_TEACHER_PASSWORD=확인용 pnpm playtest http://localhost:5273/
 DF_TEACHER_PASSWORD=확인용 pnpm loadtest http://localhost:5273/ http://localhost:2667
@@ -39,6 +40,12 @@ DF_TEACHER_PASSWORD=확인용 pnpm loadtest http://localhost:5273/ http://localh
 
 저장소 맨 위 `goldenbell/` 폴더에 `.yaml` 파일로 넣는다. 형식은 `goldenbell/example.yaml`에 적어 두었다.
 서버를 켠 컴퓨터(수업 때는 맥)의 이 폴더를 읽는다. 정답이 들어 있으므로 예시 말고는 저장소에 올라가지 않는다(`.gitignore`).
+
+## 방탈출 자료 파일
+
+저장소 맨 위 `escape/` 폴더에 `.yaml` 파일로 넣는다. 형식은 `escape/example.yaml`에 적어 두었다(미션의 문제·정답·단서·아이템·힌트 카드).
+맵(`src/data/school.json`)에는 사물 자리와 미션 id만 있다. 선생님이 방을 만들면 자료 파일을 고르는 창이 뜨고, 나중에 "방탈출 자료" 단추로 바꿀 수 있다.
+정답과 힌트 글이 들어 있으므로 예시 말고는 저장소에 올라가지 않는다(`.gitignore`).
 
 ## 선생님 비밀번호
 

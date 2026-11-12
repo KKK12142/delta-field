@@ -1,4 +1,5 @@
 import { Input } from 'phaser';
+import { DOOR_KINDS, type MissionReward } from '../../shared/escape.ts';
 import { GATHER_SECONDS, type ActivityKind } from '../../shared/protocol.ts';
 import { areaAt, type RoomObject } from '../data/room';
 import { byClassAndNickname, classCounts, describeStudent } from '../game/cctv';
@@ -35,6 +36,8 @@ export class RoomScene extends MapScene {
   private place = '';
   /** 강당으로 모으기 안내에 보인 남은 시간(초). 바뀔 때만 고친다. */
   private gatherShown = -1;
+  /** 화면에 맞춰 둔 방탈출 진행(자료 버전, 잠긴 문, 마친 미션, 물건, 힌트). 서버 값이 바뀌면 문 모양과 안내를 고친다. */
+  private escapeShown = '';
 
   constructor() {
     super('school');
@@ -52,6 +55,7 @@ export class RoomScene extends MapScene {
     this.cctv = null;
     this.place = '';
     this.gatherShown = -1;
+    this.escapeShown = '';
     // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
     ctx.state.activity = { kind: '', object: '' };
   }
@@ -64,11 +68,11 @@ export class RoomScene extends MapScene {
     this.hud = new Hud(this.room.goal, this.touch, teacher);
     this.hud.setRoomCode(this.net.code);
     this.updatePlace();
-    // 골든벨에 다녀왔으면 연 문이 그대로 열려 있다.
-    for (const o of this.room.objects) if (this.isOpenDoor(o)) this.objectViews.get(o.id)?.setOpen(true);
-    // 골든벨에 다녀왔으면 가진 물건이 그대로 있다.
-    this.hud.setItems([...this.state.items].map((id) => this.room.items[id]));
+    // 연 문, 가진 물건, 힌트 카드 수는 서버의 진행을 따른다(골든벨에 다녀와도 그대로).
+    this.syncEscape();
     this.hud.onAction(this.onActionButton);
+    this.hud.notebook.addEventListener('click', this.onNotebookButton);
+    this.hud.escapeFile.addEventListener('click', this.onEscapeFileButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
     this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
     this.hud.part.addEventListener('click', this.onPartButton);
@@ -86,9 +90,16 @@ export class RoomScene extends MapScene {
       this.hud.destroy();
     });
     this.fitCamera();
+    // 선생님이 방을 만들었는데 방탈출 자료를 아직 고르지 않았으면 바로 고르게 한다(이 접속에서 한 번).
+    if (teacher && !this.net.escape.file && !this.ctx.askedEscape) {
+      this.ctx.askedEscape = true;
+      void this.pickEscapeFile();
+    }
 
     this.exposeDevHooks({
-      items: () => [...this.state.items],
+      items: () => [...(this.net.me()?.items ?? [])],
+      hints: () => [...(this.net.me()?.hints ?? [])],
+      escapeFile: () => this.net.escape.file,
       place: () => this.place,
       target: () => this.target?.id ?? null,
       escaped: () => this.state.escapedAt !== null,
@@ -123,8 +134,37 @@ export class RoomScene extends MapScene {
     return !this.isOpenDoor(o);
   }
 
+  /** 문 사물이고, 자료 파일에서 잠긴 문이 아니거나 내가 연 문이면 열려 있다. */
   private isOpenDoor(o: RoomObject) {
-    return o.action?.type === 'open' && this.state.done.has(o.id);
+    if (!(DOOR_KINDS as readonly string[]).includes(o.kind)) return false;
+    if (!o.mission || !this.net.escape.doors.includes(o.mission)) return true;
+    return this.hasDone(o.mission);
+  }
+
+  private hasDone(mission: string) {
+    return this.net.me()?.done.includes(mission) ?? false;
+  }
+
+  /** 살펴볼 수 있는 사물: 자료 파일에 미션이 있고, 연 문이 아닌 것 */
+  private canLook(o: RoomObject) {
+    return !!o.mission && this.net.escape.missions.includes(o.mission) && !this.isOpenDoor(o);
+  }
+
+  /** 서버의 방탈출 진행이 바뀌었으면 문 모양, 가진 물건, 힌트 수첩 단추를 맞춘다. 매 프레임 부르고 바뀐 때만 고친다. */
+  private syncEscape() {
+    const e = this.net.escape;
+    const me = this.net.me();
+    const items = [...(me?.items ?? [])];
+    const key = [e.version, [...e.doors], [...(me?.done ?? [])], items, me?.hints.length ?? 0, e.hintTotal].join('|');
+    if (key === this.escapeShown) return;
+    this.escapeShown = key;
+    for (const o of this.room.objects) this.objectViews.get(o.id)?.setOpen(this.isOpenDoor(o));
+    this.hud.setItems(items.map((id) => e.items.get(id) ?? id));
+    this.hud.setHints(me?.hints.length ?? 0, e.hintTotal);
+    // 연 문 위에 서 있던 사물 강조를 다시 고른다.
+    this.target = null;
+    this.highlight.clear();
+    this.hud.setTarget(null);
   }
 
   /** 지금 장소 이름을 안내에 보인다(바뀌었을 때만). */
@@ -143,6 +183,7 @@ export class RoomScene extends MapScene {
     // 진행 상태가 바뀌었으면 서버로 보낸다(바뀌지 않았으면 보내지 않는다).
     if (this.net.role === 'student') this.net.sendStatus(this.state.toStatus());
     this.updateGather();
+    this.syncEscape();
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {
@@ -356,7 +397,7 @@ export class RoomScene extends MapScene {
     }
     const students = this.net
       .students(this.mapId)
-      .map(([id, p]) => describeStudent(this.room, id, p))
+      .map(([id, p]) => describeStudent(this.room, this.net.escape, id, p))
       .sort(byClassAndNickname);
     for (const s of students) {
       const tag = this.remotes.get(s.id)?.avatar.tag;
@@ -414,7 +455,7 @@ export class RoomScene extends MapScene {
     let bestDist: number = size.reach;
     for (const o of this.room.objects) {
       // 연 문은 지나가는 길이므로 살펴볼 대상에서 뺀다.
-      if (!o.action || this.isOpenDoor(o)) continue;
+      if (!this.canLook(o)) continue;
       const nx = Math.max(o.col, Math.min(this.pos.col, o.col + o.w));
       const ny = Math.max(o.row, Math.min(this.pos.row, o.row + o.h));
       const d = Math.hypot(this.pos.col - nx, this.pos.row - ny);
@@ -439,65 +480,43 @@ export class RoomScene extends MapScene {
     if (this.target && !this.dialog.isOpen() && !this.busy) void this.interact(this.target);
   };
 
+  /** 미션을 단 사물을 살펴본다. 서버가 단서·문제를 보내고, 답을 채점한다. */
   private async interact(o: RoomObject) {
-    const action = o.action;
-    if (!action) return;
+    const id = o.mission;
+    if (!id) return;
     this.busy = true;
-    this.setActivity(this.opensQuiz(o) ? 'quiz' : 'look', o.id);
+    this.setActivity('look', o.id);
     try {
-      if (this.state.done.has(o.id)) {
-        await this.dialog.message(o.name, o.doneText ?? (action.type === 'clue' ? action.text : '이미 마쳤습니다.'));
-        return;
-      }
-      if (o.requires && !this.state.items.has(o.requires)) {
-        await this.dialog.message(o.name, o.lockedText ?? '잠겨 있습니다.');
-        return;
-      }
-      switch (action.type) {
-        case 'clue': {
-          await this.dialog.message(o.name, action.text);
-          if (action.gives) await this.give(o, action.gives, '');
-          else this.state.done.add(o.id);
+      const view = await this.net.missionOpen(id);
+      switch (view.kind) {
+        case 'none':
+        case 'locked':
+        case 'done':
+          await this.dialog.message(o.name, view.text);
           break;
-        }
+        case 'clue':
+          if (view.text) await this.dialog.message(o.name, view.text);
+          await this.reward(o, view.reward, '');
+          break;
         case 'quiz': {
-          const quiz = this.room.quizzes[action.quiz];
-          if (!(await this.dialog.quiz(o.name, quiz))) return;
-          if (action.gives) await this.give(o, action.gives, '맞았습니다. ');
-          else {
-            this.state.done.add(o.id);
-            await this.dialog.message(o.name, '맞았습니다.');
-          }
-          break;
-        }
-        case 'open': {
-          if (action.quiz && !(await this.dialog.quiz(o.name, this.room.quizzes[action.quiz]))) return;
-          this.state.done.add(o.id);
-          this.objectViews.get(o.id)?.setOpen(true);
-          this.target = null;
-          this.highlight.clear();
-          this.hud.setTarget(null);
-          await this.dialog.message(o.name, `${action.quiz ? '맞았습니다. ' : ''}${o.name}${objectParticle(o.name)} 열었습니다. 지나갈 수 있습니다.`);
-          break;
-        }
-        case 'exit': {
-          if (action.quiz && !(await this.dialog.quiz(o.name, this.room.quizzes[action.quiz]))) return;
-          await this.escape();
+          this.setActivity('quiz', o.id);
+          let reward: MissionReward | null = null;
+          const correct = await this.dialog.quiz(o.name, view, async (answer) => {
+            const reply = await this.net.missionAnswer(id, answer);
+            if (reply.error) return reply.error;
+            reward = reply.reward;
+            return reply.correct;
+          });
+          if (correct && reward) await this.reward(o, reward, '맞았습니다. ');
           break;
         }
       }
+    } catch {
+      await this.dialog.message(o.name, '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 살펴봅니다.');
     } finally {
       this.busy = false;
       this.setActivity('', '');
     }
-  }
-
-  /** 지금 살펴보면 퀴즈가 뜨는지(마쳤거나 잠겨 있으면 글만 보인다) */
-  private opensQuiz(o: RoomObject) {
-    const a = o.action;
-    if (!a || this.state.done.has(o.id)) return false;
-    if (o.requires && !this.state.items.has(o.requires)) return false;
-    return a.type === 'quiz' || ((a.type === 'exit' || a.type === 'open') && a.quiz !== undefined);
   }
 
   /** 지금 하는 일. 서버로는 tick()에서 보낸다. */
@@ -505,12 +524,82 @@ export class RoomScene extends MapScene {
     this.state.activity = { kind, object };
   }
 
-  private async give(o: RoomObject, itemId: string, prefix: string) {
-    const item = this.room.items[itemId];
-    this.state.items.add(itemId);
-    this.state.done.add(o.id);
-    this.hud.setItems([...this.state.items].map((id) => this.room.items[id]));
-    await this.dialog.message(o.name, `${prefix}${item}${objectParticle(item)} 얻었습니다.`);
+  /** 미션을 마치고 얻은 것을 알린다: 문 열림, 아이템, 힌트 카드(글을 바로 보이고 수첩에 넣는다), 탈출 */
+  private async reward(o: RoomObject, r: MissionReward, prefix: string) {
+    // 서버가 바꾼 진행(연 문, 물건)이 오기 전에 화면을 먼저 맞추지 않는다. 문 모양은 syncEscape()가 맞춘다.
+    if (r.escaped) {
+      await this.escape();
+      return;
+    }
+    if (r.opened) {
+      this.objectViews.get(o.id)?.setOpen(true);
+      this.target = null;
+      this.highlight.clear();
+      this.hud.setTarget(null);
+      await this.dialog.message(o.name, `${prefix}${o.name}${objectParticle(o.name)} 열었습니다. 지나갈 수 있습니다.`);
+    } else if (r.item) {
+      await this.dialog.message(o.name, `${prefix}${r.item}${objectParticle(r.item)} 얻었습니다.`);
+    } else if (prefix) {
+      await this.dialog.message(o.name, prefix.trim());
+    }
+    if (r.hint) await this.dialog.message(`힌트 카드: ${r.hint.title}`, r.hint.text, '수첩에 넣기');
+  }
+
+  // ---- 힌트 수첩·방탈출 자료 ----
+
+  private onNotebookButton = () => {
+    this.hud.notebook.blur();
+    void this.openNotebook();
+  };
+
+  private async openNotebook() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const cards = await this.net.myHints();
+      await this.dialog.notebook(cards, this.net.escape.hintTotal);
+    } catch {
+      await this.dialog.message('힌트 수첩', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private onEscapeFileButton = () => {
+    this.hud.escapeFile.blur();
+    void this.pickEscapeFile();
+  };
+
+  /** 선생님: 방탈출 자료 파일을 고른다. 고르면 모든 사람의 방탈출 진행이 처음으로 돌아간다. */
+  private async pickEscapeFile() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const files = await this.net.escapeFiles();
+      if (!files.length) {
+        await this.dialog.message('방탈출 자료', '자료 파일이 없습니다. 서버의 escape 폴더에 .yaml 파일을 넣습니다.');
+        return;
+      }
+      const now = this.net.escape;
+      const picked = await this.dialog.choose(
+        '방탈출 자료',
+        now.file
+          ? `지금 자료: ${now.title}. 다른 자료를 고르면 모든 학생의 방탈출 진행(가진 물건, 마친 미션, 힌트 카드)이 처음으로 돌아갑니다.`
+          : '이 방에서 쓸 방탈출 자료(미션, 문제, 힌트 카드)를 고릅니다. 나중에 "방탈출 자료" 단추로 바꿀 수 있습니다.',
+        files.map((f) => ({
+          label: f.error ? f.file : `${f.title} (미션 ${f.missions}개, 힌트 카드 ${f.hints}장)`,
+          detail: f.error ?? (f.file === now.file ? `${f.file} · 지금 쓰는 자료` : f.file),
+          disabled: f.error !== null,
+        })),
+      );
+      if (picked === null) return;
+      const reply = await this.net.escapeLoad(files[picked].file);
+      if (reply.error) await this.dialog.message('방탈출 자료', reply.error);
+    } catch {
+      await this.dialog.message('방탈출 자료', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
   }
 
   private async escape() {
@@ -521,6 +610,12 @@ export class RoomScene extends MapScene {
       `${this.state.nickname}님이 ${this.room.name}${objectParticle(this.room.name)} 탈출했습니다.\n걸린 시간: ${time}`,
       '다시 하기',
     );
+    // 서버의 진행(물건, 마친 미션, 탈출)을 처음으로 돌린다. 얻은 힌트 카드는 수첩에 남는다.
+    try {
+      await this.net.escapeRestart();
+    } catch {
+      // 연결이 잠깐 끊겼으면 진행은 그대로 두고 자리만 처음으로 돌아간다.
+    }
     this.ctx.state = new RunState(this.state.nickname);
     this.ctx.schoolPos = null;
     this.scene.restart(this.ctx);

@@ -14,7 +14,10 @@ export class Hud {
   private readonly people = el('span', 'df-muted');
   private readonly status = el('span', 'df-status');
   readonly action = el('button', 'df-button df-action', '살펴보기');
+  /** 얻은 힌트 카드를 다시 본다(모두). 글에 얻은 수를 적는다. */
+  readonly notebook = el('button', 'df-button df-button-small', '힌트 수첩');
   /** 선생님 화면에만 보인다. */
+  readonly escapeFile = el('button', 'df-button df-button-small', '방탈출 자료');
   readonly cctv = el('button', 'df-button df-button-small', 'CCTV 보기');
   /** 강당으로 모으기(모으는 중에는 모으기 그만두기) */
   readonly goldenbell = el('button', 'df-button df-button-small', '강당으로 모으기');
@@ -34,13 +37,15 @@ export class Hud {
     this.left.append(left, this.notice);
     this.people.hidden = true;
     this.status.hidden = true;
-    this.cctv.hidden = this.goldenbell.hidden = this.part.hidden = !teacher;
+    this.cctv.hidden = this.goldenbell.hidden = this.part.hidden = this.escapeFile.hidden = !teacher;
     this.right.append(
       this.room,
       this.people,
       this.status,
       el('span', 'df-muted', '가진 물건'),
       this.items,
+      this.notebook,
+      this.escapeFile,
       this.cctv,
       this.goldenbell,
       this.part,
@@ -50,6 +55,12 @@ export class Hud {
     uiRoot().append(this.top, this.action);
     this.setItems([]);
     this.setCctv(false);
+  }
+
+  /** 힌트 수첩 단추에 얻은 수/전체를 적는다. */
+  setHints(got: number, total: number) {
+    const label = `힌트 수첩 ${got}/${total}`;
+    if (this.notebook.textContent !== label) this.notebook.textContent = label;
   }
 
   /** 강당으로 모으기 안내(null이면 감춘다). 글이 달라졌을 때만 바꾼다. */

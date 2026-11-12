@@ -23,6 +23,8 @@ export interface MapContext {
   net: Net;
   /** 학교 맵을 떠날 때 서 있던 자리. 학교 맵으로 돌아오면 이 자리에 선다. */
   schoolPos: { col: number; row: number } | null;
+  /** 선생님: 방탈출 자료를 고르라고 이미 물었으면 true(이 접속에서 한 번만 묻는다) */
+  askedEscape: boolean;
 }
 
 /** 다른 접속자의 아바타. 서버가 알려 준 위치(target)로 부드럽게 따라간다. */

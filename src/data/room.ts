@@ -2,6 +2,7 @@
 // 나중에 Unity로 옮길 때도 같은 JSON을 쓸 수 있게, 좌표는 픽셀이 아니라 칸 단위로 적는다.
 // 바닥·벽·사물 종류 목록과 그림 크기는 docs/map.md에 정리해 두었다.
 // scripts/lib/bots.mjs도 이 파일을 Node로 그대로 불러 쓰므로, import에는 .ts를 붙이고 타입만 가져올 때는 import type을 쓴다.
+import { DOOR_KINDS } from '../../shared/escape.ts';
 import type { Zone, Zones } from '../../shared/goldenbell.ts';
 
 /** layout 한 줄. 글자 하나가 한 칸이고, 글자의 뜻은 TILES에 있다. */
@@ -50,12 +51,6 @@ export const OBJECT_KINDS = [
 ] as const;
 export type ObjectKind = (typeof OBJECT_KINDS)[number];
 
-export type Action =
-  | { type: 'clue'; text: string; gives?: string } // 글을 보여 주고, 아이템을 줄 수 있다
-  | { type: 'quiz'; quiz: string; gives?: string } // 퀴즈를 맞히면 아이템을 준다
-  | { type: 'open'; quiz?: string } // (퀴즈를 맞히면) 문이 열려 지나갈 수 있다. 학생마다 따로 열린다
-  | { type: 'exit'; quiz?: string }; // (퀴즈를 맞히면) 맵을 나간다(탈출)
-
 export interface RoomObject {
   id: string;
   name: string;
@@ -65,22 +60,11 @@ export interface RoomObject {
   row: number;
   w: number;
   h: number;
-  /** 없으면 살펴볼 수 없는 사물(가구 등) */
-  action?: Action;
-  /** 이 아이템이 있어야 action을 할 수 있다 */
-  requires?: string;
-  lockedText?: string;
-  /** action을 마친 뒤 다시 살펴볼 때 보이는 글 */
-  doneText?: string;
-}
-
-export interface Quiz {
-  /** 교사가 바꿔 넣을 예시 문제이면 true */
-  example?: boolean;
-  question: string;
-  choices: string[];
-  /** 정답의 choices 번호(0부터) */
-  answer: number;
+  /**
+   * 미션 id. 미션의 종류·문제·정답·힌트 카드는 서버만 읽는 방탈출 자료 파일(escape/*.yaml)에 있다(shared/escape.ts).
+   * 없으면 살펴볼 수 없는 사물(가구 등)이다. 여러 사물이 같은 미션 id를 쓸 수 있다.
+   */
+  mission?: string;
 }
 
 /** 칸 단위 네모 */
@@ -106,17 +90,12 @@ export interface Room {
   areas?: Area[];
   /** 시작 위치(칸 좌표, 칸 가운데는 .5) */
   start: { col: number; row: number };
-  /** 아이템 id → 이름 */
-  items: Record<string, string>;
   objects: RoomObject[];
-  quizzes: Record<string, Quiz>;
   /** 골든벨 맵: 답 구역 */
   zones?: Zones;
   /** 골든벨 맵: 서버가 학생의 발밑을 처음 세우는 곳(벽과 구역에 닿지 않게 띄워 둔다) */
   spawn?: Rect;
 }
-
-const ACTION_TYPES = ['clue', 'quiz', 'open', 'exit'];
 
 /** 맵 크기(칸) */
 export function mapSize(room: Room) {
@@ -151,21 +130,14 @@ export function loadRoom(data: unknown): Room {
     if (unknown.length) errors.push(`layout ${r}번째 줄에 모르는 글자 ${unknown.map((ch) => `'${ch}'`).join(', ')}가 있습니다.`);
   });
   const inside = (r: Rect) => r.col >= 0 && r.row >= 0 && r.col + r.w <= cols && r.row + r.h <= rows;
-  const quizIds = new Set(Object.keys(room.quizzes));
-  const itemIds = new Set(Object.keys(room.items));
   const seen = new Set<string>();
   for (const o of room.objects) {
     if (seen.has(o.id)) errors.push(`사물 id '${o.id}'가 두 번 나옵니다.`);
     seen.add(o.id);
     if (!OBJECT_KINDS.includes(o.kind)) errors.push(`사물 '${o.id}'의 kind '${o.kind}'를 모릅니다.`);
     if (!inside(o)) errors.push(`사물 '${o.id}'가 맵 밖으로 나갑니다.`);
-    if (o.requires && !itemIds.has(o.requires)) errors.push(`사물 '${o.id}'의 requires '${o.requires}'가 items에 없습니다.`);
-    const a = o.action;
-    if (a && !ACTION_TYPES.includes(a.type)) errors.push(`사물 '${o.id}'의 action type '${a.type}'을 모릅니다.`);
-    if (a && 'quiz' in a && a.quiz && !quizIds.has(a.quiz)) errors.push(`사물 '${o.id}'의 퀴즈 '${a.quiz}'가 quizzes에 없습니다.`);
-    if (a && 'gives' in a && a.gives && !itemIds.has(a.gives)) errors.push(`사물 '${o.id}'의 gives '${a.gives}'가 items에 없습니다.`);
-    // 열리는 문은 열면 지나갈 수 있어야 하므로 그 밑이 바닥 칸이어야 한다.
-    if (a?.type === 'open' && inside(o)) {
+    // 문은 열면 지나갈 수 있어야 하므로 그 밑이 바닥 칸이어야 한다.
+    if ((DOOR_KINDS as readonly string[]).includes(o.kind) && inside(o)) {
       for (let r = o.row; r < o.row + o.h; r++) {
         for (let c = o.col; c < o.col + o.w; c++) {
           if (!isFloor(room.layout[r][c])) errors.push(`문 '${o.id}' 밑의 칸 (${c}, ${r})이 바닥이 아닙니다.`);
@@ -188,11 +160,6 @@ export function loadRoom(data: unknown): Room {
     errors.push('답 구역은 OX 2개, 객관식 4개여야 합니다.');
   }
   if (room.spawn && !inside(room.spawn)) errors.push('spawn이 맵 밖으로 나갑니다.');
-  for (const [id, q] of Object.entries(room.quizzes)) {
-    if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.choices.length) {
-      errors.push(`퀴즈 '${id}'의 answer 번호가 choices 범위를 벗어납니다.`);
-    }
-  }
   if (errors.length) throw new Error(`맵 '${room.id}' 데이터 오류\n- ${errors.join('\n- ')}`);
   return room;
 }

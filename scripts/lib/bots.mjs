@@ -101,14 +101,14 @@ export class Bot {
     this.sent++;
   }
 
-  /** 학교 맵에서 가끔 사물을 살펴보는 것처럼 진행 상태를 보낸다(CCTV에 보인다). */
+  /** 학교 맵에서 가끔 사물을 살펴보는 것처럼 지금 하는 일을 보낸다(CCTV에 보인다). 미션은 풀지 않는다. */
   sendStatus() {
     const pick = [
       { activity: '', object: '' },
       { activity: 'look', object: 'blackboard' },
       { activity: 'quiz', object: 'teacher-desk' },
     ][Math.floor(Math.random() * 3)];
-    this.room.send('status', { ...pick, items: [], done: Math.random() < 0.5 ? ['blackboard'] : [], escaped: false });
+    this.room.send('status', pick);
   }
 
   ping() {
