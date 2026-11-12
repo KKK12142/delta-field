@@ -135,4 +135,64 @@ for (const [label, base] of Object.entries(ZONE)) {
   writeFileSync(join(out, 'tiles', 'gbWallFace.txt'),
     formatTxt({ comments: ['# 강당 안쪽 벽 앞면(골든벨 맵의 벽 앞면 대신). 창 하나·판벽 (scripts/art/decals.mjs가 만듦)'], fw: T, fh: T, cols: 1, palette, frames: [{ name: 'v0', rows: g.map((r) => r.join('')) }] }));
 }
+// ---------- 6. 2부 문(partDoor, 복도를 세로로 가로막는 2×4칸 + 위 벽 앞면 1칸 = 60×150) ----------
+// 위에서 본 문틀: 가운데 24도트 폭 기둥이 위 벽(벽 윗면 색)에서 내려와 복도 바닥을 가로지르고 아래 벽(17행 벽 윗면)에 닿는다.
+//   0~29줄: 위 벽 앞면 칸(12행)을 덮는 기둥 윗면, 30~41줄: 기둥 앞면(크림 벽과 파란 "2" 판), 42~139줄: 문지방(금속 띠)과 문짝, 140~149줄: 아래 기둥 윗면.
+// 닫힘: 위에서 본 나무 미닫이 문짝 두 장(폭 12도트)이 가운데(90줄)에서 만남, 손잡이, 오른쪽 아래로 그림자.
+// 열림: 문짝이 위·아래 기둥 속으로 들어가 끝만 6줄 보이고, 문지방 가운데에 문 홈이 보인다.
+{
+  const W = 60, H = 150, X0 = 18, X1 = 41;
+  const pal = {
+    a: '#c3c5cc', b: '#9fa1ab', o: '#4a4458', c: '#100e34', // 벽 윗면·테(wallTop·wallEdge 색), 외곽선
+    f: '#fef5d2', k: '#1d2c4a', w: '#cd833c', // 기둥 앞면(wallFace 색)
+    p: '#3b6ea8', q: '#7fa9e8', n: '#f8f8f6', // "2" 판
+    t: '#b4b3b4', u: '#e5e6ea', v: '#7c7b7a', // 문지방
+    h: '#fbd79d', m: '#edb46d', e: '#ce914e', // 문짝(교실 문 색)
+    s: '#1d153166', // 문짝 그림자
+  };
+  const TWO = ['.nnn.', 'n...n', '....n', '...n.', '..n..', '.n...', 'nnnnn'];
+  const draw = (open) => {
+    const g = grid(W, H);
+    const post = (y0, y1, edgeTop, edgeBottom) => {
+      for (let y = y0; y <= y1; y++)
+        for (let x = X0; x <= X1; x++)
+          g[y][x] = x === X0 || x === X1 ? 'o' : x === X0 + 1 || x === X1 - 1 ? 'b' : (edgeTop && y === y0) || (edgeBottom && y === y1) ? 'o' : (edgeTop && y === y0 + 1) || (edgeBottom && y === y1 - 1) ? 'b' : 'a';
+    };
+    post(0, 29, false, false);
+    // 기둥 앞면(12줄): 위·아래 짙은 선, 크림 벽, 아래 3줄은 판벽 색
+    for (let y = 30; y <= 41; y++)
+      for (let x = X0; x <= X1; x++) g[y][x] = x === X0 || x === X1 || y === 30 || y === 41 ? 'k' : y >= 38 ? 'w' : 'f';
+    // "2" 판(12×10, 31~40줄) — 앞면 가운데
+    for (let y = 31; y <= 40; y++)
+      for (let x = 24; x <= 35; x++) {
+        const edge = x === 24 || x === 35 || y === 31 || y === 40;
+        const gy = y - 33, gx = x - 28;
+        g[y][x] = edge ? 'c' : TWO[gy]?.[gx] === 'n' ? 'n' : y === 32 ? 'q' : 'p';
+      }
+    // 문지방(24도트 폭, 42~139줄)
+    for (let y = 42; y <= 139; y++)
+      for (let x = 15; x <= 44; x++) g[y][x] = x === 15 || x === 44 ? 'v' : x === 16 ? 'u' : open && (x === 29 || x === 30) ? 'v' : 't';
+    post(140, 149, true, false);
+    const leaf = (y0, y1) => {
+      for (let y = y0; y <= y1; y++)
+        for (let x = 24; x <= 35; x++) g[y][x] = x === 24 || x === 35 || y === y0 || y === y1 ? 'c' : x <= 26 ? 'h' : x >= 33 ? 'e' : 'm';
+      for (let y = y0 + 1; y <= y1 + 1 && y < 140; y++) for (const x of [36, 37, 38]) if (g[y][x] === 't' || g[y][x] === 'v') g[y][x] = 's';
+    };
+    if (open) {
+      leaf(42, 47);
+      leaf(134, 139);
+    } else {
+      leaf(42, 90);
+      leaf(91, 139);
+      // 손잡이(문짝 양옆으로 튀어나온 은색 손잡이, 만나는 곳 가까이)
+      for (const [x0, y0] of [[22, 82], [36, 82], [22, 94], [36, 94]])
+        for (let y = y0; y < y0 + 6; y++) for (let x = x0; x < x0 + 2; x++) g[y][x] = y === y0 || y === y0 + 5 ? 'c' : x === x0 ? 'u' : 'v';
+    }
+    return g.map((r) => r.join(''));
+  };
+  const palette = new Map(Object.entries(pal).map(([k, v]) => [k, { rgb: rgb(v), alpha: v.length === 9 ? parseInt(v.slice(7), 16) : 255 }]));
+  for (const [name, open] of [['partDoor', false], ['partDoor-open', true]])
+    writeFileSync(join(out, 'objects', `${name}.txt`),
+      formatTxt({ comments: [`# 2부 문 ${open ? '열림' : '닫힘'}(60×150, 위에서 본 문틀·문짝. 위 30줄은 12행 벽 앞면 칸을 덮음) (scripts/art/decals.mjs가 만듦)`], fw: W, fh: H, cols: 1, palette, frames: [{ name, rows: draw(open) }] }));
+}
 console.log('ok');

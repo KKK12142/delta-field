@@ -137,13 +137,14 @@ function roof(c, r) {
   const n = !isRoof(c, r - 1), s = !isRoof(c, r + 1), w = !isRoof(c - 1, r), e = !isRoof(c + 1, r);
   for (const [on, d] of [[n, 'N'], [s, 'S'], [w, 'W'], [e, 'E'], [n && w, 'NW'], [n && e, 'NE'], [s && w, 'SW'], [s && e, 'SE']]) if (on) tile(`roofEdge${d}`, c, r);
 }
-const things = room.objects.map((o) => ({ ...o, bottom: (o.row + o.h) * T }));
+// under: 연 문처럼 캐릭터보다 뒤에 그림(게임 painter.ts의 setOpen과 같게 차지 칸 위 끝을 깊이로). 놓는 자리는 그대로 아래 끝
+const things = room.objects.map((o) => ({ ...o, bottom: (o.row + o.h) * T, sortKey: o.under ? o.row * T : (o.row + o.h) * T }));
 for (const ch of opt.chars.split(';').filter(Boolean)) {
   const [id, at] = ch.split('@');
   const [c, r, dir = 'down'] = at.split(',');
-  things.push({ char: id, col: Number(c), row: Number(r), dir, bottom: (Number(r) + 1) * T });
+  things.push({ char: id, col: Number(c), row: Number(r), dir, bottom: (Number(r) + 1) * T, sortKey: (Number(r) + 1) * T });
 }
-things.sort((a, b) => a.bottom - b.bottom);
+things.sort((a, b) => a.sortKey - b.sortKey);
 // 벽에 걸리거나 바닥에 깔리는 것은 그림자가 없다
 const NO_SHADOW = ['blackboard', 'bulletinBoard', 'timetable', 'calendar', 'lightBulb', 'bookshelf', 'door', 'entrance', 'partDoor', 'gate', 'auditoriumDoor', 'item'];
 for (const o of things) {
