@@ -181,8 +181,26 @@ function make(txtPath) {
     const body = fillArmHole(base, r.arm, r.legTop);
     stamp(g, body, (x, y) => y < r.legTop, 0, 1);
     // 가까운 팔: 가까운 다리와 반대로
-    warp(g, base, inArm, armOff(-nearSign), null);
+    const armCells = warp(g, base, inArm, armOff(-nearSign), null);
+    trimBehindArm(g, armCells, r.arm, -facing);
     return g;
+  }
+
+  /** 팔이 앞으로 가면 팔이 있던 자리(fillArmHole이 몸통 색과 외곽선으로 메운 곳)가 팔 뒤에 1~3칸 띠로 남는다.
+   *  그 줄에서 몸의 뒤쪽 끝이 원래 팔 상자 안이면(팔 뒤에 진짜 몸이 없으면) 팔 뒤쪽 칸을 지워, 팔의 뒤 외곽선이 몸의 윤곽이 되게 한다. */
+  function trimBehindArm(g, cells, [ax0, , ax1], back) {
+    const rows = new Map();
+    for (const [x, y] of cells) {
+      const cur = rows.get(y);
+      if (cur === undefined || (back > 0 ? x > cur : x < cur)) rows.set(y, x);
+    }
+    const inBox = (x) => x >= ax0 && x <= ax1;
+    for (const [y, bx] of rows) {
+      let end = bx;
+      while (end + back >= 0 && end + back < W && g[y][end + back] !== '.') end += back;
+      if (end === bx || !inBox(end)) continue;
+      for (let x = bx + back; x !== end + back; x += back) g[y][x] = '.';
+    }
   }
 
   function warpLeg(g, base, test, off, lifted, map) {
@@ -206,14 +224,18 @@ function make(txtPath) {
         if (ch !== '.' && test(x, y)) put(g, x + dx, y + dy, ch);
       }
   }
+  /** 옮겨 그리고, 그린 칸 [x, y] 목록을 돌려준다 */
   function warp(g, src, test, off, map) {
+    const cells = [];
     for (let y = 0; y < H; y++)
       for (let x = 0; x < W; x++) {
         const ch = src[y][x];
         if (ch === '.' || !test(x, y)) continue;
         const [nx, ny] = off(x, y);
         put(g, nx, ny, map ? map(ch) : ch);
+        if (nx >= 0 && nx < W && ny >= 0 && ny < H) cells.push([nx, ny]);
       }
+    return cells;
   }
   /** 상자 안 그림을 dy만큼 옮긴다. 내리면 상자 맨 윗줄을 되풀이해 이어 붙인다(팔이 길어짐) */
   function stretchBox(g, src, [x0, y0, x1, y1], dy) {
@@ -340,7 +362,10 @@ function fillArmHole(base, [x0, y0, x1, y1], legTop) {
     for (let x = x0; x <= x1; x++) if (base[y][x] !== '.') cells.push(x);
     if (!cells.length) continue;
     if (L !== '.' && R !== '.') {
-      for (let x = x0; x <= x1; x++) g[y][x] = x - x0 <= x1 - x ? L : R;
+      // 이웃이 외곽선이면 그 안쪽 색을 쓴다(외곽선 색으로 메우면 팔 뒤에 검은 덩어리가 남는다)
+      const Lc = L !== line ? L : innerColor(base[y], x0 - 1, -1, line);
+      const Rc = R !== line ? R : Lc;
+      for (let x = x0; x <= x1; x++) g[y][x] = x - x0 <= x1 - x ? Lc : Rc;
     } else if (L !== '.' || R !== '.') {
       const inner = L !== '.' ? innerColor(base[y], x0 - 1, -1, line) : innerColor(base[y], x1 + 1, 1, line);
       for (let x = x0; x <= x1; x++) g[y][x] = '.';
@@ -367,9 +392,9 @@ function outlineChar(g) {
   return [...n].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-/** x에서 step 방향으로 가며 외곽선이 아닌 첫 색. 없으면 외곽선 */
+/** x에서 step 방향으로 가며 외곽선이 아닌 첫 색. 투명을 만나거나 없으면 외곽선 */
 function innerColor(row, x, step, line) {
-  for (let i = x; i >= 0 && i < row.length; i += step) if (row[i] !== '.' && row[i] !== line) return row[i];
+  for (let i = x; i >= 0 && i < row.length && row[i] !== '.'; i += step) if (row[i] !== line) return row[i];
   return line;
 }
 
