@@ -1,0 +1,50 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/gate-open.png
+size 120x30
+cols 1
+palette
+a #1c1946
+b #a1a5a7
+c #f57447
+d #df523c
+e #d7d1c0
+f #b8b7b7
+g #e6e1d2
+h #822a2c
+i #93949d
+j #3c385c
+k #5c5d73
+l #fbfaf5
+m #daaecd
+n #c47ec8
+
+frame gate-open
+.alaaaaaaa....................................................................................................aaaaaaaaa.
+aeleeeeeeeea........................aaaa........................................aaaaa........................aelleeeeeea
+aleeeeeeeeea.................aaaaaaageea........................................afegeagaaaa..................alleeeeeeea
+aeeeeeeeeeea.............aaaaggggggbbbba........................................abbbbggggggaaaa..............aeeeeeeeeea
+aeeeeeeeeeea.......aaaaaagggggbbbbbbbbba........................................abbbbbbbbbbggggaaaaaaa.......aeeeeeeeeea
+aiiiiiiibbba...aaaaglggegbbbbbbbbbkajaff........................................afakjabbbbbbbbbgggllglaaa....aiiiiiiiiia
+aiiiibbbbiiaaaaggggggebbbbbbbbbja..a.afa........................................afa.aa.ajkkbbbbbbbbggggggaaaaaiiiiiiiiia
+.addcaadddafaggggbbbbbbbbika.aa.a..a.afa........................................afa..a.a..a.aajbbbbbbbbbggeagaadadaaaaa.
+.dddddddddafaibbbbbbjja.a..a.ja.a..a.afa........................................afa..a.a..a..a.aj.ajbbbbbbbagbaddddhdda.
+.adhhcchhaabfbbkijka.ka.a.ma.fa.aa.a.afb........................................afa.aa.a..a..a.aj.anaa.ibbbafbahhhhccha.
+.dddccccccabaaafa.ba.ea.a.ia.ja.a..a.afa........................................afa.aa.a..an.a.aa.a..a.aafaafbaddhcccca.
+.ahhhhhhhhabj.afa.na.ka.a.ma.ma.a..a.afb........................................afa..a.a..an.a.aj.a..a.aafaafbahhhhhhha.
+.cccccddddaba.afa.fa.aa.a.na.aa.a..a.afa........................................aba.jf.a..an.a.aa.a..i.aafaafbacccchdda.
+.accccddddaba.afa.ma.ea.a.ia.aa.a..a.aba........................................afa.aa.a..a..a.aj.a..a.affaafbacccchdda.
+.ahhccccccabf.afa.fa.ea.a.na.ma.a..a.afa........................................afa.aa.a..a..a.aj.a..a.affaafbadhhhccha.
+.dddccccccabf.afa..a.fa.a.ma.aa.a..a.afa........................................afa.aa.a..a..a.aj.a..b.ajfaafbaddhcccca.
+.ahhhhhhhhabf.aea..a.ea.a.na.fa.a..a.aff........................................afa.aa.a..an.a.aj.a..a.aafaafbahhhhhhha.
+.acccccdddabf.aea.fa.aa.a.ma.aa.aa.a.afa........................................afa..a.a..a..a.aj.a..a.aafaafbacccchdda.
+.cccccddddabf.afa.fa.aa.a.ma.aa.aa.a.afa........................................afa..a.a..a..a.af.a.aa.aafaafbacccchdda.
+.cdhhccccaabf.afa.ma.fa.a..a.aa.a..a.afa........................................afa.ab.a..a..a.aj.a..a.aafaabbaddhhccca.
+.addhcccccabf.aea..a.ja.a..a.aa.aababgba........................................abggafea..a..a.aj.a..a.aafaafbaddhcccca.
+.dhdchcchhabf..ea.ma.ka.a..a.aafaaglggba........................................abgbggggfgaeaa.aj.a..a.aefaafbadhhcchha.
+.chhhhhhhhabf.aea.ma.aaeakfgegggbbbbbkia........................................aibbbbbbbggfigfajean.a.ajfaafbachhchdha.
+.ccccccdddabj.aba.faeeaggggbbbbbkaaaaaaa........................................aaaaaaaabbbbbeggggaiaf.aaeaafbacccchdda.
+.accccddddabaaeiafgggggbbbibkaaaa.......................................................aaakbbbbbiggggeabbaaibacccchdda.
+.addddddddafgeaelbbbbbaaaaaaa..............................................................aaaaaaaibbbgggaggebaddhdddda.
+.dddddddddakggaibkkaaa............................................................................aaaakbbalgekaddhdddda.
+.aiiiiiiiiaabfaaaaa...................................................................................aaaaafbaaiiiiiiia.
+.abiiiiiibaaaaa..........................................................................................aaaa.abiiiiiia.
+.aaaaaaaaa.....................................................................................................aaaaaaaa.

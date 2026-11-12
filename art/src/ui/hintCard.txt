@@ -1,0 +1,70 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/hintCard.png
+size 40x56
+cols 1
+palette
+a #fdf7dc
+b #150d4d
+c #fcd005
+d #edb906
+e #fdfdfb
+f #fdf6a5
+g #9a97d2
+h #ede3cc
+
+frame hintCard
+....bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb....
+...bbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbb..
+..baaeeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaab..
+.bbaaeeeaaaaaaaaaabbbbeaaaaaaaaaaaaaab..
+.baeeeaaaaaddaaaabccccbbaaaaddaaaaaaaa..
+.baeeaaaaaaaddaabfffcccbhaaddaaaaaaaaa..
+.baeeaaaaaaaadabcffcccccbaddaaaaaaaaaa..
+.baeeaaaaaaaaaabcffccccccaaaaaaaaaaaaa..
+.baaaaaaaaaaaaabcfccccccbaaaaaaaaaaaaa..
+.baaaaaaadddddabccccccccbaaddddaaaaaaa..
+.baaaaaaaaaaaaabbcccccccbaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaabbccccbbaaaaaaaaaaaaaa..
+.baaaaaaaaaaadaaabcccdbaaaddaaaaaaaaaa..
+.baaaaaaaaadddaaabggggbaaaaddeaaaaaaaa..
+.baaaaaaaaaaaaaaaebgggaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
+.bbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab..
+..baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabb..
+..bbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabb...

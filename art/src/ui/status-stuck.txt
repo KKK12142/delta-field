@@ -1,0 +1,22 @@
+# CCTV 상태 아이콘 stuck(11×11) (scripts/art/ui-icons.mjs가 만듦)
+size 11x11
+cols 1
+palette
+o #1d1531
+f #e12a24
+h #f5735a
+s #8f221e
+w #f8f8f6
+
+frame status-stuck
+...ooooo...
+..ohhfffo..
+.ohhhwffso.
+offffwffsso
+offffwffsso
+offffwffsso
+offffwffsso
+offfffffsso
+.ossswssso.
+..ossssso..
+...ooooo...

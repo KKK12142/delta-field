@@ -1,0 +1,35 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/stairs.png
+size 24x24
+cols 1
+palette
+a #8d8c9f
+b #76758c
+c #e3e3e2
+d #0e1341
+e #434363
+
+frame stairs
+........................
+........................
+........................
+........................
+................ddddddd.
+...............dccccccd.
+...............daaaacad.
+...............daaaaabd.
+............dcccaaaacbd.
+...........dcccccccebbd.
+...........daaaaaaabbbd.
+...........daaaaaaabbbd.
+........dccccccccccbbbd.
+........cccccccccebbbbd.
+........aaaaaaaaabbbbbd.
+......ddaaaaaaaaebbbbbd.
+.....cccccccccccebbbbbd.
+....daaaaaaaaaabbbbbbbd.
+....daaaaaaaaaabbbbbbbd.
+..dcccaaaacacaabbbbbbbd.
+.dcccccccccccebbbbbbbbd.
+.daaaaaaaaaaabbbbbbbbbd.
+.daaaaaaaaaaabbbbbbbbbd.
+.dddddddddddddddddddddd.

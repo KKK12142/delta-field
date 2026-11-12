@@ -1,0 +1,37 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/library.png
+size 24x24
+cols 1
+palette
+a #fdf8ed
+b #aca4ba
+c #0e1341
+d #1d4290
+e #3e88f8
+f #2b68cb
+g #c7c7cb
+
+frame library
+........................
+........................
+........................
+........................
+........................
+........................
+....cccccc....cccccc....
+...aaaaaaac..caaaaaac...
+.ccaaaaaaaaaaaaaaaaaacc.
+.cdabbbbbbaaaabbbbbbadc.
+.cdaaaaaabaaabbaaaaaadc.
+.cdabbbbbaaaaaabbbbbadc.
+.cdabbbbbbaaabbbbbbbadc.
+.cdaaaaaaaaaaaaaaaaaadc.
+.cdabbbbbaaaaaabbbbbadc.
+.cdaaaaaabaaabbaaaaaaec.
+.cdaaaabaaaaaaabbbbbaec.
+.cdabbbbbbaaabbbbbbbadc.
+.cdaaaaaaaaaaaaaaaaaadc.
+.cdaaaaaaaaaaaaaaaaaadc.
+.cdbbbbbbbaaaabbbbbbbdc.
+.cdddddddddgbddddddddec.
+..ecccecccffffcccccccc..
+..........cccc..........
