@@ -9,8 +9,11 @@ import { CctvPanel, type CctvSort } from '../ui/cctv';
 import { objectParticle } from '../ui/dom';
 import { Hud } from '../ui/hud';
 import { Minimap, drawMinimap } from '../ui/minimap';
-import { color, minimap, motion, size } from '../theme';
-import { MapScene, type MapContext, type Reserved } from './MapScene';
+import { alpha, color, minimap, motion, size } from '../theme';
+import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
+import { MiniGameView, loadMiniSprites, prepareMiniSprites } from './minigame';
+import { MINI_KINDS, MINI_NAMES, type MiniKind } from '../../shared/minigame.ts';
+import type { Player } from '../../shared/schema.ts';
 
 /** 선생님의 CCTV 모드 */
 interface Cctv {
@@ -22,6 +25,9 @@ interface Cctv {
   /** 학생 목록 정렬 */
   sort: CctvSort;
 }
+
+/** 미니게임 → 고르기 단추 그림(public/sprites/ui/icon-<이름>.png) */
+const MINI_ICON: Record<MiniKind, string> = { treasure: 'treasure', dodge: 'ball', tug: 'rope' };
 
 /** 미션을 마치면 열린 그림(-open)으로 바꾸는 사물(문이 아닌 것) */
 const OPEN_WHEN_DONE: ReadonlySet<string> = new Set(['gate', 'timeCapsule']);
@@ -43,6 +49,8 @@ export class RoomScene extends MapScene {
   private busy = false;
   private studentCount = -1;
   private cctv: Cctv | null = null;
+  /** 미니게임 화면(보물·공·줄다리기·결과) */
+  private miniView: MiniGameView | null = null;
   /** 지금 서 있는 장소 이름(안내에 보인 것) */
   private place = '';
   /** 강당으로 모으기 안내에 보인 남은 시간(초). 바뀔 때만 고친다. */
@@ -71,8 +79,14 @@ export class RoomScene extends MapScene {
     ctx.state.activity = { kind: '', object: '' };
   }
 
+  preload() {
+    super.preload();
+    loadMiniSprites(this);
+  }
+
   create() {
     super.create();
+    prepareMiniSprites(this);
     this.highlight = this.add.graphics().setDepth(Number.MAX_SAFE_INTEGER);
 
     const teacher = this.net.role === 'teacher';
@@ -88,6 +102,26 @@ export class RoomScene extends MapScene {
     this.hud.cctv.addEventListener('click', this.onCctvButton);
     this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
     this.hud.part.addEventListener('click', this.onPartButton);
+    this.hud.mini.addEventListener('click', this.onMiniButton);
+    this.miniView = new MiniGameView({
+      scene: this,
+      net: this.net,
+      dialog: this.dialog,
+      pos: () => ({ ...this.pos }),
+      teleport: (col, row) => {
+        this.pos = { col, row };
+        this.placeAvatar();
+        this.net.sendMove(this.mapId, col, row, true);
+      },
+      setMyAlpha: (a) => this.avatar.setAlpha(a),
+      onStart: () => {
+        // 미니게임이 시작되면 살펴보던 창을 거두고(답을 기다리던 일은 버린다) 대상 강조를 지운다.
+        if (this.dialog.isOpen()) this.dialog.abandon();
+        this.busy = false;
+        this.setActivity('', '');
+        this.clearTarget();
+      },
+    });
     this.updateGather();
     if (teacher) {
       this.input.on('pointerdown', this.onPointerDown, this);
@@ -100,6 +134,8 @@ export class RoomScene extends MapScene {
       this.input.off('pointerdown', this.onPointerDown, this);
       this.input.off('pointermove', this.onPointerMove, this);
       this.hud.destroy();
+      this.miniView?.destroy();
+      this.miniView = null;
       this.minimap?.destroy();
       this.minimap = null;
     });
@@ -132,12 +168,20 @@ export class RoomScene extends MapScene {
         big: !!document.querySelector('.df-map-big canvas'),
       }),
       escapeFile: () => this.net.escape.file,
+      /** 미니게임: 종류, 단계, 남은 시간, 남은 보물 수, 내 점수, 탈락 */
+      mini: () => {
+        const m = this.net.mini;
+        const me = this.net.me();
+        return { kind: m.kind, phase: m.phase, timeLeft: m.timeLeft, treasures: m.treasures.size, score: me?.miniScore ?? 0, out: me?.miniOut ?? false, heart: me?.miniHeart ?? false };
+      },
+      /** 보물 자리 [id, 열, 행, 금] */
+      treasures: () => [...this.net.mini.treasures].map(([id, t]) => [id, t.col, t.row, t.gold]),
       /** 미니맵에 표시한 곳(2부 문, 강당)의 id. 없으면 null */
       mapMark: () => {
         const m = this.mapMark();
         return m && 'id' in m ? m.id : null;
       },
-      place: () => this.place,
+      place: () => this.place.split('|')[0],
       target: () => this.target?.id ?? null,
       finished: () => this.state.finishedAt !== null,
       cctv: () => {
@@ -165,6 +209,16 @@ export class RoomScene extends MapScene {
 
   protected beforeLeave() {
     this.ctx.schoolPos = { ...this.pos };
+  }
+
+  /** 공 피하기 중에는 운동장 밖으로 나가지 못한다(보이지 않는 울타리). */
+  protected free(col: number, row: number) {
+    return super.free(col, row) && (this.miniView?.allows(col, row) ?? true);
+  }
+
+  /** 미니게임 공 피하기에서 탈락한 학생은 흐리게 보인다. */
+  protected decorateRemote(r: Remote, p: Player) {
+    r.avatar.setAlpha(p.miniOut && this.net.mini?.kind === 'dodge' ? alpha.outAvatar : 1);
   }
 
   /** 연 문과 감춘 사물(주운 물건, 아직 열리지 않은 2부 사물)은 지나갈 수 있다. */
@@ -212,6 +266,8 @@ export class RoomScene extends MapScene {
   /** 문 사물이고, 열린 부의 문이며, 자료 파일에서 잠긴 문이 아니거나 내가 연 문이면 열려 있다. */
   private isOpenDoor(o: RoomObject) {
     if (!this.isDoor(o) || this.isClosedPart(o)) return false;
+    // 보물찾기 중에는 열린 부의 문을 모두 연다(방탈출 진행과 따로).
+    if (this.miniView?.doorsOpen) return true;
     if (!o.mission || !this.net.escape.doors.includes(o.mission)) return true;
     return this.hasDone(o.mission);
   }
@@ -222,6 +278,8 @@ export class RoomScene extends MapScene {
 
   /** 살펴볼 수 있는 사물: 자료 파일에 미션이 있고, 열린 부에 있으며, 연 문이나 감춘 사물이 아닌 것 */
   private canLook(o: RoomObject) {
+    // 미니게임 중에는 사물을 살펴보지 않는다.
+    if (this.miniView?.playing) return false;
     return (
       !!o.mission &&
       this.net.escape.missions.includes(o.mission) &&
@@ -237,7 +295,7 @@ export class RoomScene extends MapScene {
     const me = this.net.me();
     const items = [...(me?.items ?? [])];
     const key = [
-      this.net.part, e.version, me?.finished, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, [...(me?.pressed ?? [])], me?.hints.length ?? 0, e.hintTotal,
+      this.net.part, e.version, me?.finished, this.miniView?.doorsOpen, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, [...(me?.pressed ?? [])], me?.hints.length ?? 0, e.hintTotal,
     ].join('|');
     if (key === this.escapeShown) return;
     this.escapeShown = key;
@@ -263,10 +321,13 @@ export class RoomScene extends MapScene {
   private updatePlace() {
     const area = areaAt(this.room, this.pos.col, this.pos.row);
     const name = area?.name ?? this.room.name;
-    if (name === this.place) return;
-    this.place = name;
+    const mini = this.miniView?.playing ?? '';
+    const key = `${name}|${mini}`;
+    if (key === this.place) return;
+    this.place = key;
     const count = area && this.net.role === 'student' ? areaMissions(this.room, this.net.escape, [...(this.net.me()?.done ?? [])], area.id) : null;
-    this.hud.setPlace(count ? `${name} · 미션 ${count.done}/${count.total}` : name);
+    if (mini) this.hud.setPlace(`${name} · 미니게임 중`);
+    else this.hud.setPlace(count ? `${name} · 미션 ${count.done}/${count.total}` : name);
   }
 
   protected setConnectionText(text: string | null) {
@@ -279,6 +340,8 @@ export class RoomScene extends MapScene {
     this.updateGather();
     this.syncEscape();
     this.notices();
+    this.miniView?.update();
+    if (this.net.role === 'teacher') this.hud.setMini(this.net.mini?.phase !== '' && this.net.mini?.phase !== undefined);
     this.minimap?.update(this.pos, this.net.part, this.mapMark());
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
@@ -293,7 +356,8 @@ export class RoomScene extends MapScene {
     }
     if (this.dialog.isOpen() || this.busy) return;
 
-    this.moveByInput(delta);
+    // 줄다리기 중, 공 피하기에서 탈락해 구경하는 중에는 걷지 않는다.
+    if (!this.miniView?.frozen) this.moveByInput(delta);
     this.updatePlace();
     this.updateTarget();
 
@@ -449,6 +513,61 @@ export class RoomScene extends MapScene {
       if (reply.error) await this.dialog.message('강당으로 모으기', reply.error);
     } catch {
       await this.dialog.message('강당으로 모으기', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  // ---- 미니게임(선생님) ----
+
+  private onMiniButton = () => {
+    this.hud.mini.blur();
+    void (this.net.mini?.phase ? this.stopMini() : this.startMini());
+  };
+
+  /** 미니게임 고르기 → 확인 → 시작(서버가 3초 센 뒤 시작한다). */
+  private async startMini() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const help: Record<MiniKind, string> = {
+        treasure: '열린 장소 곳곳에 보물이 나타납니다. 먼저 닿은 학생이 가져갑니다(3분).',
+        dodge: '모두 운동장으로 옮겨 굴러오는 공을 피합니다. 맞으면 구경합니다(2분).',
+        tug: '반 대항 줄다리기입니다. 이긴 반 학생은 다음 골든벨에서 하트 +1(30초).',
+      };
+      const picked = await this.dialog.choose(
+        '미니게임',
+        '할 미니게임을 고릅니다.',
+        MINI_KINDS.map((k) => ({ label: MINI_NAMES[k], detail: help[k], icon: `${import.meta.env.BASE_URL}sprites/ui/icon-${MINI_ICON[k]}.png` })),
+      );
+      if (picked === null) return;
+      const kind = MINI_KINDS[picked];
+      const sure = await this.dialog.confirm('미니게임', `${MINI_NAMES[kind]}을(를) 시작합니다. 3초 뒤 모든 학생 화면에서 시작합니다.`, '시작하기');
+      if (!sure) return;
+      const reply = await this.net.miniStart(kind);
+      if (reply.error) await this.dialog.message('미니게임', reply.error);
+    } catch {
+      await this.dialog.message('미니게임', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async stopMini() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const playing = this.net.mini.phase !== 'result';
+      const sure = await this.dialog.confirm(
+        '미니게임 그만두기',
+        playing ? '지금 하는 미니게임을 결과 없이 그만둡니다.' : '결과 창을 닫습니다.',
+        '그만두기',
+      );
+      if (!sure) return;
+      const reply = await this.net.miniStop();
+      if (reply.error) await this.dialog.message('미니게임', reply.error);
+    } catch {
+      await this.dialog.message('미니게임', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
     } finally {
       this.busy = false;
     }

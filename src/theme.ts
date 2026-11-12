@@ -49,6 +49,10 @@ export const color = {
   plateText: '#ffffff', // 이름표 판(어두운 판) 위 글자
   signText: '#ffffff', // 교실 이름판·현수막 글자
   objectShadow: 0x1d1531, // 사물 그림자
+  // 미니게임(그림이 없을 때의 도형)
+  treasure: 0xd9a33b,
+  treasureGold: 0xf6d34a,
+  ball: 0xe4572e,
   pitchLine: '#f4ecdc', // 운동장 경기장 선
   livesStroke: '#ffffff', // 배경 없이 띄우므로 테두리로 바닥과 구분한다
   // 사물 종류별 색(단순 도형 단계)
@@ -99,6 +103,10 @@ export const uiColor = {
   panel: '#fff3d6', // panel 그림의 안쪽
   line: '#e3cf9f', // 패널 안 구분선(panel 그림의 아래 그늘)
   backdrop: 'rgba(29, 21, 49, 0.5)',
+  // 미니게임 줄다리기(반 색, 줄 바탕). 겉모양은 화면 담당이 맞춘다.
+  tugScience: '#3b6ea8',
+  tugAisw: '#c0603a',
+  tugBackdrop: 'rgba(29, 21, 49, 0.72)',
   startBackground: '#8aa37a', // 첫 화면 바탕(배경 그림이 오기 전까지)
   buttonText: '#ffffff', // 파란 단추(btn)
   buttonLightText: '#1d1531', // 크림·금색 단추(btn-light, btn-gold)
@@ -194,6 +202,9 @@ export const size = {
   shadowHeight: 8,
   shadowLift: 5,
   pitchLine: 2, // 경기장 선 두께(도트)
+  // 미니게임(그림이 없을 때의 도형 반지름, 픽셀)
+  treasureRadius: 14,
+  ballRadius: 21, // 칸 60px × BALL_RADIUS 0.35
 } as const;
 
 /**
@@ -291,6 +302,13 @@ export const uiSize = {
   storyWidth: '512px',
   storyPanelWidth: '560px', // 그림 512 + 외곽선 6 + 테두리 24 + 여백 18
   bannerWidth: '480px',
+  // 미니게임(동작 담당이 넣은 뼈대 크기)
+  miniCountFont: '96px', // 시작 전 세기(Galmuri11 8배)
+  miniTop: '12px', // 위쪽 가운데 진행 칸의 위 여백
+  tugPullSize: '200px', // 줄다리기 "당기기" 단추 지름(태블릿 두 손가락으로 연타)
+  tugEmblem: '90px', // 반 상징(30도트 × 3)
+  tugRopeHeight: '36px', // 줄(rope 30×12 도트 × 3)
+  tugMarkSize: '90px', // 가운데 리본(30도트 × 3)
   bannerTop: '28%', // 학생 문제 카드에서 순위 한 칸의 가장 작은 너비(넓으면 여러 칸으로)
   podium1: '84px',
   podium2: '60px',
@@ -363,6 +381,8 @@ export const motion = {
   facingKeep: 0.7, // 대각선으로 갈 때 지금 보는 쪽의 성분이 다른 쪽의 이 비율 이상이면 방향을 바꾸지 않는다(깜빡임 막기)
   remoteWalkGap: 3, // 다른 사람 아바타가 서버 위치와 이 거리(픽셀) 넘게 떨어져 있으면 걷는 중으로 본다
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
+  shineFps: 6, // 금 보물 반짝임 빠르기(프레임/초)
+  ballFps: 10, // 공 굴러가는 그림 빠르기(프레임/초)
   gbFadeMs: 2000, // 골든벨 문제가 시작되면 다른 학생이 이 시간(ms) 동안 흐려지다 사라진다(학생 화면만)
   bannerMs: 4000, // 화면 가운데 큰 알림(2부 열림, 강당으로 모으기)이 보이는 시간(ms)
   mapMarkMs: 60000, // 미니맵에 2부 문을 표시해 두는 시간(ms)

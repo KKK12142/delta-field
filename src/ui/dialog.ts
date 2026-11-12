@@ -1,6 +1,6 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import { el, uiRoot } from './dom';
-import { objectPicture, pixelImage, uiIcon } from './pictures';
+import { face, objectPicture, pixelImage, uiIcon } from './pictures';
 
 /** 미션 문제(정답은 서버만 안다). choices가 비어 있으면 단답형 */
 export interface QuizView {
@@ -53,6 +53,27 @@ export interface ChoiceOption {
   detail?: string;
   /** 고를 수 없으면 true(detail에 까닭을 적는다) */
   disabled?: boolean;
+  /** 단추 앞 그림 주소(미니게임 고르기 등) */
+  icon?: string;
+}
+
+/** 미니게임 결과 창 한 줄 */
+export interface ResultRow {
+  rank: number;
+  nickname: string;
+  character: string;
+  score: string;
+  me: boolean;
+}
+
+/** 미니게임 결과 창 */
+export interface ResultView {
+  title: string;
+  /** 위쪽 글 줄(줄다리기: 이긴 반, 반별 평균) */
+  lines: string[];
+  rows: ResultRow[];
+  /** 내 등수 줄(선생님은 '') */
+  mine: string;
 }
 
 /** 대화상자 제목 옆에 그림을 넣을 사물(맵 사물의 이름·종류·그림 이름) */
@@ -356,6 +377,39 @@ export class Dialog {
     });
   }
 
+  /**
+   * 미니게임 결과 창: 위쪽 글(줄다리기 이긴 반 등), 1~5등(얼굴·등수·닉네임·점수, 내 줄 강조), 내 등수. 닫기로 닫는다.
+   * 서버가 결과를 거두면 장면이 abandon()으로 닫는다. 겉모양은 화면 담당(df-mini-result 아래 클래스).
+   */
+  result(v: ResultView): Promise<void> {
+    return new Promise((resolve) => {
+      const panel = this.panel(v.title);
+      panel.classList.add('df-mini-result');
+      for (const line of v.lines) panel.append(el('p', 'df-text df-mini-line', line));
+      const list = el('ol', 'df-mini-rank');
+      for (const r of v.rows) {
+        const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
+        li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', r.score));
+        list.append(li);
+      }
+      list.hidden = v.rows.length === 0;
+      panel.append(list);
+      if (v.mine) panel.append(el('p', 'df-text df-mini-mine', v.mine));
+      const row = el('div', 'df-row');
+      const ok = el('button', 'df-button', '닫기');
+      row.append(ok);
+      panel.append(row);
+      const done = () => {
+        this.close();
+        resolve();
+      };
+      ok.addEventListener('click', done);
+      this.open(panel, (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') done();
+      });
+    });
+  }
+
   /** 이야기 카드(입장 직후)나 1부 완료처럼 한 장면을 보이는 창. 겉모양은 화면 담당(df-story, kind별 is-<kind>). */
   story(kind: 'intro' | 'finish', title: string, text: string, buttonText = '확인'): Promise<void> {
     return new Promise((resolve) => {
@@ -449,6 +503,12 @@ export class Dialog {
       };
       options.forEach((o, i) => {
         const b = el('button', 'df-choice');
+        if (o.icon) {
+          const img = el('img', 'df-choice-icon');
+          img.src = o.icon;
+          img.alt = '';
+          b.append(img);
+        }
         b.append(el('span', '', o.label));
         if (o.detail) b.append(el('span', o.disabled ? 'df-choice-detail is-wrong' : 'df-choice-detail', o.detail));
         b.disabled = !!o.disabled;

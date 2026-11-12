@@ -87,7 +87,7 @@ export function describeStudent(room: Room, escape: Escape, id: string, p: Playe
     className: classGroupName(p.classGroup),
     doing,
     tag,
-    progress: [`미션 ${missions.done}/${missions.total}`, `힌트 ${hintSummary(escape, [...p.hints])}`, ...(bonus ? ['보너스'] : [])].join(' · '),
+    progress: [`미션 ${missions.done}/${missions.total}`, `힌트 ${hintSummary(escape, [...p.hints])}`, ...(bonus ? ['보너스'] : []), ...(p.miniHeart ? ['미니게임 하트'] : [])].join(' · '),
     items: [...p.items].map((itemId) => escape.items.get(itemId) ?? itemId),
     done: missions.done,
     total: missions.total,

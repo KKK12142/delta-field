@@ -15,7 +15,8 @@ import {
   type Role,
   type StatusMessage,
 } from '../../shared/protocol.ts';
-import type { ClassState, Escape, GoldenBell, Player } from '../../shared/schema.ts';
+import type { ClassState, Escape, GoldenBell, MiniGame, Player } from '../../shared/schema.ts';
+import type { MiniKind, MiniPickMessage, MiniStartMessage } from '../../shared/minigame.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../../shared/escape.ts';
 
 /** 개발 중에는 Vite가 /colyseus를 서버(2567)로 넘겨 주고, 수업용 서버는 같은 주소에서 바로 받는다. */
@@ -207,6 +208,61 @@ export class Net {
   gbAccept(key: string, accept: boolean): Promise<GbReply> {
     const message: GbAcceptMessage = { key, accept };
     return this.room.request('gbAccept', message);
+  }
+
+  // ---- 미니게임(shared/minigame.ts) ----
+
+  /** 서버 시계 - 이 화면 시계(ms). 공 피하기 공을 서버 시각에 맞춰 그릴 때 쓴다(syncClock()으로 잰다). */
+  private clockOffset = 0;
+
+  /** 서버 시계를 잰다: 요청을 보낸 때와 받은 때의 가운데를 서버 시각으로 본다(가장 빠른 답 세 번 가운데). */
+  async syncClock() {
+    let best = Infinity;
+    for (let i = 0; i < 3; i++) {
+      const t0 = Date.now();
+      const server: number = await this.room.request('clock');
+      const t1 = Date.now();
+      if (t1 - t0 < best) {
+        best = t1 - t0;
+        this.clockOffset = server - (t0 + t1) / 2;
+      }
+    }
+  }
+
+  /** 지금 서버 시각(ms, 잰 차이로 고친 값) */
+  serverNow() {
+    return Date.now() + this.clockOffset;
+  }
+
+  get mini(): MiniGame {
+    return this.room.state.mini;
+  }
+
+  /** 선생님: 미니게임 시작(3초 세기 뒤 시작) */
+  miniStart(kind: MiniKind): Promise<GbReply> {
+    const message: MiniStartMessage = { kind };
+    return this.room.request('miniStart', message);
+  }
+
+  /** 선생님: 미니게임 그만두기(결과 없이 닫는다) */
+  miniStop(): Promise<GbReply> {
+    return this.room.request('miniStop');
+  }
+
+  /** 보물을 줍는다(서버가 먼저 온 요청에 준다) */
+  miniPick(id: string) {
+    const message: MiniPickMessage = { id };
+    this.room.send('miniPick', message);
+  }
+
+  /** 공 피하기: 내 캐릭터가 공에 맞았다 */
+  miniHit() {
+    this.room.send('miniHit');
+  }
+
+  /** 줄다리기: 한 번 당긴다 */
+  miniTug() {
+    this.room.send('miniTug');
   }
 
   onStatus(listener: (status: ConnectionStatus) => void) {

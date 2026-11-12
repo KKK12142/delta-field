@@ -40,6 +40,7 @@ import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './question
 import { EscapeGame } from './EscapeGame.ts';
 import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
+import { MiniGames } from './MiniGame.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../shared/escape.ts';
 
 /** 맵 id → 크기(칸) */
@@ -103,6 +104,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   /** 이번 문제를 채점하기 전의 목숨·점수(선생님이 단답형 답을 정답으로 인정하거나 거둘 때 다시 채점한다) */
   private beforeJudge = new Map<string, GbScore>();
   private readonly escape = new EscapeGame(this.state);
+  private readonly mini = new MiniGames(this.state, this.clock);
 
   onCreate(options: Partial<JoinOptions>) {
     checkTeacher(options?.password);
@@ -140,6 +142,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('missionOpen', (client: Client, message: { object?: unknown }): MissionView => {
       const p = this.state.players.get(client.sessionId);
       if (!p || p.map !== 'school') return { kind: 'none', text: '지금은 살펴볼 수 없습니다.' };
+      if (this.mini.playing) return { kind: 'none', text: '미니게임 중에는 살펴볼 수 없습니다.' };
       if ((OBJECT_PARTS.get(String(message?.object)) ?? 1) > this.state.part) {
         return { kind: 'none', text: '아직 열리지 않은 곳입니다. 선생님이 2부를 열면 살펴볼 수 있습니다.' };
       }
@@ -147,12 +150,12 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     });
     this.onMessage('missionAnswer', (client: Client, message: MissionAnswerMessage): MissionAnswerReply => {
       const p = this.state.players.get(client.sessionId);
-      if (!p || p.map !== 'school') return { correct: false, reward: null, clue: '', error: '지금은 답을 낼 수 없습니다.' };
+      if (!p || p.map !== 'school' || this.mini.playing) return { correct: false, reward: null, clue: '', error: '지금은 답을 낼 수 없습니다.' };
       return this.escape.answer(p, message?.object, message?.answer);
     });
     this.onMessage('missionPress', (client: Client, message: { object?: unknown }): MissionPressReply => {
       const p = this.state.players.get(client.sessionId);
-      if (!p || p.map !== 'school' || (OBJECT_PARTS.get(String(message?.object)) ?? 1) > this.state.part) {
+      if (!p || p.map !== 'school' || this.mini.playing || (OBJECT_PARTS.get(String(message?.object)) ?? 1) > this.state.part) {
         return { step: 0, total: 0, wrong: false, reward: null, error: '지금은 누를 수 없습니다.' };
       }
       return this.escape.press(p, message?.object);
@@ -168,6 +171,31 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('gbGather', (client: Client, message: GatherMessage) => this.gbGather(client, message));
     this.onMessage('gbGatherCancel', (client: Client) => this.gbGatherCancel(client));
     this.onMessage('openPart', (client: Client, message: { part?: unknown }) => this.openPart(client, message));
+    // 미니게임(shared/minigame.ts): 선생님이 시작·그만두기, 학생은 보물 줍기·공에 맞음·줄 당기기. 화면이 서버 시계를 맞추려고 clock을 묻는다.
+    this.onMessage('miniStart', (client: Client, message: { kind?: unknown }): GbReply => {
+      if (!this.isTeacher(client)) return refuse('선생님만 미니게임을 시작할 수 있습니다.');
+      const error = this.mini.start(message?.kind);
+      return error ? refuse(error) : ok;
+    });
+    this.onMessage('miniStop', (client: Client): GbReply => {
+      if (!this.isTeacher(client)) return refuse('선생님만 미니게임을 그만둘 수 있습니다.');
+      if (!this.mini.active) return refuse('미니게임을 하고 있지 않습니다.');
+      this.mini.stop();
+      return ok;
+    });
+    this.onMessage('miniPick', (client: Client, message: { id?: unknown }) => {
+      const p = this.state.players.get(client.sessionId);
+      if (p) this.mini.pick(client.sessionId, p, message?.id);
+    });
+    this.onMessage('miniHit', (client: Client) => {
+      const p = this.state.players.get(client.sessionId);
+      if (p) this.mini.hit(client.sessionId, p);
+    });
+    this.onMessage('miniTug', (client: Client) => {
+      const p = this.state.players.get(client.sessionId);
+      if (p) this.mini.tug(client.sessionId, p);
+    });
+    this.onMessage('clock', (): number => Date.now());
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
     this.onMessage('gbClose', (client: Client) => this.gbClose(client));
     this.onMessage('gbResetTotal', (client: Client) => this.gbResetTotal(client));
@@ -223,6 +251,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   }
 
   onDispose() {
+    this.mini.dispose();
     console.log(`방 ${this.roomId}을 닫았습니다.`);
   }
 
@@ -234,14 +263,15 @@ export class ClassRoom extends Room<{ state: ClassState }> {
 
   /**
    * 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 학교 맵의 자리는 화면이 기억한다.
-   * 보너스 미션을 마쳐 남은 하트가 있으면 목숨 +1(최대 GB_MAX_LIVES)로 시작하고 하트를 쓴다.
+   * 보너스 미션 하트, 미니게임(줄다리기) 하트가 남아 있으면 하나씩 목숨에 더해(최대 GB_MAX_LIVES) 시작하고 하트를 쓴다.
    */
   private enterGoldenBell(p: Player) {
     p.map = 'goldenbell';
     p.col = GB_SPAWN.col + Math.random() * GB_SPAWN.w;
     p.row = GB_SPAWN.row + Math.random() * GB_SPAWN.h;
-    p.gbLives = p.bonusHeart ? Math.min(GB_MAX_LIVES, GB_LIVES + 1) : GB_LIVES;
+    p.gbLives = Math.min(GB_MAX_LIVES, GB_LIVES + (p.bonusHeart ? 1 : 0) + (p.miniHeart ? 1 : 0));
     p.bonusHeart = false;
+    p.miniHeart = false;
     p.gbScore = 0;
     p.gbOut = false;
     p.gbRevive = 0;
@@ -277,6 +307,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private gbStart(client: Client, message: { file?: unknown }): GbReply {
     if (!this.isTeacher(client)) return refuse('선생님만 골든벨을 시작할 수 있습니다.');
     if (this.state.goldenbell.phase !== '') return refuse('이미 골든벨을 하고 있습니다.');
+    if (this.mini.active) return refuse('미니게임을 하는 중에는 골든벨을 시작할 수 없습니다.');
     const set = this.readSet(message?.file);
     if (typeof set === 'string') return refuse(set);
     this.beginGoldenBell(set);
@@ -307,6 +338,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private gbGather(client: Client, message: GatherMessage): GbReply {
     if (!this.isTeacher(client)) return refuse('선생님만 강당으로 모을 수 있습니다.');
     if (this.state.goldenbell.phase !== '') return refuse('이미 골든벨을 하고 있습니다.');
+    if (this.mini.active) return refuse('미니게임을 하는 중에는 강당으로 모을 수 없습니다.');
     if (this.state.gatherLeft > 0) return refuse('이미 강당으로 모으는 중입니다.');
     const seconds = Number(message?.seconds);
     if (!(GATHER_SECONDS as readonly number[]).includes(seconds)) return refuse('남은 시간을 1분, 3분, 5분 가운데에서 고릅니다.');
