@@ -94,7 +94,7 @@
 | src/data/characters.json | 캐릭터 목록 `[{ id, name }]`. name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
-| public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …) | 넣음 |
+| public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
 
 ## 캐릭터 구상(8가지, 교사 확인 전)
 공통: 고등학생, 2.5등신. 성별은 정하지 않고 머리 모양과 옷으로 구분한다. 교사가 8가지 구상을 그대로 쓰기로 했다(2026-11-11).
@@ -219,8 +219,25 @@
 3. 문: `node scripts/art/compose.mjs --out door.png --size 60x60 --tile public/sprites/tiles/wallTop.png:0,0,60,24 --image door-fit.png:0,24`
 4. 글자판 art/src/objects/<kind>.txt → `pnpm art:grid to-png` → public/sprites/objects/<kind>.png.
 
+### 2묶음(2026-11-12, 3단계 맵의 새 장소)
+- 같은 kind의 다른 그림(대장 결정): 맵 사물의 sprite 항목. 그림은 public/sprites/objects/<sprite가 있으면 sprite, 없으면 kind>.png, 열림은 <이름>-open.png.
+  sprite를 다 주는 kind도 기본 그림(<kind>.png)을 둔다(codingBlock = codingBlock-1, tileBoard = tileBoard-square, item = item-book).
+- 1×1 작은 것은 small-set.txt로 한 장에 2×2로 넷씩 받는다(작은 것은 여럿을 받아도 도트 약 16픽셀로 그려진다).
+  `pnpm art:fit <받은 그림> --bg '#ff00ff' --grid 2x2 --width 26 --frame 30x40 --colors 16`(비커 묶음은 --px 16). 시트는 2줄×2칸이다.
+  칸 k를 30×30으로: `compose.mjs --size 30x30 --image <시트>:-(k%2)*30,-(k/2)*40-10`.
+  - microbit·codingBlock-1·lightBulb(꺼짐)·lightBulb-on, item-sensor·item-pump·item-wire·item-book, 실험대 위 얼음 비커·물 비커·수증기 플라스크.
+  - codingBlock-2~4는 1의 파랑 세 단계를 빨강·초록·노랑으로 바꿨다(`tile.mjs clean --map`).
+  - labBench-ice·water·steam은 labBench 위 가운데(30,4)에 비커를 얹었다(compose).
+  - 바닥 물건 아이콘 public/sprites/icons/item-*.png는 사물 그림과 같다(30×30).
+- tileBoard-triangle·square·hexagon: 빈 판(생성)에 `node scripts/art/patterns.mjs <판> --kind triangle|square|hexagon --fill '#fce5c5' --line '#b46d3c' --size 10`로 무늬를 긋는다.
+- bookshelf-empty: 책꽂이 가운데 칸의 책 세 권 자리(52~61칸, 21~29줄)를 비웠다(몸 백과 책을 꽂는 곳).
+- 달력은 칸선이 끊겨 칸선(7×5)과 동그라미 셋을 규칙대로 다시 그었다. 계단은 `tile.mjs stripes --period 10`(10줄마다 미끄럼 막이·그늘).
+- 2부 문(partDoor, 2×4)은 위에서 본 칸막이다. 받은 그림이 좁아 19칸 폭(양옆 외곽선을 더해 21)이고, 위·아래 칸막이 판을 늘여 120줄, 60×120 가운데에 놓았다.
+- 강당 문(auditoriumDoor)은 강당 왼쪽 옆 벽(1×3)의 문이다. 옆 벽의 문은 정면이 보이지 않아, 생성 그림(정면 두 짝 문)의 색으로 위에서 본 옆문을 짰다(30×90, 바탕은 wallTop).
+- 방위 표지(compassSign)의 화살표 판이 4~5도트라 N·E·S·W 글자는 넣지 못했다.
+
 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --out art/work/mock/school.png --area 0,0,48,37 [--scale 2] [--chars 'char-01@10,6,down;...']`
-맵 데이터에 public/sprites의 타일·사물을 깔아 본다. 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.
+맵 데이터에 public/sprites의 타일·사물을 깔아 본다(사물의 sprite 항목을 읽는다). 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.

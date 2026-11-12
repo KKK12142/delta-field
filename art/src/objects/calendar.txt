@@ -1,0 +1,62 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/obj2/calendar.png
+size 60x46
+cols 1
+palette
+a #f2f3f7
+b #b2b8c6
+c #191b45
+d #db1122
+e #fb8082
+f #e2292e
+g #c9cdd8
+h #9b9b9d
+i #252d51
+j #f2545d
+
+frame calendar
+.........ccc....................................ccc.........
+.........cgc....................................ggc.........
+..ccccccccgccccccccccccccccccccccccccccccccccccccgcccccccc..
+.cceeeeeecgcdeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeedcgceeeeeecc.
+.ceeddddicgccddddddddddddddddddddddddddddddddddccgcdddddddc.
+.cedddddihcchddddddddddddddddddddddddddddddddddhcchiddddddc.
+.cjdddddihcchddddddddddddddddddddddddddddddddddhcchiddddddc.
+.cdddddddccccddddddddddddddddddddddddddddddddddccccdddddddc.
+.cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.
+.caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac.
+.caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaffaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabafaafaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabafaafaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaffaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaffaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabafaafabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabafaafabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaffaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caabaaaaaabaaffaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabafaafabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabafaafabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaffaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaaabaaaaaabaaaaaabaac.
+.caabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaac.
+.caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac.
+.caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac.
+.cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.

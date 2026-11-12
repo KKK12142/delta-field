@@ -3,7 +3,7 @@
 //   mock.mjs --map src/data/school.json --out <png> [--area 0,0,48,37] [--scale 1] [--sprites public/sprites] [--chars 'char-01@6,5,down;...'] [--seed 1]
 //   - 바닥: tiles/<id>.png의 변형을 무작위로. 벽(#)·울타리(%): 아래 칸이 바닥이면 앞면(<id>Face), 아니면 윗면(<id>Top).
 //     울타리 윗면은 위아래가 울타리면 세로 가로대(fenceTopV). 울타리 앞면의 투명한 곳 아래에는 운동장 흙을 깐다.
-//   - 사물: objects/<kind>.png를 차지 칸 왼쪽 아래에 맞춰(그림이 좁으면 가운데) 놓고, 아래 끝이 아래인 것을 앞에 그린다.
+//   - 사물: objects/<sprite 또는 kind>.png를 차지 칸 왼쪽 아래에 맞춰(그림이 좁으면 가운데) 놓고, 아래 끝이 아래인 것을 앞에 그린다.
 //     열린 모양은 그리지 않는다. id에 right가 든 goalpost는 좌우로 뒤집는다.
 import { existsSync, readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
@@ -93,7 +93,7 @@ for (const o of things) {
     if (src) blit(src, T, row * 60, T, 60, o.col * T, o.bottom - 60);
     continue;
   }
-  const src = load(`objects/${o.kind}.png`);
+  const src = load(`objects/${o.sprite ?? o.kind}.png`);
   if (!src) {
     box(o.col * T + 2, o.row * T + 2, o.w * T - 4, o.h * T - 4);
     continue;

@@ -1,0 +1,45 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/obj2/computerDesk.png
+size 90x26
+cols 1
+palette
+a #c7c9cd
+b #828690
+c #0e1b43
+d #f2f2f2
+e #a1a5ac
+f #0e4798
+g #6e7381
+h #b3b5bb
+i #dfe0e1
+j #152b5d
+k #5e6370
+l #67b6fb
+m #0c69ca
+
+frame computerDesk
+....cccccccccc..............................................................cccccccccc....
+...cbhhhhhhhhhc............................................................cbhhhhhhhhbc...
+...cbjmlffffjbc............................................................cbjmlffffjbc...
+...cbjlfffffjbc............................................................cbjlfffffjbc...
+..ccbjffffffjbccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccbjffffffjbcc..
+.cdcbjffffffjbcddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddcbjffffffjbcdc.
+cdacbjffffffjbcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacbjffffffjbcaac
+cdacbbbbbbbbbbcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacbbbbbbbbbbcaac
+cdaaccccccccccaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaccccccccccaaac
+cdaaaaacggcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacggcaaaaaac
+cdaaaackkkkcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaackkkkcaaaaac
+cdacigigiibigicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacigiggibiiicaac
+cdacggggggbgggcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacggggggbgggcaac
+cdacigigiibigicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacigdigibiigcaac
+cdaaccccccccccaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaccccccccccaaac
+cdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddac
+cgeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeegc
+.cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.
+.chbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbhc.
+.chbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbhc.
+.chbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbhc.
+.chbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbhc.
+.chbccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccbhc.
+.chbc................................................................................cbhc.
+.chbc................................................................................cbhc.
+.cccc................................................................................cccc.

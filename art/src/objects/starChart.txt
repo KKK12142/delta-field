@@ -1,0 +1,47 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/obj2/starChart.png
+size 90x36
+cols 1
+palette
+a #1b224e
+b #d6dbe4
+c #7f8da5
+d #fcfcfc
+e #b9c1d1
+
+frame starChart
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.
+abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba
+abaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abaaddaaaaaaaddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abaaadaaaaaaaddaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaadaaaaaba
+abaaaadaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaba
+abaaaaadaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaddaaaaaaaaaaaaaaaba
+abaaaaaaddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaba
+abaaaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaddaaaaaaaaaaaaba
+abaadaaaadaaaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abaaaaaaadaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaadaaba
+abaaaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaddddddddaaba
+abaaaaddaddddaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaadaaba
+abaaaaddadaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaadaaba
+abaaaadaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaadaaaaaadaaba
+abaaaadaaaaaadaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaddaaaaddaaba
+abaaadaaaaaaaddaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaaaaaaaaaadaaaaaddaaba
+abaaddaaaaaaaddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaba
+abaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaba
+abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccca
+acccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccca
+.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.
+...accc...........................................................................accca...
+...aeee...........................................................................aeeea...
+...aeee...........................................................................aeeea...
+...aeee...........................................................................aeeea...
+...aeee...........................................................................aeeea...
+...aeee...........................................................................aeeea...
+...aeee...........................................................................aeeea...
+..aaeeeaa........................................................................aaeeeaa..
+..accccca........................................................................accccca..
+..accccca........................................................................accccca..

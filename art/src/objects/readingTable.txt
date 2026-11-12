@@ -1,0 +1,84 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/obj2/readingTable.png
+size 90x62
+cols 1
+palette
+a #f8ba6f
+b #1d1143
+c #c96f31
+d #45a2ef
+e #a95b2d
+f #fdda8f
+g #fbedd6
+h #e99449
+i #fa9913
+j #d12832
+k #319c2a
+l #fcd806
+m #a48471
+n #bedb5e
+o #e7d2bb
+p #fa939a
+
+frame readingTable
+..bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb..
+.bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb.
+bffaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbaaaabbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbgggggbabbgggggbbbbbbbbabaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabllbggggggggdddddggggdddddggggggggbllbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaablbggddddgdddgggdddgddddddddddgdddgblbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabbbgdkkdddkkkddgdddddiddddiiiddiddgbbbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjbgkkkkkkkddddgddddidiiiiiiiiiiiigbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgkdkkkkkdkdddddddddiiiiiiiiiiddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdddkkkkkkkddddddiiiiiiiiiiidddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddkkkkkkdddddddiiiiiiiiiiiidddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddkkkkkdddddddiddimdiiiiiididdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdddkkdkddddddddnnddiidiiiiddddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdddddkdllddddnnnnnndiddiddhdddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdkddddlllldddnnnnnnndddddddpddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddddddllllllddnnnnndddddddddpdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdddddddlllldddddnnnddddddpppddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddddddddllddddddnndnddddpppppdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgdddddddllldddddddnddddddpppppdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddddddddldddddddddddddddddppddgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgddddggddlddddddddddgggddddddpdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgggggggggggggggdddggggggggggggdgbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabjjgggmmmmmmmmmmmggggmmmmmmmmmmmmggbjbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabbbmmoooooooooooomggmoooooooooooommbbbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabllbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbblbaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaabblbbbbbbbbbbbbbbjjjjbbbbbjbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bfaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaahb
+bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb
+.bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb.
+.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+..eeeebeeeeeeebeeeeeeebeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeeeeeeebeeeeeeebeee..
+..hcccbeeeecccbeeeecccbeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebhcceeeebhcceeeebhce..
+..hccebeeeeccebeeeeccebeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebhcceeeebhcceeeebhce..
+..hcccbeeeecccbeeeecccbeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebhcceeeebhcceeeebhce..
+..hcccbbbbbcccbbbbbcccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccbbbbbcccbbbbbcce..
+..hcccb....cccb....cccb.............................................bhcc....bhcc....bhce..
+..hcccb....cccb....cccb.............................................bccc....bccc....bcce..
+..hcccb....cccb....cccb.............................................bccc....bccc....bcce..
+..hcccb....cccb....cccb.............................................bccc....bccc....bcce..
+..hcccb....cccb....cccb.............................................bccc....bccc....bcce..
+..hcccb....cccb....cccb.............................................bccc....bccc....bcce..
+..hcccb....cccb....cccb.............................................bhcc....bhcc....bhce..
+..bbbb.....bbb.....bbb...............................................b.......b.......b....

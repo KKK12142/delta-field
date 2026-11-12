@@ -8,6 +8,8 @@
 //       칸 가장자리에 걸친 이음은 넣지 않아 어떤 순서로 깔아도 이어진다.
 //   grid <시트.png> --out <png> --step 15 --line '#hex' [--light '#hex']
 //       네모 타일 바닥: 칸 안 step칸마다(마지막 줄·칸) 이음선을 긋는다. light는 이음 바로 오른쪽 아래 줄의 밝은 선.
+//   stripes <시트.png> --out <png> --period 10 --rowColors '9:#hex,0:#hex,1:#hex'
+//       가로 줄무늬(계단 등): 칸 안 y % period가 적은 값인 줄을 그 색으로 긋는다.
 //   roll <시트.png> --out <png> --grid 2x2 [--dx 0] [--dy 15]
 //       칸들을 받은 그림의 배치(줄×칸, 시트에는 줄 순서로 이어져 있음)로 다시 붙여 dx·dy만큼 돌려 민 뒤 다시 자른다.
 //       받은 그림의 가운데에 있던 것(울타리 가로대 등)을 칸 가운데로 옮길 때 쓴다.
@@ -45,11 +47,13 @@ const { values: opt, positionals } = parseArgs({
     rows: { type: 'string', default: '4' },
     scale: { type: 'string', default: '4' },
     keep: { type: 'string' },
+    period: { type: 'string', default: '10' },
+    rowColors: { type: 'string' },
   },
 });
 const [command, input] = positionals;
-if (!input || !opt.out || !['clean', 'planks', 'grid', 'roll', 'pick', 'turn', 'mix'].includes(command)) {
-  console.error('사용: tile.mjs clean|planks|grid|roll|pick|turn|mix <시트.png> --out <png> [옵션](파일 맨 위 설명)');
+if (!input || !opt.out || !['clean', 'planks', 'grid', 'stripes', 'roll', 'pick', 'turn', 'mix'].includes(command)) {
+  console.error('사용: tile.mjs clean|planks|grid|stripes|roll|pick|turn|mix <시트.png> --out <png> [옵션](파일 맨 위 설명)');
   process.exit(2);
 }
 
@@ -75,6 +79,7 @@ const rand = (() => {
 if (command === 'clean') clean();
 else if (command === 'planks') planks();
 else if (command === 'grid') grid();
+else if (command === 'stripes') stripes();
 else if (command === 'roll') roll();
 else if (command === 'pick') pick();
 else if (command === 'turn') turn();
@@ -170,6 +175,15 @@ function grid() {
         else if (light && (x % S === 0 || y % S === 0)) set(t * T + x, y, light);
       }
   save(`${S}칸마다 이음선`);
+}
+
+function stripes() {
+  const P = Number(opt.period);
+  if (T % P) throw new Error(`칸 크기 ${T}가 ${P}로 나누어떨어지지 않습니다.`);
+  const rows = new Map((opt.rowColors ?? '').split(',').filter(Boolean).map((s) => { const [k, c] = s.split(':'); return [Number(k), hex(c)]; }));
+  if (!rows.size) throw new Error("stripes는 --rowColors '9:#hex,...'가 필요합니다.");
+  for (let t = 0; t < N; t++) for (let y = 0; y < T; y++) { const c = rows.get(y % P); if (c) for (let x = 0; x < T; x++) set(t * T + x, y, c); }
+  save(`${P}줄마다 줄무늬`);
 }
 
 function roll() {

@@ -1,0 +1,53 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/obj2/polyhedron.png
+size 60x31
+cols 1
+palette
+a #e79953
+b #17133e
+c #ad5534
+d #fdc97a
+e #8f4431
+f #54a2f9
+g #fbc106
+h #b5f355
+i #e94031
+j #b05fec
+k #78cd34
+l #892ed7
+m #99cafb
+n #d3a7f8
+o #1a65da
+p #2e9d25
+
+frame polyhedron
+...bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb...
+...ddddddddddddddddddddddddddddddddddddddddddddddddddddda...
+..bddaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab..
+..bdaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaaaabbbaaaaaaaaabbaaaab..
+..bdaaaabaaaaaaammmmmmmbaaaabdgaaaaaaabhbhhbaaaaabnnnbaaab..
+..bdaaabiaaaaaammmmmmmbbaaabddggaaaabhhhbhhhbaaannnnnnnbab..
+.bdaaaabibaaaabmmmmmmbobaabdddggbaaabhhhhhhhhabbnnnnnnnnbab.
+.bdaaabdiiaaaabbbbbbboobaaddddgggbabkhhhhhbkbbajjjjbbjjjbab.
+.bdaabddiibaaafffffffoobabddddggggbbkkhhhhhbkbbjjjbjjjjjlab.
+.bdaadddiiibaafffffffoobbbbbbbgbggbbkkbhhhhkkkbjjjjjjjjblab.
+.ddabdddiiibaafffffffoobabggggggggbbkkkhhhbkkbbjbbjjjjbllaa.
+.daaddddiiiiaafffffffoobaagggggggbaakkkbbbbkkbajbbbbbbbllaa.
+.dabddiiiieibafffffffooaaaagggggbaaabkpppppbbaalllllllllbaa.
+.dadiiiiiiiiiafffffffobaaaabggggaaaaabppppppaaaablblllbaaaa.
+.daaaaaababbaabbbbbbbbaaaaaabggaaaaaaaabbbbaaaaaabllbbaaaaa.
+bdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaab
+bdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+bdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+bddddddddddddddddddddddddddddddddddddddddddddddddddddddddddb
+bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb
+bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb
+..bbebbbbbebeebeebebbbebeeeeebeebebbebbeebebeeeeebeebebbbb..
+...eeeebccccccccccccccccccccccccccccccccccccccccccccbeeee...
+...eeecbccccccccccccccccccccccccccccccccccccccccccccbeece...
+...aaccbccccccccccccccccccccccccccccccccccccccccccccbaacc...
+...aaccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaacc...
+...aaccb............................................baacc...
+...aaccb............................................baacc...
+...aaccb............................................baacc...
+...aaccb............................................baacc...
+...aaccb............................................baacc...

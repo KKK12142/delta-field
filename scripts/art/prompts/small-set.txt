@@ -1,0 +1,4 @@
+Four separate small object sprites for a top-down school map, arranged in a 2 by 2 grid: each is centered in its own quarter of the image, with wide empty magenta space between them; they must not touch.
+All four share the same scale and palette: each object is about 26 game pixels wide, and each game pixel is a solid square about 16 image pixels wide.
+Unless said otherwise, each is seen from above at a slight angle (top surface visible, front face below it), with no vanishing-point perspective.
+{{desc}}
