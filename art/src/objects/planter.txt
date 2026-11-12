@@ -1,0 +1,45 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/planter.png
+size 30x30
+cols 1
+palette
+a #e79648
+b #135a2a
+c #995524
+d #121935
+e #4d9a39
+f #fcec09
+g #53230a
+h #f82812
+i #fbe682
+
+frame planter
+..............................
+..............................
+..............................
+....dddddddddddddddddddddd....
+...daaaaaaaaaaaaaaaaaaaaaad...
+..daaaaabbaaaaaaaaafdaaaaaad..
+..daabbbhhbbbeebbbbfffbbbaad..
+..dagbhhhhhhbbeebfffaffbbaad..
+..daabhhiihhbbeebdfffffbbaad..
+..dagbbbhhbbebbbbedffbdebaad..
+..daaeeebbeebbffbeebbbeebaad..
+..daaeeebbedffffffeebeeebaad..
+..daabeeeeebffafffebbeebbaad..
+..daabbebbbbffffffbbhhhbbaad..
+..daabbbffbbbbffbbbbhhhbbaad..
+..daabffffffbbbdeebhhihhbaad..
+..daabfffaffbbbeebbhhhhhbaad..
+..dagbbbffdbeebbbeebhhhbbaad..
+..dagbbbbbbbeeebeeebdbdebaad..
+..daabbbbbbbbbebeebbbbebgaad..
+..dcaaaaaaaaaaaaaaaaaaaaaacd..
+..dcgggccccccccccccccccgggcd..
+..dgaagccccccccccccccccgaagd..
+...dccggggggggggggggggggccd...
+...dccgccccccccccccccccgccd...
+...dccgaaaaaaaaaaaaaaaagccd...
+...dccgccccccccccccccccgccd...
+...dccgccccccccccccccccgccd...
+...dccddddddddddddddddddccd...
+...dddd................dddd...

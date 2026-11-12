@@ -1,0 +1,63 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/sofa.png
+size 60x46
+cols 1
+palette
+a #f0bd2d
+b #1d1f42
+c #cb7a42
+d #ca9117
+e #fde080
+f #934f2d
+g #603122
+h #f5b266
+i #b76637
+j #a95c33
+k #4a2c25
+
+frame sofa
+........bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb........
+......bbeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeb.......
+.....beeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeaabb.....
+.....beeeeeeeeaaaaaaaaaaaaaaaaaaaaeaeeaaaaaaaaaaaeaaabb.....
+....beeeeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab....
+....beeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab....
+....beeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab....
+....beeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab....
+....beeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab....
+..bbbeeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbb..
+.bbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbb.
+bhhhhhcbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabhhhhhcb
+bhhhcccbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabhhhhccb
+bhhccccbddddddddddddddddddddddddddddddddddddddddddddbhhccccb
+bhcccccbddddddddddddddddddddddddddddddddddddddddddddbhcccccb
+bhcccccbddddddddddddddddddddddddddddddddddddddddddddbhcccccb
+bhcccccbdbbbbbbbbbbbbbbbbbbbddddbbbbbbbbbbbbbbbbbbbdbhcccccb
+bhcccccbbeeeeeeeeeeeeeeeeeaabddbeeeeeeeeeeeeeeeeaaabbhcccccb
+bhcccccbeeeeeeeeeeeeeeeeeaaaabbeeeeeeeeeeeeeeeeaaaaabhcccccb
+bhcccccbeeeeaaaaaaaaaaaaaaaaabbeeeeaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbeeaaaaaaaaaaaaaaaaaaabbeeaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbeeaaaaaaaaaaaaaaaaaaabbeeaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbeeaaaaaaaaaaaaaaaaaaabbeeaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbeaaaaaaaaaaaaaaaaaaaabbeaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabaaaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaabhcccccb
+bhcccccbaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaabhcccccb
+bffffffbdaaaaaaaaaaaaaaaaaaadbddaaaaaaaaaaaaaaaaaaadbffffffb
+bffffffbdddddddddddddddddddddbbdddddddddddddddddddddbffffffb
+.bbbbbbbdddddddddddddddddddddbbdddddddddddddddddddddbbbbbbb.
+..biiikcbdddddddddddddddddddbccbdddddddddddddddddddbckiiib..
+..biiikccbbbbbbbbbbbbbbbbbbbccccbbbbbbbbbbbbbbbbbbbcckiiib..
+..biiikcccccccccccccccccccccccccccccccccccccccccccccckiiib..
+..biiigccccccccccccccccccccccccccccccccccccccccccccccgiiib..
+..biiiggggggggggggggggggggggggggggggggggggggggggggggggiiib..
+..biiigffffffffffffffffffffffffffffffffffffffffffffffgiiib..
+..bjiigffffffffffffffffffffffffffffffffffffffffffffffgiiib..
+..bjjjgffffffffffffffffffffffffffffffffffffffffffffffgjjjb..
+..bjjjgbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbgjjjb..
+..bffffb............................................bffffb..
+..bffffb............................................bffffb..
+...bbbb..............................................bbbb...
+...bbbb..............................................bbb....

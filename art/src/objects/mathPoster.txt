@@ -1,0 +1,47 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/mathPoster.png
+size 60x30
+cols 1
+palette
+a #fdf6d4
+b #27205e
+c #bb6532
+d #62b442
+e #26a8f3
+f #502a26
+g #e62c52
+h #ef9956
+i #f76d7d
+j #79d3fb
+k #abe466
+
+frame mathPoster
+............................................................
+............................................................
+bbbbbbbhbbbhbbbbbbbbhbbbhbhbhhhbbhhhhbbbbhbbbhbhhhhbhbbbbbbb
+bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb
+bhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacb
+hhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacb
+bhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaaacb
+bhaaaaaaaaaaaaaaaaaaabbbbaaaaaabbbbbbbbbbaaaaaaaabaaaaaaaacb
+bhaaaaaaabbaaaaaaaaabjjjebbaaaakkkkkdddddaaagaaaabaaaaaaaacb
+bhaaaaaaabiaaaaaaabjjjeeeeebaaakkkdddddddaaagaaaabaaaaaaaacb
+bfaaaaaabiibaaaaaabjjeeeeeeeaaakkkdddddddaaaaaaaabaaaagaaacb
+bfaaaaaaiiggbaaaabjjjeeeeeeebaakkddddddddaaaagaaabaaagaaaacb
+hfaaaaaiiigggaaaabjjeeeeeeeebaaddddddddddaaaagaaabaaagaaaacb
+hhaaaabiiigggbaaabjjeeeeeeeebaaddddddddddaaaaagaabaagaaaaacb
+bhaaaabiigggggaaabeeeeeeeeeebaaddddddddddaaaaaagabaaaaaaaacb
+bhaaabiiggggggbaaabeeeeeeeeeaaaddddddddddaaaaaaagggaaaabaacb
+bhaabiiigggggggbaabeeeeeeeeeaaaddddddddddaabbbbbbbbbbbbbbacb
+bhaabiiggggggggbaaaaeeeeeeeaaaaddddddddddaaaaaaaabaaaaabaacb
+bhaabbbbbbbbbbbbaaaaabbbbaaaaaabbbbbbbbbbaaaaaaaabaaaaaaaacb
+bhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaaacb
+bhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacb
+bfffffffffffffffffffffffffffffffffffffffffffffffffffffffffcb
+bccccccccccccccccccccccccccccccccccccccccccccccccccccccccccb
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................

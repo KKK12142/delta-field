@@ -1,0 +1,81 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/serverRack.png
+size 26x60
+cols 1
+palette
+a #2c4253
+b #0f1531
+c #1a2f42
+d #626773
+e #3d4351
+f #7188a1
+g #3d5567
+h #37fb08
+i #808691
+j #02b5fc
+k #bac3cc
+l #58738f
+m #99a2ae
+n #4b6276
+o #7ee588
+
+frame serverRack
+...bbbbbbbbbbbbbbbbbbbb...
+..bkkkkidddddddddddddddb..
+.bkkkkddddddddddddddddddb.
+.bkkkdddddddddddddddddddb.
+bkkkdddddddddddddddddddddb
+bkdddddddddddddddddddddddb
+bddddddddddddddddddddddddb
+biiiiiiiiiiiiiiiiiiiiiiiib
+baaaaaaaaaaaaaaaaaaaaaaaab
+bbbbbbbbbbbbbbbbbbbbbbbbbb
+befffffffffffffffffffffbeb
+befccccccclllccccccccccfeb
+befcaaaaafffaaaaaaaaaacbeb
+befcaaaafffaaaaaaaaaaacfeb
+befcaaaffoahhacjajcajacbeb
+bbbbaafffaaaaaaaaaaaaacbeb
+bbmbcfffcccccccccccccccbeb
+bbmbffffaaaaaaaaaaaaaacfeb
+bbblffaaahahcahcajjacacbeb
+beflfaaaaaaaaaaaaaaaaacfeb
+beflfccccccccccccccccccfeb
+befcaaaaaaaaaaaaaaaaaacfeb
+befcaaaaahachahcajcajacfeb
+befcaaaaaaaaaaaaaaaaaacfeb
+befcggggggggggggggggggcfeb
+befcaaaaahahhacjajjacacbeb
+befcaaaaaaaaaaaaaaaaaacfeb
+befcacacaaaaaaaaacaaaccfeb
+befcaaaaaaaaaaaaaaaaaabbbb
+befcaaaaahachaahacjajanmbb
+befcaaaaaaaaaaaaaaaaaagmbb
+bebcccccccccccccccccccbmbb
+befcaaaaaaaaaaaaaaaaaanmbb
+befcaaaaahahcahcajjajanmbb
+bebcaaaaaaaaaaaaaaaaaacfeb
+bebcggggggggggggggggggcbeb
+bebcaaaaahachachajaajacfeb
+bebcaaaaaaaaaaaaaaaaaacbeb
+bebcaaaaaaaaaaaaaaaaaacbeb
+befcaaaaaaaaaaaaaaaaaacfeb
+befcaaaaahahhacjajcajacbeb
+befcaaaaaaaaaaaaaaaaaacfeb
+befccccccccccccccccccclfeb
+bbbbaaaaaaaaaaaaaaaaaalfeb
+bbmbaaaaahachahcajjaaflfeb
+bbmbaaaaaaaaaaaaaaaafflfeb
+bbbcaaacaaaaaaacaacffacbeb
+befcaaaaaaaaaaaaaafffacbeb
+befcaaaaahahaahaafffjacbeb
+befcaaaaaaaaaaaafffaaacbeb
+befcaaaaaaaaaaafffaaaacbeb
+beffffffffffffffffffffffeb
+bebbbbbbbbbbbbbbbbbbbbbbeb
+bddddddddddddddddddddddddb
+beeeeeebbebebbebebbeeeeeeb
+beeeeeebbebebbebebbeeeeeeb
+beeeeeeeeeeeeeeeeeeeeeeeeb
+.bbdb................bdbb.
+.bggb................bggb.
+.bbbb................bbbb.

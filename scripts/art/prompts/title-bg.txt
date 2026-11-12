@@ -1,0 +1,6 @@
+Original wide pixel art background for the title screen of a cheerful top-down 2D school game used in a high school science class.
+Strict pixel art: every game pixel is a crisp solid square about 6 image pixels wide on one uniform grid. No anti-aliasing, no gradients, no blur, no glow, no dithering. Flat colors, 2-3 shades per material, light from the top-left.
+Scene, seen from above at a slight angle like the game map: a sunny school sports ground of light-brown dirt in the front, a low green fence with a closed school gate at the bottom middle,
+a cream two-story school building with many windows across the top, a blue metal auditorium roof at the right, a few round green trees, a small flower bed, a flagpole with a plain light blue flag.
+No people, no characters, no text, no letters, no numbers, no signs with writing, no watermark. Keep the center of the image calm and empty (a menu card will be placed there).
+Do not imitate any existing game, franchise, studio style or real place.

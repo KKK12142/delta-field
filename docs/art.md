@@ -78,6 +78,7 @@
 
 ### 아이콘
 - 아이템 등은 30×30. 대화상자(HTML)에서 크게 보일 때는 CSS `image-rendering: pixelated`로 키운다.
+- 열쇠 아이콘 icons/door-key(교실 문, 빨간 꼬리표)·lab-key(과학실, 파랑)·entrance-key(현관, 초록). 글자판은 art/src/icons/(아래 "장식 소품").
 
 ### 그리는 법
 - 외곽선 1도트, 어두운 남색 계열(순검정 쓰지 않음). 빛은 왼쪽 위에서. 재질마다 2~3단계 명암. 그라데이션·디더링·흐림 없음.
@@ -97,6 +98,7 @@
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
+| art/src/icons/<아이템 id>.txt | 아이템 아이콘 글자판(열쇠) | 넣음 |
 | art/src/ui/<이름>.txt → public/sprites/ui/<이름>.png | UI 테두리(9-slice)·표시·하트(아래 "UI 그림") | 넣음 |
 | public/fonts/ | 웹 글꼴 Galmuri11·Galmuri9(woff2)와 라이선스 Galmuri-OFL.txt(아래 "글꼴") | 넣음 |
 
@@ -299,6 +301,58 @@
 
 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --out art/work/mock/school.png --area 0,0,48,37 [--scale 2] [--chars 'char-01@10,6,down;...']`
 맵 데이터에 public/sprites의 타일·사물을 깔아 본다(사물의 sprite 항목을 읽는다). 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.
+
+## 장식 소품·새 타일(2026-11-12, 교사 결정 "모든 장소")
+진단 보고(.run/ui-audit/report.md)의 M1·M2·M4·M5·M6·M7·U4·U6. 그림 생성 28장, **1,254.07크레딧**(장당 35.12~45.49, 다시 받은 것 없음. 동시에 5개를 부를 때 2번 실패했고 값은 나가지 않았다).
+프롬프트 설명은 scripts/art/things.json(set-*, bench … auditoriumFace), 로고·첫 화면 배경은 prompts/logo.txt·title-bg.txt(--no-style).
+배치는 맵 담당이 school.json·goldenbell.json에 넣는다(배치 초안은 docs/map.md에 붙일 표).
+
+- 작은 소품(small-set 2×2, 한 장에 넷): `pnpm art:fit <받은 그림> --bg '#ff00ff' --grid 2x2 --width 26 --frame 30x40 --colors 16`
+  → `node scripts/art/split.mjs <시트> --frame 30x40 --names a,b,c,d --out-dir <폴더>`(프레임마다 한 장, 위 빈 줄을 잘라 30×30 이상) → `grid.mjs to-txt` → `to-png`.
+
+  | 받은 묶음 | 그림(objects/, 30×30 안팎) |
+  |---|---|
+  | set-classroom | chair(쓰지 않음, 아래), wallClock, plant, trashBin |
+  | set-hall | extinguisher, waterCooler(30×33), eyeShower(30×32), safetySign |
+  | set-room | officeChair(30×34), printer, globe, weatherBox |
+  | set-outdoor | soccerBall, cone, outdoorBin, planter |
+  | set-keys | icons/door-key(빨간 꼬리표)·lab-key(파랑)·entrance-key(초록), objects/beanbag |
+- 하나씩 받은 것: `art:fit --bg '#ff00ff' --width <너비> --frame <너비>x<높이> --colors 16`, 긴 것은 stretch.mjs로 늘였다.
+
+  | 그림 | 크기(도트) | 차지 칸 | 만든 법 |
+  |---|---|---|---|
+  | bench | 90×21 | 3×1 | 견본 60 → 칸 15-44 되풀이 |
+  | stands | 240×30 | 8×1 | 견본 60 → 칸 20-39 --whole |
+  | waterTap | 90×22 | 3×1 | 칸 15-29 --whole(수도꼭지 박자) |
+  | flowerBed | 120×20 | 4×1 | 칸 15-44 |
+  | handrail | 120×13 | 4×1 | 칸 15-29 --whole(기둥 박자) |
+  | sink | 60×57 | 2×1 | 수도꼭지가 1칸 위로 솟음 |
+  | serverRack | 26×60 | 1×1 | 1칸 위로 솟음 |
+  | sofa, bookCart | 60×46, 60×52 | 2×1 | |
+  | flagpole | 30×97 | 1×1 | --height 100, 2칸 넘게 솟음 |
+  | window | 46×30 | 2×1 | 벽 앞면 칸의 위 1~18줄(아래 판벽을 가리지 않게 높이 18로 맞춤) |
+  | periodicTable | 52×30 | 2×1 | 벽 앞면(높이 27) |
+  | whiteboard | 90×30 | 3×1 | 벽 앞면, 칸 15-44 |
+  | mathPoster | 60×30 | 2×1 | 벽 앞면(그림 22줄, 위 2·아래 6 투명) |
+  | curtain | 180×30 | 6×1 | 벽 앞면, 칸 15-44 |
+  | banner | 180×30 | 6×1 | 벽 앞면(그림 20줄). 가운데가 비어 있어 글자는 화면이 적는다 |
+  | stage | 210×54 | 7×2 | 견본 60×27 → 가로 칸 15-44, 세로 줄 4-12(마루)를 늘임 |
+  | auditoriumBigDoor | 54×30 | 2×1 | 강당 앞면 벽 칸의 큰 유리문(꾸밈) |
+- 받은 그림을 타일로
+  - gardenGrass(새 바닥, 30×30 변형 4): floor-patch → `art:fit --full --grid 2x2 --frame 30x30 --cols 4 --badge 0` → `tile.mjs clean --erase 113,24,7,6`. 운동장 흙 옆에서 너무 밝아 색 다섯을 손으로 낮췄다(글자판).
+  - roofFloor(옥상 바닥, 대장 결정으로 콘크리트로 바꿈): 같은 방법 뒤 `tile.mjs grid --step 30 --line '#8e929d' --light '#c3c6ce'`(판 이음을 칸 가장자리로). 이름이 같아 맵을 고치지 않아도 바뀐다.
+  - auditoriumFace(강당 앞면 벽, 변형 2): 받은 띠는 벽돌 박자가 고르지 않아, 그 색으로 decals.mjs가 짠다(처마 테·그늘, 10도트 벽돌 6단, 돌 굽).
+- 규칙으로 짠 그림(생성 없음): `node scripts/art/decals.mjs`가 글자판을 만들고 `grid.mjs to-png`로 PNG를 만든다.
+  - 벽 윗면 테 tiles/wallEdgeN·S·W·E(변에 2도트: 바깥 #4a4458, 안 #9fa1ab)와 안쪽 모서리 wallCornerNW·NE·SW·SE(2×2). 테두리 밖은 투명이라 wallTop 위에 겹친다.
+    고르기(mock.mjs의 wallEdges()와 같게 painter.ts에): 벽 윗면 칸(# 이고 아래가 바닥이 아님)에서, 위·아래·왼쪽·오른쪽 칸이 바닥이거나 벽 앞면 칸이면 그 변의 테.
+    두 변이 모두 벽 윗면이고 그 사이 대각선 칸만 트이면 그 구석의 안쪽 모서리.
+  - 골든벨 구역 판 objects/zone-O·X·1·2·3·4(60×60, 2×2칸): theme color.zone 색, 7×9 도트 글자를 3배로. 바닥에 깔아 지나갈 수 있다.
+  - objects/roomSign(30×30 칸의 3~14줄에 30×12 판): 문 옆 벽 앞면에 거는 교실 이름판. 이름 글자는 화면이 Galmuri9로 적는다.
+- 첫 화면: ui/logo.png(81×64, "DELTA FIELD"와 삼각형, 생성 그림을 12픽셀 = 1도트로), ui/title-bg.png(256×171, 1536×1024 생성 그림을 6픽셀 = 1도트로, 32색. 오른쪽 아래 AI 표시 자리를 옆 칸으로 덮음).
+  화면에서는 정수 배로 키우고 `image-rendering: pixelated`(배경은 화면을 덮도록 3~5배, 남는 곳은 잘림).
+- 쓰지 않은 것: chair(교실 책상 아래에 놓으면 책상이 두 줄로 보이고, 등받이가 칠판 쪽이라 방향이 맞지 않음). 그림은 남겨 둔다.
+- 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --decor <배치.json> --out <png> [--area ...]`. --decor는 배치 초안(새 칸 글자 +·$, 옮기기, 장식 사물)과
+  그리기 효과(벽 윗면 테, 사물 그림자, 경기장 선, 미션 사물 위 "!")를 얹는다. 형식은 mock.mjs 맨 위.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.

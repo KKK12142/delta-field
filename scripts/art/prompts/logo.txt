@@ -1,0 +1,5 @@
+Original pixel art game title logo for a cheerful 2D school game used in a high school science class, on one flat solid magenta (#FF00FF) background (removed later).
+Strict pixel art: every game pixel is a crisp solid square about 8 image pixels wide on one uniform grid. No anti-aliasing, no gradients, no blur, no glow, no soft shadows, no dithering.
+The logo reads exactly "DELTA FIELD" in two lines ("DELTA" above "FIELD"), chunky blocky pixel capital letters, cream white letters with a thick dark warm navy (#1d1531) outline and a blue lower shade,
+a small golden triangle (the Greek letter delta shape) above the first letter, a few tiny green grass blades along the bottom edge.
+No other text, no watermark, no signature. Do not imitate any existing game, franchise or studio logo.
