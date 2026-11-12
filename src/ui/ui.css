@@ -467,8 +467,20 @@
   border-image: var(--df-skin-btn-gold);
   color: var(--df-button-light-text);
   white-space: pre-line;
-  padding-left: calc(var(--df-icon-size) + 2 * var(--df-gap-small));
-  background: var(--df-skin-megaphone) var(--df-gap-small) center / var(--df-icon-size) no-repeat;
+  position: relative;
+  padding-left: calc(var(--df-icon-size) + var(--df-gap-small));
+}
+/* 9-slice의 fill이 바탕 그림을 덮으므로 그림은 ::before로 위에 얹는다. */
+.df-hud-notice::before,
+#ui > .df-banner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  transform: translateY(-50%);
+  background: var(--df-skin-megaphone) center / contain no-repeat;
   image-rendering: pixelated;
 }
 /* 가진 물건 칸 */
@@ -644,9 +656,10 @@
   color: var(--df-text);
   cursor: pointer;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: var(--df-gap-small);
+  row-gap: var(--df-hud-gap);
 }
 .df-cctv-row:hover {
   background: var(--df-row-hover);
@@ -662,22 +675,26 @@
   vertical-align: middle;
 }
 .df-cctv-face {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
 }
 .df-cctv-row-head {
   display: flex;
   align-items: center;
   gap: var(--df-hud-gap-wide);
   min-width: 0;
+  white-space: nowrap;
 }
 .df-cctv-progress {
+  justify-self: start;
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
   padding: var(--df-badge-pad);
   border: var(--df-badge-border) solid var(--df-text);
   background: var(--df-badge);
   color: var(--df-badge-text);
 }
 .df-cctv-row-doing {
-  grid-column: 2 / -1;
+  grid-column: 2;
   display: flex;
   align-items: center;
   gap: var(--df-hud-gap);
@@ -950,4 +967,227 @@ span.df-rank-medal {
   font-family: var(--df-font-family-small);
   font-size: var(--df-font-small);
   pointer-events: none;
+}
+
+/* ---- 보상 카드(미션을 마쳤을 때) ---- */
+.df-panel.df-reward {
+  position: relative;
+}
+/* 맞힌 문제면 오른쪽 위에 "맞음" 도장 */
+.df-reward.is-correct::after {
+  content: '';
+  position: absolute;
+  top: var(--df-gap-small);
+  right: var(--df-gap-small);
+  width: var(--df-stamp-size);
+  height: var(--df-stamp-size);
+  background: var(--df-skin-stamp) center / contain no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.df-reward-gains {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+/* 얻은 것: 앞에 반짝이는 별(4프레임), 하트를 더 얻으면 하트 +1 */
+.df-reward-gain {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap-small);
+}
+.df-reward-gain::before {
+  content: '';
+  flex: none;
+  width: var(--df-sparkle-size);
+  height: var(--df-sparkle-size);
+  background: var(--df-skin-sparkle) 0 0 / var(--df-sparkle-sheet) no-repeat;
+  image-rendering: pixelated;
+  animation: df-sparkle 0.6s steps(4) infinite;
+}
+.df-reward-gain.is-heart::before {
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  background: var(--df-skin-heart-plus) center / contain no-repeat;
+  animation: none;
+}
+@keyframes df-sparkle {
+  to {
+    background-position: var(--df-sparkle-end) 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .df-reward-gain::before {
+    animation: none;
+  }
+}
+/* 힌트 카드: 왼쪽에 빛살 위 카드 그림, 오른쪽에 글 */
+.df-card.df-reward-hint {
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  min-height: var(--df-burst-size);
+  padding-left: calc(var(--df-burst-size) + var(--df-gap-small));
+}
+.df-card.df-reward-hint::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--df-burst-size);
+  height: var(--df-burst-size);
+  transform: translateY(-50%);
+  background: var(--df-skin-hint-card) center / var(--df-card-image-width) var(--df-card-image-height) no-repeat,
+    var(--df-skin-burst) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+/* ---- 이야기 카드(입장 직후)·1부 완료: 장면 그림(256×171을 2배) ---- */
+.df-panel.df-story {
+  width: min(var(--df-story-panel-width), calc(100vw - 2 * var(--df-margin)));
+}
+.df-story-art {
+  width: min(var(--df-story-width), 100% - 2 * var(--df-badge-border));
+  aspect-ratio: 256 / 171;
+  align-self: center;
+  border: var(--df-badge-border) solid var(--df-text);
+  background: center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+.df-story.is-intro .df-story-art {
+  background-image: var(--df-skin-story);
+}
+.df-story.is-finish .df-story-art {
+  background-image: var(--df-skin-finish);
+}
+
+/* ---- 실마리(같은 자물쇠를 여러 번 틀렸을 때): 금색 쪽지 ---- */
+.df-text.df-clue {
+  padding: var(--df-hud-pad);
+  border: var(--df-badge-border) solid var(--df-text);
+  background: var(--df-row-me);
+}
+
+/* ---- 가운데 알림(2부 열림, 강당으로 모으기): 금색 판, 왼쪽에 확성기 ---- */
+#ui > .df-banner {
+  position: absolute;
+  top: var(--df-banner-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--df-banner-width), calc(100vw - 2 * var(--df-margin)));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+  padding: var(--df-panel-pad);
+  padding-left: calc(var(--df-icon-size) * 2 + var(--df-gap));
+  border-style: solid;
+  border-color: transparent;
+  border-width: var(--df-skin-border);
+  border-image: var(--df-skin-btn-gold);
+  image-rendering: pixelated;
+  color: var(--df-button-light-text);
+  pointer-events: none;
+}
+#ui > .df-banner::before {
+  left: var(--df-gap-small);
+  width: calc(var(--df-icon-size) * 2);
+  height: calc(var(--df-icon-size) * 2);
+}
+.df-banner-title {
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+
+/* ---- CCTV 진행 요약과 막힌 학생 ---- */
+.df-cctv-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap-wide);
+}
+.df-cctv-summary > .df-row {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+.df-cctv-summary-line {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+}
+.df-button.df-cctv-sort {
+  flex: none;
+  border-image: var(--df-skin-btn-light);
+  color: var(--df-button-light-text);
+}
+.df-button.df-cctv-sort:active {
+  border-image: var(--df-skin-btn-light-down);
+}
+.df-cctv-stuck {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: calc(4 * var(--df-touch));
+  overflow-y: auto;
+}
+.df-cctv-stuck-row {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap-small);
+  border-left: var(--df-state-bar) solid var(--df-state-stuck);
+  border-bottom: var(--df-row-line) solid var(--df-line);
+  padding-left: var(--df-hud-gap-wide);
+}
+.df-cctv-stuck-name {
+  font: inherit;
+  min-height: var(--df-touch);
+  padding: 0 var(--df-hud-gap);
+  border: 0;
+  background: none;
+  color: var(--df-state-stuck);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.df-cctv-row.is-finished {
+  border-left-color: var(--df-state-done);
+}
+
+/* ---- 골든벨: 마감, 합산 순위, 반 대항, 합계 처음으로 ---- */
+.df-button.df-gb-close.is-ready {
+  border-image: var(--df-skin-btn-gold);
+  color: var(--df-button-light-text);
+}
+.df-gb-totals-title {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap-small);
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+.df-gb-totals-title:not(:empty)::before {
+  content: '';
+  flex: none;
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  background: var(--df-skin-trophy) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+.df-gb-classes .df-emblem {
+  margin-right: var(--df-hud-gap);
+}
+.df-button.df-gb-reset {
+  align-self: flex-start;
+  margin-top: var(--df-danger-gap);
+  border-image: var(--df-skin-btn-light);
+  color: var(--df-button-light-text);
+}
+
+/* 골든벨 선생님 창: 순위·합산 순위가 함께 나오면 창 전체를 넘겨 본다(목록마다 따로 접히지 않게). */
+.df-cctv.df-gb-panel {
+  overflow-y: auto;
+}
+.df-gb-panel .df-gb-ranking.df-cctv-list {
+  flex: none;
+  overflow: visible;
 }

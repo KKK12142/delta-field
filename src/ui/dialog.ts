@@ -325,10 +325,13 @@ export class Dialog {
     return new Promise((resolve) => {
       const panel = this.panel(card.title);
       panel.classList.add('df-reward');
+      // 맞힌 문제의 보상이면 "맞음" 도장을 찍는다(겉모양).
+      panel.classList.toggle('is-correct', card.lead.startsWith('맞았습니다') || card.lead.startsWith('번호가 맞았습니다'));
       if (card.lead) panel.append(el('p', 'df-text df-reward-lead', card.lead));
       if (card.gains.length) {
         const list = el('ul', 'df-reward-gains');
-        for (const g of card.gains) list.append(el('li', 'df-reward-gain', g));
+        // 얻은 것마다 반짝임, 하트를 더 얻으면 하트 +1 그림(겉모양)
+        for (const g of card.gains) list.append(el('li', g.includes('하트') ? 'df-reward-gain is-heart' : 'df-reward-gain', g));
         panel.append(list);
       }
       if (card.after) panel.append(el('p', 'df-text df-reward-after', card.after));

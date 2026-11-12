@@ -11,6 +11,7 @@ interface Row {
   face: HTMLElement;
   character: string;
   state: string;
+  icon: string | undefined;
   classGroup: string;
   emblem: HTMLElement;
   status: HTMLElement;
@@ -190,8 +191,6 @@ export class CctvPanel {
       if (row.state !== s.state) {
         row.state = s.state;
         row.node.className = `df-cctv-row is-${s.state}`;
-        const icon = STATUS_ICON[s.state];
-        row.status.replaceChildren(...(icon ? [uiIcon('ui', icon, 'df-status-icon')] : []));
       }
       if (row.classGroup !== s.classGroup) {
         row.classGroup = s.classGroup;
@@ -202,6 +201,12 @@ export class CctvPanel {
       setText(row.progress, s.progress);
       setText(row.doing, s.stuck ? `${s.doing} · 막힘: ${s.stuck}` : s.doing);
       row.node.classList.toggle('is-stuck', s.stuck !== null);
+      // 막힌 학생은 푸는 중이어도 막힘 그림을 보인다.
+      const icon = s.stuck !== null ? 'status-stuck' : STATUS_ICON[s.state];
+      if (row.icon !== icon) {
+        row.icon = icon;
+        row.status.replaceChildren(...(icon ? [uiIcon('ui', icon, 'df-status-icon')] : []));
+      }
       row.node.classList.toggle('is-finished', s.finished);
     }
     for (const [id, row] of this.rows) {
@@ -244,6 +249,7 @@ export class CctvPanel {
       face: face('', 'df-cctv-face'),
       character: '',
       state: '',
+      icon: undefined,
       classGroup: '',
       emblem: el('span', 'df-cctv-emblem'),
       status: el('span', 'df-cctv-status'),

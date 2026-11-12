@@ -2,7 +2,8 @@ import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import type { AnswerGroup, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
 import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
-import { face, uiIcon } from './pictures';
+import { CLASS_GROUPS } from '../../shared/protocol.ts';
+import { emblem, face, uiIcon } from './pictures';
 
 /** 1·2·3위 메달(public/sprites/ui/medal-*.png) */
 const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: 'medal-bronze' };
@@ -56,19 +57,28 @@ function setRankList(list: HTMLElement, rows: RankRow[]) {
   list.replaceChildren(
     ...rows.map((r) => {
       const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
-      li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
+      const medal = MEDAL[r.rank] ? uiIcon('ui', MEDAL[r.rank], 'df-rank-medal') : el('span', 'df-rank-medal');
+      li.append(medal, face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
       return li;
     }),
   );
   list.hidden = rows.length === 0;
 }
 
-/** 글 목록: 달라졌을 때만 다시 만든다(반 대항). */
+/** 글 목록: 달라졌을 때만 다시 만든다(반 대항). 줄에 반 이름이 있으면 그 반 상징을 앞에 붙인다. */
 function setList(list: HTMLElement, rows: string[]) {
   const key = rows.join('\n');
   if (list.dataset.key === key) return;
   list.dataset.key = key;
-  list.replaceChildren(...rows.map((r) => el('li', '', r)));
+  list.replaceChildren(
+    ...rows.map((r) => {
+      const li = el('li', 'df-rank');
+      const group = CLASS_GROUPS.find((g) => r.includes(g.name));
+      if (group) li.append(emblem(group.id), ' ');
+      li.append(r);
+      return li;
+    }),
+  );
   list.hidden = rows.length === 0;
 }
 

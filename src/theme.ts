@@ -250,7 +250,18 @@ export const uiSize = {
   lifeIcon: '18px',
   cardImageWidth: '40px',
   cardImageHeight: '56px',
-  rankMin: '220px', // 학생 문제 카드에서 순위 한 칸의 가장 작은 너비(넓으면 여러 칸으로)
+  rankMin: '220px',
+  // 보상 카드: 맞음 도장 24×24 2배, 반짝임 9×9 2배(4프레임 시트 36×9), 빛살 48×48 2배 위에 힌트 카드 40×56 1배
+  stampSize: '48px',
+  sparkleSize: '18px',
+  sparkleSheet: '72px 18px',
+  sparkleEnd: '-72px',
+  burstSize: '96px',
+  // 이야기·1부 완료 장면(256×171을 2배). 창 너비는 그림 + 테두리·여백
+  storyWidth: '512px',
+  storyPanelWidth: '560px', // 그림 512 + 외곽선 6 + 테두리 24 + 여백 18
+  bannerWidth: '480px',
+  bannerTop: '28%', // 학생 문제 카드에서 순위 한 칸의 가장 작은 너비(넓으면 여러 칸으로)
   podium1: '84px',
   podium2: '60px',
   podium3: '42px',
@@ -276,7 +287,15 @@ export const uiSkin = {
   barFillLow: `url("/sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
   // 9-slice가 아닌 바탕 그림
   startImage: 'url("/sprites/ui/title-bg.png")', // 첫 화면 배경(256×171, 화면을 덮도록 키운다)
-  megaphone: 'url("/sprites/ui/megaphone.png")', // 강당으로 모으기 안내
+  megaphone: 'url("/sprites/ui/megaphone.png")', // 강당으로 모으기 안내, 가운데 알림
+  trophy: 'url("/sprites/ui/trophy-icon.png")', // 합산 순위 제목
+  stamp: 'url("/sprites/ui/stamp-correct.png")', // 보상 카드: 맞음 도장
+  sparkle: 'url("/sprites/ui/sparkle.png")', // 보상 카드: 얻은 것 앞 반짝임(4프레임)
+  burst: 'url("/sprites/ui/burst.png")', // 보상 카드: 힌트 카드 뒤 빛살
+  hintCard: 'url("/sprites/ui/hintCard.png")',
+  heartPlus: 'url("/sprites/ui/heart-plus.png")', // 하트 +1(보너스)
+  story: 'url("/sprites/ui/story.png")', // 이야기 카드(입장 직후)
+  finish: 'url("/sprites/ui/finish.png")', // 1부 완료
 } as const;
 
 /** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */
