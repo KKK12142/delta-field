@@ -10,6 +10,10 @@ export const color = {
     classroomFloor: { fill: 0xe9e1d2, alt: 0xe2d9c8, line: 0xcfc3ad },
     hallFloor: { fill: 0xe3e1db, alt: 0xdbd8d0, line: 0xc6c1b5 },
     labFloor: { fill: 0xdde6e8, alt: 0xd3dde0, line: 0xb9c8cc },
+    computerFloor: { fill: 0xd8dce6, alt: 0xcfd4df, line: 0xb4bbc9 },
+    libraryFloor: { fill: 0xb98f7a, alt: 0xb28872, line: null },
+    roofFloor: { fill: 0xb7bcc0, alt: 0xb0b5b9, line: 0x9ca2a7 },
+    stairs: { fill: 0xc9c4bb, alt: 0xbdb7ad, line: 0x9e978b },
     field: { fill: 0xd9c49c, alt: 0xd4bf96, line: null },
     wall: { top: 0xa59a8c, face: 0x8a7f72 },
     fence: { top: 0x7e8a68, face: 0x66714f },
@@ -53,6 +57,23 @@ export const color = {
     entrance: 0x5d7f95,
     gate: 0x55585c,
     item: 0xd9a441,
+    timetable: 0xe8e4d8,
+    calendar: 0xf3efe6,
+    apparatus: 0x6f8aa0,
+    computerDesk: 0x8e9aa8,
+    microbit: 0x2f3a46,
+    codingBlock: 0xe58a3a,
+    lightBulb: 0xf2d16b,
+    polyhedron: 0x9a7fb8,
+    tileBoard: 0x7fa37a,
+    bookshelf: 0x7a5236,
+    readingTable: 0xa77b55,
+    telescope: 0x3e4a5c,
+    starChart: 0x2c3a5e,
+    compassSign: 0x8a6d4a,
+    sundial: 0xa8a39a,
+    partDoor: 0x6b4a33,
+    auditoriumDoor: 0x7a3f3f,
   },
 } as const;
 
@@ -83,6 +104,7 @@ export const uiColor = {
 
 /** 게임 화면 크기. 길이는 픽셀, 칸 좌표의 크기는 칸 단위 */
 export const size = {
+  groundChunk: 32, // 바닥·벽을 이 칸 수씩 나눠 한 장으로 굽는다(32칸 = 1920px, 텍스처 크기 한도 아래)
   tile: 60, // 바닥 한 칸의 한 변(픽셀). 타일 그림 30도트를 2배로 그린다(docs/art.md). 캐릭터(60×120)는 1×2칸
   floorLine: 1,
   viewTiles: 15, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
@@ -107,7 +129,7 @@ export const size = {
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
   viewMargin: 0.92, // 맵 전체를 화면에 맞출 때(골든벨, CCTV 전체 보기) 남기는 비율
-  zoomMin: 0.15, // 화면(CSS) 배율
+  zoomMin: 0.05, // 화면(CSS) 배율(넓힌 학교 맵 전체를 CCTV에 맞출 때 0.1쯤)
   zoomMax: 2,
   reserveTop: 100, // 위쪽 안내 자리(픽셀)
   // CCTV 모드

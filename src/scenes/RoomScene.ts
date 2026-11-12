@@ -1,7 +1,7 @@
 import { Input } from 'phaser';
 import { DOOR_KINDS, type MissionReward } from '../../shared/escape.ts';
 import { GATHER_SECONDS, type ActivityKind } from '../../shared/protocol.ts';
-import { areaAt, type RoomObject } from '../data/room';
+import { areaAt, partOf, type RoomObject } from '../data/room';
 import { byClassAndNickname, classCounts, describeStudent } from '../game/cctv';
 import { formatDuration, RunState } from '../game/state';
 import { CctvPanel } from '../ui/cctv';
@@ -21,7 +21,7 @@ interface Cctv {
 const REOPEN_GUARD = 250;
 
 /**
- * 학교: 교실, 복도, 실험실, 운동장이 이어진 맵을 돌아다니며 사물을 살펴보는 방탈출. 장소 사이 문은 잠겨 있다가 열면 지나갈 수 있다.
+ * 학교: 교실·복도·과학실·컴퓨터실·운동장(1부)과 수학실·도서관·옥상 천문대(2부)가 이어진 맵을 돌아다니며 사물을 살펴보는 방탈출. 장소 사이 문은 잠겨 있다가 열면 지나갈 수 있다.
  * 화면은 내 아바타를 따라간다. 선생님은 CCTV 모드로 학생을 지켜보고 골든벨을 시작한다.
  */
 export class RoomScene extends MapScene {
@@ -101,6 +101,8 @@ export class RoomScene extends MapScene {
       hints: () => [...(this.net.me()?.hints ?? [])],
       /** 내 화면에서 감춘(주운) 사물 id */
       picked: () => this.room.objects.filter((o) => this.isPicked(o)).map((o) => o.id),
+      /** 내 화면에서 감춘 사물 id(주운 물건, 아직 열리지 않은 2부 사물) */
+      hidden: () => this.room.objects.filter((o) => this.isHidden(o)).map((o) => o.id),
       escapeFile: () => this.net.escape.file,
       place: () => this.place,
       target: () => this.target?.id ?? null,
@@ -131,9 +133,14 @@ export class RoomScene extends MapScene {
     this.ctx.schoolPos = { ...this.pos };
   }
 
-  /** 연 문과 주운 물건은 지나갈 수 있다(나만). */
+  /** 연 문과 감춘 사물(주운 물건, 아직 열리지 않은 2부 사물)은 지나갈 수 있다. */
   protected objectBlocks(o: RoomObject) {
-    return !this.isOpenDoor(o) && !this.isPicked(o);
+    return !this.isOpenDoor(o) && !this.isHidden(o);
+  }
+
+  /** 아직 열리지 않은 부의 사물인지(선생님이 "2부 열기"를 누르면 모두에게 열린다) */
+  private isClosedPart(o: RoomObject) {
+    return partOf(this.room, o) > this.net.part;
   }
 
   /** 내가 주워 간 물건(줍기 미션을 마침)이면 화면에서 감춘다. */
@@ -141,9 +148,18 @@ export class RoomScene extends MapScene {
     return !!o.mission && this.net.escape.pickups.includes(o.mission) && this.hasDone(o.mission);
   }
 
-  /** 문 사물이고, 자료 파일에서 잠긴 문이 아니거나 내가 연 문이면 열려 있다. */
+  /** 화면에서 감춘 사물: 주운 물건, 아직 열리지 않은 2부의 문 아닌 사물 */
+  private isHidden(o: RoomObject) {
+    return this.isPicked(o) || (!this.isDoor(o) && (o.part ?? 1) > this.net.part);
+  }
+
+  private isDoor(o: RoomObject) {
+    return (DOOR_KINDS as readonly string[]).includes(o.kind);
+  }
+
+  /** 문 사물이고, 열린 부의 문이며, 자료 파일에서 잠긴 문이 아니거나 내가 연 문이면 열려 있다. */
   private isOpenDoor(o: RoomObject) {
-    if (!(DOOR_KINDS as readonly string[]).includes(o.kind)) return false;
+    if (!this.isDoor(o) || this.isClosedPart(o)) return false;
     if (!o.mission || !this.net.escape.doors.includes(o.mission)) return true;
     return this.hasDone(o.mission);
   }
@@ -152,9 +168,15 @@ export class RoomScene extends MapScene {
     return this.net.me()?.done.includes(mission) ?? false;
   }
 
-  /** 살펴볼 수 있는 사물: 자료 파일에 미션이 있고, 연 문이나 주운 물건이 아닌 것 */
+  /** 살펴볼 수 있는 사물: 자료 파일에 미션이 있고, 열린 부에 있으며, 연 문이나 감춘 사물이 아닌 것 */
   private canLook(o: RoomObject) {
-    return !!o.mission && this.net.escape.missions.includes(o.mission) && !this.isOpenDoor(o) && !this.isPicked(o);
+    return (
+      !!o.mission &&
+      this.net.escape.missions.includes(o.mission) &&
+      !this.isClosedPart(o) &&
+      !this.isOpenDoor(o) &&
+      !this.isHidden(o)
+    );
   }
 
   /** 서버의 방탈출 진행이 바뀌었으면 문 모양, 가진 물건, 힌트 수첩 단추를 맞춘다. 매 프레임 부르고 바뀐 때만 고친다. */
@@ -162,13 +184,13 @@ export class RoomScene extends MapScene {
     const e = this.net.escape;
     const me = this.net.me();
     const items = [...(me?.items ?? [])];
-    const key = [e.version, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, me?.hints.length ?? 0, e.hintTotal].join('|');
+    const key = [this.net.part, e.version, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, me?.hints.length ?? 0, e.hintTotal].join('|');
     if (key === this.escapeShown) return;
     this.escapeShown = key;
     for (const o of this.room.objects) {
       const view = this.objectViews.get(o.id);
       view?.setOpen(this.isOpenDoor(o));
-      view?.setHidden(this.isPicked(o));
+      view?.setHidden(this.isHidden(o));
     }
     this.hud.setItems(items.map((id) => e.items.get(id) ?? id));
     this.hud.setHints(me?.hints.length ?? 0, e.hintTotal);

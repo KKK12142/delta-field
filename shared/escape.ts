@@ -19,8 +19,8 @@ export type MissionType = (typeof MISSION_TYPES)[number];
 /** 숫자 자물쇠 번호의 가장 긴 자릿수 */
 export const MAX_CODE_DIGITS = 8;
 
-/** 열린 문처럼 지나갈 수 있게 되는 사물 종류(open 미션은 이 사물에만 둔다) */
-export const DOOR_KINDS = ['door', 'entrance'] as const;
+/** 열린 문처럼 지나갈 수 있게 되는 사물 종류(open 미션은 이 사물에만 둔다). partDoor는 2부 장소로 가는 복도 칸막이 문 */
+export const DOOR_KINDS = ['door', 'entrance', 'partDoor'] as const;
 
 /** 선생님이 고를 수 있는 방탈출 자료 파일(서버의 escape/ 폴더) */
 export interface EscapeFileInfo {

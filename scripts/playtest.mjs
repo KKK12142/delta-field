@@ -1,4 +1,4 @@
-// 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 학교 맵(교실-복도-실험실-운동장) 방탈출을 해 보고, 선생님은 CCTV 모드로 지켜본 뒤 골든벨을 한다.
+// 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 학교 맵(교실-복도-과학실-운동장) 방탈출을 해 보고, 선생님은 CCTV 모드로 지켜본 뒤 골든벨을 한다.
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버의 선생님 비밀번호를 DF_TEACHER_PASSWORD로 넘긴다.
 // 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(제한 시간이 짧은 확인용 문제 파일),
 // DF_ESCAPE_DIR=scripts/playtest-escape(예시 방탈출 자료와 형식이 틀린 자료)로 켠다.
@@ -183,8 +183,8 @@ await a.shot('camera-hall');
 const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽은 안내 자리만큼)',
   Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row + size.reserveTop / c3.zoom / size.tile) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
-const c4 = await camAt(46.5, 35.5);
-check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 48) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
+const c4 = await camAt(119.5, 35.5);
+check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 121) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
 check('장소: 운동장', (await placeOf(a)) === '운동장');
 await a.js(`__df.teleport(11.5, 8.5)`);
@@ -362,12 +362,12 @@ await wait(300);
 check('CCTV: 따라가는 학생의 장소가 복도', /복도 · 돌아다니는 중/.test((await cctvText()) ?? ''), fmt(await cctvText()));
 await a.shot('hallway');
 
-// 복도: 잠긴 실험실 문, 게시판, 신발장
+// 복도: 잠긴 과학실 문, 게시판, 신발장
 await a.js(`__df.teleport(37, 13.5)`);
 await a.press('ArrowUp', 600);
-check('잠긴 실험실 문은 지나가지 못함', (await a.js(`__df.pos().row`)) >= 13.29);
+check('잠긴 과학실 문은 지나가지 못함', (await a.js(`__df.pos().row`)) >= 13.29);
 await pressA('Space');
-check('열쇠 없이 실험실 문: 잠김 안내', await dialogHas(/실험실 문이 잠겨/));
+check('열쇠 없이 과학실 문: 잠김 안내', await dialogHas(/과학실 문이 잠겨/));
 await pressA('Enter');
 await a.js(`__df.teleport(5.5, 13.5)`);
 await pressA('Space');
@@ -381,7 +381,7 @@ await typeA('5');
 check('단답형: 틀리면 다시 써서 냄', await dialogHas(/틀렸습니다\. 다시 써서 냅니다/), fmt(await a.dialogText()));
 await a.shot('quiz-short');
 await typeA('6이요');
-check('단답형: 단위를 빼고 말끝을 붙여도 맞음, 실험실 열쇠를 얻음', await dialogHas(/실험실 열쇠를 얻었습니다/), fmt(await a.dialogText()));
+check('단답형: 단위를 빼고 말끝을 붙여도 맞음, 과학실 열쇠를 얻음', await dialogHas(/과학실 열쇠를 얻었습니다/), fmt(await a.dialogText()));
 await pressA('Enter');
 check('신발장 힌트 카드', await dialogHas(/힌트 카드: 운동량/));
 await pressA('Enter');
@@ -398,12 +398,12 @@ check('줍기: 주운 물건 자리를 지나갈 수 있음', (await a.js(`__df.
 check('줍기: 다른 학생 화면에는 물건이 그대로', (await b.js(`__df.picked()`)).length === 0 && (await a.js(`__df.picked()`)).join(',') === 'part-a');
 await a.js(`__df.teleport(37, 13.5)`);
 await pressA('Space');
-check('실험실 문이 열림', await dialogHas(/실험실 문을 열었습니다/), `${fmt(await a.dialogText())} | ${await a.js(`__df.target()`)} ${JSON.stringify(await a.js(`__df.pos()`))}`);
+check('과학실 문이 열림', await dialogHas(/과학실 문을 열었습니다/), `${fmt(await a.dialogText())} | ${await a.js(`__df.target()`)} ${JSON.stringify(await a.js(`__df.pos()`))}`);
 await pressA('Enter');
 await a.press('ArrowUp', 900);
-check('연 실험실 문을 지나 실험실로 들어감', (await a.js(`__df.pos().row`)) < 11 && (await placeOf(a)) === '실험실', await placeOf(a));
+check('연 과학실 문을 지나 과학실로 들어감', (await a.js(`__df.pos().row`)) < 11 && (await placeOf(a)) === '과학실', await placeOf(a));
 
-// 실험실: 약품장, 실험대
+// 과학실: 약품장, 실험대
 await a.js(`__df.teleport(44, 3.4)`);
 await pressA('Space');
 check('약품장 단서', await dialogHas(/실험대 ㄴ → ㄱ → ㄷ/), fmt(await a.dialogText()));
@@ -536,13 +536,26 @@ await pressA('Space');
 await pressA('Space');
 const aBefore = await a.js(`__df.pos()`);
 
-// ---- 2부 열기(지금은 서버 상태와 단추만) ----
+// ---- 2부 열기: 복도의 2부 문이 모두에게 열리고, 2부 사물(실험 장치, 전구)이 보인다 ----
 check('학생 화면에는 2부 열기 단추가 없음', (await a.js(`[...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '2부 열기').hidden`)) === true);
+await a.js(`__df.teleport(63.5, 14.5)`);
+await a.press('ArrowRight', 700);
+const hiddenA = async () => (await a.js(`__df.hidden()`)) ?? [];
+check('2부 열기 전: 복도의 2부 문을 지나가지 못하고 2부 사물은 보이지 않음',
+  (await a.js(`__df.pos().col`)) <= 64.71 && (await hiddenA()).includes('apparatus') && (await hiddenA()).includes('bulb-1'),
+  `col ${(await a.js(`__df.pos().col`)).toFixed(2)}, 감춤 ${(await hiddenA()).join(',')}`);
 await clickText(teacher, '.df-hud button', '2부 열기');
 await wait(500);
 check('2부 열기: 서버 상태가 2부, 단추는 "2부 열림"으로 잠김',
   (await a.js(`__df.part()`)) === 2 &&
     (await teacher.js(`(() => { const b = [...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '2부 열림'); return !!b && b.disabled; })()`)) === true);
+await a.press('ArrowRight', 1000);
+check('2부 열기 뒤: 2부 문을 지나 2부 복도로', (await a.js(`__df.pos().col`)) > 67 && (await placeOf(a)) === '복도(2부)',
+  `col ${(await a.js(`__df.pos().col`)).toFixed(2)}, ${await placeOf(a)}`);
+check('2부 열기 뒤: 2부 사물(실험 장치, 전구)이 보임', !(await hiddenA()).includes('apparatus') && !(await hiddenA()).includes('bulb-1'), (await hiddenA()).join(','));
+await a.shot('part2');
+await a.js(`__df.teleport(${aBefore.col}, ${aBefore.row})`);
+await wait(300);
 
 // ---- 강당으로 모으기: 문제 파일과 시간을 고르면 남은 시간이 모두에게 보이고, 0이 되면 골든벨 맵으로 ----
 /** 선생님이 강당으로 모으기를 누르고 확인용 골든벨 파일을 고른 뒤 시간(단추 글)을 고른다. */
