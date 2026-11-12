@@ -1,0 +1,4 @@
+One object sprite for a top-down school map, seen from above at a slight angle: the top surface is visible and the front face is visible below it.
+No vanishing-point perspective; edges are straight horizontal and vertical.
+Only this one object, drawn large and centered: it is {{size}}, and each game pixel is a solid square about 16 image pixels wide, so the object fills most of the image width.
+Object: {{desc}}

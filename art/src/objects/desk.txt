@@ -1,0 +1,51 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/objects/desk.png
+size 60x35
+cols 1
+palette
+a #edb165
+b #14193f
+c #b0b1b1
+d #ac7a43
+e #916031
+f #faca79
+g #fde7c1
+h #6c6d6d
+i #f5f5f4
+j #dcdcdb
+
+frame desk
+..bbbbbbbbbbbbbbbbbbbbbbbbbbb..bbbbbbbbbbbbbbbbbbbbbbbbbbb..
+.bggggggaaaaaaaaaaaaaaaaaaaab..bgggggaaaaaaaaaaaaaaaaaaaaab.
+bggggggaaaaaaaaaaaaaaaaaaaaaabbggggggaaaaaaaaaaaaaaaaaaaaaab
+bggggaaaaaaaaaaaaaaaaaaaaaaaabbggggaaaaaaaaaaaaaaaaaaaaaaaab
+bggggaaaaaaaaaaaaaaaaaaaaaaaabbggggaaaaaaaaaaaaaaaaaaaaaaaab
+bggaaaaaaaaaaaaaaaaaaaaaaaaaabbggaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+beffffffffffffffffffffffffffebbeffffffffffffffffffffffffffeb
+bdeeeeeeeeeeeeeeeeeeeeeeeeeedbbdeeeeeeeeeeeeeeeeeeeeeeeeeedb
+.beeeeeeeeeeeeeeeeeeeeeeeeeeb..beeeeeeeeeeeeeeeeeeeeeeeeeeb.
+..bbbbbbbbbbbbbbbbbbbbbbbbbbb..bbbbbbbbbbbbbbbbbbbbbbbbbbb..
+..bjbddddddddddddddddddddbccb..bjcbddddddddddddddddddddbcb..
+..bibddddddddddddddddddddbccb..bicbddddddddddddddddddddbcb..
+..bibddddddddddddddddddddbccb..bicbddddddddddddddddddddbcb..
+..bicbbbbbbbbbbbbbbbbbbbbbicb..bicbbbbbbbbbbbbbbbbbbbbbicb..
+..bicb...................bccb..bicb...................bicb..
+..bccb...................bccb..bccb...................bccb..
+..bccbbbbbbbbbbbbbbbbbbbbbccb..bccbbbbbbbbbbbbbbbbbbbbbccb..
+..bccbcccccccccccccccccccbccb..bccbcccccccccccccccccccbccb..
+..bccbcccccccccccccccccccbccb..bccbcccccccccccccccccccbccb..
+..bccbbbbbbbbbbbbbbbbbbbbbccb..bccbbbbbbbbbbbbbbbbbbbbbccb..
+..bccb...................bccb..bccb...................bccb..
+..bccb...................bccb..bccb...................bccb..
+..bccb...................bccb..bccb...................bccb..
+..bccb...................bccb..bccb...................bccb..
+..bhhb...................bhhb..bhhb...................bhhb..
+..bhhb...................bhhb..bhhb...................bhhb..
+...bb.....................bb....bb.....................bb...

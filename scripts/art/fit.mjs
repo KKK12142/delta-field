@@ -9,6 +9,7 @@
 //   --full             --grid 칸 전체를 그림 하나로 본다(바닥 타일처럼 배경이 없는 그림). --frame과 함께 쓰면 칸을 프레임 크기로 나눠 가짜 픽셀 크기를 정한다
 //   --px auto          가짜 픽셀 한 칸의 크기(받은 그림의 픽셀). auto면 찾는다. 숫자나 "가로x세로"로 정할 수 있다.
 //                      --frame이 있으면(--full 아닐 때) 기본은 frame이다. frame이면 가장 큰 그림의 높이를 --height 도트(기본: --frame 높이)로 나눈다(도트 크기가 고르지 않은 생성 그림)
+//                      --width를 주면 가장 넓은 그림의 너비를 --width 도트로 나눈다(사물처럼 너비가 정해진 그림)
 //   --bg auto          배경: auto, alpha(투명 배경), #ff00ff(이 색을 모두 지운다)
 //   --tol 48           배경색으로 볼 색 차이(0~255)
 //   --badge 0.1x0.08   오른쪽 아래 구석(그림 너비·높이의 비율)을 지운다. 생성 그림의 "AI" 표시 자리. 0이면 지우지 않는다(--full일 때도)
@@ -38,6 +39,7 @@ const { values: opt, positionals } = parseArgs({
     tol: { type: 'string', default: '48' },
     badge: { type: 'string', default: '0.1x0.08' },
     height: { type: 'string' },
+    width: { type: 'string' },
     merge: { type: 'string', default: '16' },
     colors: { type: 'string', default: '0' },
     cols: { type: 'string' },
@@ -285,17 +287,19 @@ if (opt.px === 'frame') {
   const coarse = splitBlobs(toDots());
   report.length = before;
   if (!coarse.length) throw new Error('그림을 찾지 못했습니다. --bg, --tol을 확인해 주십시오.');
-  const tall = coarse.reduce((a, b) => (b.height > a.height ? b : a));
+  const byWidth = opt.width !== undefined;
+  const tall = coarse.reduce((a, b) => ((byWidth ? b.width > a.width : b.height > a.height) ? b : a));
   // 거친 격자의 덩어리 둘레(한 칸 여유)에서 실제 픽셀 경계를 찾는다
   const b = tall.box;
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
   for (let y = Math.max(0, (b.y0 - 1) * 8); y < Math.min(H, (b.y1 + 2) * 8); y++)
     for (let x = Math.max(0, (b.x0 - 1) * 8); x < Math.min(W, (b.x1 + 2) * 8); x++)
       if (mask[y * W + x]) (x0 = Math.min(x0, x)), (y0 = Math.min(y0, y)), (x1 = Math.max(x1, x)), (y1 = Math.max(y1, y));
-  const rows = Number(opt.height ?? frame[1]);
-  const p = (y1 - y0 + 1) / rows;
+  const rows = Number(byWidth ? opt.width : (opt.height ?? frame[1]));
+  const span = byWidth ? x1 - x0 + 1 : y1 - y0 + 1;
+  const p = span / rows;
   grid = { px: p, ox: x0, py: p, oy: y0 };
-  report.push(`가짜 픽셀: 가장 큰 그림의 높이 ${y1 - y0 + 1}픽셀을 ${rows}도트로 나눠 ${p.toFixed(2)}로 정했습니다(--px frame).`);
+  report.push(`가짜 픽셀: 가장 ${byWidth ? '넓은' : '큰'} 그림의 ${byWidth ? '너비' : '높이'} ${span}픽셀을 ${rows}도트로 나눠 ${p.toFixed(2)}로 정했습니다(--px frame).`);
 }
 const dots = toDots();
 const sprites = opt.full ? splitCells(dots) : splitBlobs(dots);

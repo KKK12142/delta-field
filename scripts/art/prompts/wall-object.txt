@@ -1,0 +1,4 @@
+One object that hangs flat on a school wall, seen straight on (front view, no top surface), on the magenta background.
+Draw a short sample of it, large and centered: exactly {{size}}, each game pixel a solid square about 16 image pixels wide.
+The middle part must be plain and even so it can be repeated sideways to make the object longer; put any special details only near the two ends.
+Object: {{desc}}
