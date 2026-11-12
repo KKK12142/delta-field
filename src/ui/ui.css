@@ -20,6 +20,11 @@
 #ui > * {
   pointer-events: auto;
 }
+/* 단추·입력 칸은 브라우저 기본 글꼴을 쓰므로 도트 글꼴을 이어받게 한다(따로 정한 곳은 그대로). */
+#ui button,
+#ui input {
+  font-family: inherit;
+}
 #ui strong,
 #ui h1,
 #ui h2 {
@@ -684,6 +689,16 @@
   min-width: 0;
   white-space: nowrap;
 }
+/* 이름은 줄이지 않고 한 줄로, 넘치면 반 이름 쪽을 줄인다. */
+.df-cctv-row-name {
+  flex: none;
+  white-space: nowrap;
+}
+.df-cctv-row-head .df-cctv-row-class {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .df-cctv-progress {
   justify-self: start;
   font-family: var(--df-font-family-small);
@@ -1141,6 +1156,8 @@ span.df-rank-medal {
 }
 .df-cctv-stuck-name {
   font: inherit;
+  font-family: var(--df-font-family);
+  white-space: nowrap;
   min-height: var(--df-touch);
   padding: 0 var(--df-hud-gap);
   border: 0;
@@ -1178,9 +1195,16 @@ span.df-rank-medal {
 }
 .df-button.df-gb-reset {
   align-self: flex-start;
+  flex: none;
   margin-top: var(--df-danger-gap);
+  padding: var(--df-button-pad-small);
   border-image: var(--df-skin-btn-light);
   color: var(--df-button-light-text);
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+}
+.df-button.df-gb-reset:active:not(:disabled) {
+  border-image: var(--df-skin-btn-light-down);
 }
 
 /* 골든벨 선생님 창: 순위·합산 순위가 함께 나오면 창 전체를 넘겨 본다(목록마다 따로 접히지 않게). */
