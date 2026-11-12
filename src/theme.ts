@@ -249,7 +249,7 @@ export const uiSize = {
 
 /** 9-slice 그림(public/sprites/ui, docs/art.md "UI 그림")의 border-image 값. 도트 하나를 uiDot 픽셀로 그린다. */
 const uiDot = 3;
-const nine = (name: string, cut: number) => `url("sprites/ui/${name}.png") ${cut} fill / ${cut * uiDot}px / 0 stretch`;
+const nine = (name: string, cut: number) => `url("/sprites/ui/${name}.png") ${cut} fill / ${cut * uiDot}px / 0 stretch`;
 export const uiSkin = {
   panel: nine('panel', 4),
   panelDark: nine('panel-dark', 3),
@@ -262,9 +262,9 @@ export const uiSkin = {
   btnOff: nine('btn-off', 4),
   slot: nine('slot', 4),
   bar: nine('bar', 3),
-  barFill: `url("sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
-  barFillWarn: `url("sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
-  barFillLow: `url("sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFill: `url("/sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillWarn: `url("/sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillLow: `url("/sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
 } as const;
 
 /** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */
