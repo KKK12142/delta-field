@@ -104,6 +104,10 @@ export class MapPainter {
       if (!this.tile(ctx, `tiles/${tile.id}`, col, row, x, y)) this.floor(ctx, tile.id, col, row, x, y);
       return;
     }
+    if (ch === '&') {
+      this.roof(ctx, col, row, x, y);
+      return;
+    }
     const face = isFloor(L[row + 1]?.[col]);
     let name: string;
     if (face) {
@@ -116,6 +120,34 @@ export class MapPainter {
       name = `${tile.id}Top`;
     }
     if (!this.tile(ctx, `tiles/${name}`, col, row, x, y)) this.wall(ctx, tile.id, x, y, face);
+  }
+
+  /**
+   * 강당 지붕(&) 한 칸(docs/art.md "강당 지붕", scripts/art/mock.mjs의 roof()와 같다).
+   * 세로로 이어진 지붕 줄의 가운데는 용마루(roofRidge), 그 위는 roofN, 아래는 roofS.
+   * 지붕이 아닌 쪽(맵 밖 포함)에는 테(roofEdgeN·S·W·E)를, 두 변이 함께면 모서리(NW·NE·SW·SE)를 그 뒤에 겹친다.
+   */
+  private roof(ctx: CanvasRenderingContext2D, col: number, row: number, x: number, y: number) {
+    const L = this.room.layout;
+    const isRoof = (c: number, r: number) => L[r]?.[c] === '&';
+    let r0 = row;
+    let r1 = row;
+    while (isRoof(col, r0 - 1)) r0--;
+    while (isRoof(col, r1 + 1)) r1++;
+    const mid = r0 + Math.floor((r1 - r0 + 1) / 2);
+    const name = row < mid ? 'roofN' : row === mid ? 'roofRidge' : 'roofS';
+    if (!this.tile(ctx, `tiles/${name}`, col, row, x, y)) {
+      // 그림이 없으면 위 비탈·아래 비탈을 두 색으로 칠한다.
+      ctx.fillStyle = css(row <= mid ? color.tile.roof.top : color.tile.roof.face);
+      ctx.fillRect(x, y, DOT_TILE, DOT_TILE);
+      return;
+    }
+    const n = !isRoof(col, row - 1);
+    const s = !isRoof(col, row + 1);
+    const w = !isRoof(col - 1, row);
+    const e = !isRoof(col + 1, row);
+    const edges: [boolean, string][] = [[n, 'N'], [s, 'S'], [w, 'W'], [e, 'E'], [n && w, 'NW'], [n && e, 'NE'], [s && w, 'SW'], [s && e, 'SE']];
+    for (const [on, d] of edges) if (on) this.tile(ctx, `tiles/roofEdge${d}`, col, row, x, y);
   }
 
   /** 울타리가 위아래로 이어지는 칸(세로 가로대를 그린다) */

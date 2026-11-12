@@ -20,6 +20,7 @@ export const TILES = {
   '"': { id: 'field', name: '운동장 흙', floor: true },
   '#': { id: 'wall', name: '건물 벽', floor: false },
   '%': { id: 'fence', name: '울타리', floor: false },
+  '&': { id: 'roof', name: '강당 지붕', floor: false },
 } as const;
 export type TileChar = keyof typeof TILES;
 export type TileId = (typeof TILES)[TileChar]['id'];

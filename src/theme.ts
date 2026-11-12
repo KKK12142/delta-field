@@ -17,6 +17,7 @@ export const color = {
     field: { fill: 0xd9c49c, alt: 0xd4bf96, line: null },
     wall: { top: 0xa59a8c, face: 0x8a7f72 },
     fence: { top: 0x7e8a68, face: 0x66714f },
+    roof: { top: 0x6582a0, face: 0x4f6c89 }, // 강당 지붕(그림이 없을 때). 지붕은 앞면을 그리지 않는다
   },
   avatarShadow: 0x000000,
   highlight: 0xf2b134,
@@ -218,10 +219,11 @@ export const motion = {
 /** 미니맵(src/ui/minimap.ts, 캔버스에 그리므로 CSS 변수가 아니라 값을 바로 쓴다) */
 export const minimap = {
   background: '#8a7f72', // 벽·바깥
-  landmark: '#a59a8c', // 강당 등 들어가지 않는 건물
+  landmark: '#6582a0', // 강당 등 들어가지 않는 건물(지붕 색)
   door: '#e3e1db', // 장소 사이 문(지나가는 곳)
   lockedAlpha: 0.35, // 아직 열리지 않은 2부 장소
   label: '#2e2a26',
+  landmarkLabel: '#ffffff', // 지붕 위에 적는 건물 이름
   lockedLabel: '#5b544c',
   labelFont: '13px',
   me: '#e2433b', // 내 위치 점

@@ -60,12 +60,12 @@ export function drawMinimap(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `bold ${M.labelFont} ${fontFamily}`;
-    const label = (text: string, r: Rect, faded: boolean) => {
+    const label = (text: string, r: Rect, faded: boolean, fill: string = faded ? M.lockedLabel : M.label) => {
       const [x, y, rw, rh] = rect(r);
-      ctx.fillStyle = faded ? M.lockedLabel : M.label;
+      ctx.fillStyle = fill;
       ctx.fillText(text, x + rw / 2, y + rh / 2, rw - 4);
     };
-    for (const l of room.landmarks ?? []) label(l.name, l, false);
+    for (const l of room.landmarks ?? []) label(l.name, l, false, M.landmarkLabel);
     for (const a of room.areas ?? []) {
       // 잠긴 장소는 "· 2부에 열림"을 붙이되, 좁아서 들어가지 않으면 이름만 적는다(계단 등).
       const long = `${a.name} · 2부에 열림`;
