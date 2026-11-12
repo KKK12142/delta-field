@@ -25,6 +25,24 @@ export interface RankRow {
   me: boolean;
 }
 
+/** 선생님 창의 학생 현황 한 줄(푸는 중·정답 공개 때) */
+export interface BoardRow {
+  /** 이번 판 점수 순위(같은 점수는 같은 등수) */
+  rank: number;
+  nickname: string;
+  character: string;
+  classGroup: string;
+  /** 이번 판 점수 */
+  score: number;
+  /** 앞 판까지 더한 합계 */
+  total: number;
+  /** 머리 위 목숨과 같은 글(♥♥♡, 탈락이면 💀) */
+  lives: string;
+  out: boolean;
+  /** 정답 공개 때 이번 문제: 'correct' 맞음, 'wrong' 틀림, '' 표시 없음 */
+  mark: 'correct' | 'wrong' | '';
+}
+
 /** 위쪽 문제 카드 */
 export interface CardView {
   head: string;
@@ -75,6 +93,8 @@ export interface PanelView {
   canReset: boolean;
   /** 단답형 정답 공개 뒤 낸 답 묶음(같은 꼴의 답끼리) */
   answers: AnswerGroup[];
+  /** 학생 현황(시작 전·푸는 중·정답 공개 때). 끝나면 비고 순위(ranking)를 보인다. */
+  board: BoardRow[];
 }
 
 /** 단답형에서 같은 꼴(answerKey)로 낸 답 묶음 */
@@ -269,14 +289,31 @@ export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
   return { lives, score: `점수 ${me.gbScore}점`, where };
 }
 
+/** 학생 현황: 이번 판 점수 순(같은 점수는 닉네임 순), reveal이면 이번 문제 맞음/틀림을 단다. */
+function board(list: Player[], reveal: boolean): BoardRow[] {
+  const sorted = [...list].sort((a, b) => b.gbScore - a.gbScore || a.nickname.localeCompare(b.nickname, 'ko'));
+  return sorted.map((p) => ({
+    rank: sorted.filter((q) => q.gbScore > p.gbScore).length + 1,
+    nickname: p.nickname,
+    character: p.character,
+    classGroup: p.classGroup,
+    score: p.gbScore,
+    total: totalOf(p),
+    lives: livesTag(p),
+    out: p.gbOut,
+    mark: !reveal || !p.gbResult ? '' : isCorrectResult(p.gbResult) ? 'correct' : 'wrong',
+  }));
+}
+
 /** 선생님 창. 지금 구역마다 몇 명이 서 있는지, 정답 공개 뒤에는 맞힌 수와 남은 학생 수를 보인다. */
 export function panelView(gb: GoldenBell, players: Player[], zones: Zones, rounds: number): PanelView {
   const list = students(players);
   const n = gb.index + 1;
   const view: PanelView = {
     title: `골든벨 · ${gb.title}`, status: '', counts: [], next: null, close: null, ranking: [], totalsTitle: '', totals: [], classes: [],
-    canReset: rounds > 1, answers: [],
+    canReset: rounds > 1, answers: [], board: [],
   };
+  if (gb.phase !== 'end') view.board = board(list, gb.phase === 'reveal');
   const alive = list.filter((p) => !p.gbOut).length;
   const survivors = `남은 학생 ${alive}명 · 탈락 ${list.length - alive}명`;
   switch (gb.phase) {

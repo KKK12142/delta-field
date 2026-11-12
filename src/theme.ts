@@ -233,6 +233,16 @@ export const uiSize = {
   joystickLine: '3px',
   actionButton: '96px',
   cctvWidth: '330px',
+  gbPanelWidth: '420px', // 선생님 골든벨 창(학생 현황 표가 들어가는 너비)
+  gbSecondsWidth: '2.5em', // 골든벨 남은 시간 글 칸(가장 긴 '60초'가 들어가는 너비, 글자 크기에 따라 커짐)
+  // 선생님 골든벨 창의 학생 현황 표: 순위 | 얼굴·반·이름 | 점수 | 목숨 | 합계 | 맞음·틀림
+  boardCols: '30px minmax(0, 1fr) 30px 42px 48px 12px',
+  boardRowMin: '30px', // 줄 높이(얼굴 30×26·반 상징 30을 1배로)
+  boardMinHeight: '180px', // 창이 좁아져도 표가 이만큼은 보이게
+  boardFaceWidth: '30px',
+  boardFaceHeight: '26px',
+  boardLifeIcon: '9px', // 하트·해골 9도트를 1배로
+  dimOpacity: '0.45', // 탈락한 학생 줄
   rowPad: '6px 6px',
   rowLine: '3px', // CCTV 목록·순위 줄 사이 선
   stateBar: '6px', // CCTV 줄 왼쪽의 하는 일 띠
