@@ -1,5 +1,5 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
-import type { AnswerGroup, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
+import type { AnswerGroup, BoardRow, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
 import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
 import { CLASS_GROUPS } from '../../shared/protocol.ts';
@@ -76,6 +76,46 @@ function setList(list: HTMLElement, rows: string[]) {
       const group = CLASS_GROUPS.find((g) => r.includes(g.name));
       if (group) li.append(emblem(group.id), ' ');
       li.append(r);
+      return li;
+    }),
+  );
+  list.hidden = rows.length === 0;
+}
+
+/** 목숨 글(♥♥♡, 💀)의 하트·해골을 도트 그림으로. 글이 하트·해골이 아니면 null */
+function lifeIcons(text: string, className = 'df-life'): HTMLElement | null {
+  const m = /^(.*?)((?:♥|♡|💀)+)(.*)$/su.exec(text);
+  if (!m) return null;
+  const shown = el('span', 'df-lives-shown');
+  shown.setAttribute('aria-hidden', 'true');
+  shown.append(m[1], ...[...m[2]].map((c) => uiIcon('ui', LIFE_ICON[c], className)), m[3]);
+  return shown;
+}
+
+/**
+ * 선생님 창의 학생 현황: 등수, 얼굴, 반 상징, 닉네임, 이번 판 점수, 목숨(탈락이면 해골), 합계, 정답 공개 때 맞음(O)·틀림(X).
+ * 줄을 낮게 해 많이 보이고, 넘치면 목록 안에서 넘겨 본다. 탈락한 학생은 흐리게.
+ */
+function setBoard(list: HTMLElement, rows: BoardRow[]) {
+  const key = JSON.stringify(rows);
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  const head = el('li', 'df-board-row df-board-head');
+  head.setAttribute('aria-hidden', 'true');
+  head.append(el('span', 'df-board-rank', '순위'), el('span', 'df-board-who', '학생'), el('span', 'df-board-score', '점수'), el('span', 'df-board-lives', '목숨'), el('span', 'df-board-total', '합계'), el('span', 'df-board-mark', ''));
+  list.replaceChildren(
+    head,
+    ...rows.map((r) => {
+      const li = el('li', `df-board-row${r.out ? ' is-out' : ''}`);
+      const who = el('span', 'df-board-who');
+      who.append(face(r.character, 'df-board-face'));
+      if (r.classGroup) who.append(emblem(r.classGroup));
+      who.append(el('span', 'df-board-name', r.nickname));
+      const lives = el('span', 'df-board-lives');
+      lives.append(el('span', 'df-sr', r.lives), lifeIcons(r.lives) ?? r.lives);
+      const mark = el('span', `df-board-mark${r.mark ? ` is-${r.mark}` : ''}`, r.mark === 'correct' ? 'O' : r.mark === 'wrong' ? 'X' : '');
+      if (r.mark) mark.title = r.mark === 'correct' ? '맞음' : '틀림';
+      li.append(el('span', 'df-board-rank', `${r.rank}위`), ' ', who, ' ', el('span', 'df-board-score', `${r.score}점`), ' ', lives, ' ', el('span', 'df-board-total', `합계 ${r.total}`), ' ', mark);
       return li;
     }),
   );
@@ -238,15 +278,8 @@ export class GbHud {
   private showLives(text: string) {
     if (this.lives.dataset.key === text) return;
     this.lives.dataset.key = text;
-    const m = /^(.*?)((?:♥|♡|💀)+)(.*)$/su.exec(text);
-    if (!m) {
-      this.lives.replaceChildren(text);
-      return;
-    }
-    const shown = el('span', 'df-lives-shown');
-    shown.setAttribute('aria-hidden', 'true');
-    shown.append(m[1], ...[...m[2]].map((c) => uiIcon('ui', LIFE_ICON[c], 'df-life')), m[3]);
-    this.lives.replaceChildren(el('span', 'df-sr', text), shown);
+    const shown = lifeIcons(text);
+    this.lives.replaceChildren(...(shown ? [el('span', 'df-sr', text), shown] : [text]));
   }
 
   /** 힌트 수첩 단추에 얻은 수를 적는다(예: "1부 3/8 · 2부 0/8"). */
@@ -296,6 +329,8 @@ export class GbPanel {
   private readonly resetTotal = el('button', 'df-button df-button-small df-gb-reset', '합계 처음으로');
   /** 단답형 정답 공개 뒤 낸 답 묶음 */
   private readonly answers = el('ul', 'df-gb-answers df-cctv-list');
+  /** 학생 현황(시작 전·푸는 중·정답 공개 때) */
+  private readonly board = el('ol', 'df-gb-board');
   private readonly onAccept: (key: string, accept: boolean) => void;
 
   constructor(handlers: {
@@ -329,7 +364,8 @@ export class GbPanel {
     this.node.setAttribute('aria-label', '골든벨 진행');
     this.answers.hidden = true;
     this.podium.hidden = true;
-    this.node.append(head, this.counts, row, this.answers, this.podium, this.ranking, this.totalsTitle, this.totals, this.classes, this.resetTotal);
+    this.board.hidden = true;
+    this.node.append(head, this.counts, row, this.answers, this.board, this.podium, this.ranking, this.totalsTitle, this.totals, this.classes, this.resetTotal);
     uiRoot().append(this.node);
   }
 
@@ -364,6 +400,7 @@ export class GbPanel {
     this.resetTotal.hidden = !v.canReset;
     this.resetTotal.disabled = waiting;
     this.showAnswers(v.answers, waiting);
+    setBoard(this.board, v.board);
   }
 
   /** 낸 답 묶음: 답, 학생 수와 채점, 낸 학생, 정답 인정·인정 취소 단추 */

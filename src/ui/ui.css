@@ -640,6 +640,7 @@
   flex: none;
 }
 .df-cctv-list {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -827,6 +828,11 @@
   border-image: var(--df-skin-bar-fill-low);
 }
 .df-gb-seconds {
+  /* 9초 이하로 바뀌어도 막대 길이가 그대로 있게 글 칸 너비를 고정하고 오른쪽에 맞춘다. */
+  flex: none;
+  width: var(--df-gb-seconds-width);
+  text-align: right;
+  white-space: nowrap;
   font-size: var(--df-font-title);
   line-height: 1;
 }
@@ -1214,4 +1220,83 @@ span.df-rank-medal {
 .df-gb-panel .df-gb-ranking.df-cctv-list {
   flex: none;
   overflow: visible;
+}
+
+/* ---- 선생님 골든벨 창: 넓게, 학생 현황 표 ---- */
+.df-cctv.df-gb-panel {
+  width: min(var(--df-gb-panel-width), calc(100vw - 2 * var(--df-margin)));
+}
+.df-hud.df-gb.is-teacher.has-panel {
+  right: calc(min(var(--df-gb-panel-width), 100vw - 2 * var(--df-margin)) + 2 * var(--df-margin));
+}
+.df-gb-board {
+  position: relative; /* 안의 읽어 주기용 글(.df-sr)이 창 밖으로 넘치지 않게 */
+  flex: 1;
+  min-height: var(--df-board-min-height);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  line-height: 1;
+}
+.df-board-row {
+  display: grid;
+  grid-template-columns: var(--df-board-cols);
+  align-items: center;
+  column-gap: var(--df-gap-small);
+  min-height: var(--df-board-row-min);
+  border-bottom: var(--df-row-line) solid var(--df-line);
+}
+.df-board-row.is-out {
+  opacity: var(--df-dim-opacity);
+}
+.df-board-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 0;
+  padding: var(--df-hud-gap) 0;
+  background: var(--df-panel);
+  color: var(--df-text-muted);
+}
+.df-board-who {
+  display: flex;
+  align-items: center;
+  gap: var(--df-hud-gap);
+  min-width: 0;
+}
+.df-board-face {
+  width: var(--df-board-face-width);
+  height: var(--df-board-face-height);
+}
+.df-board-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.df-board-score,
+.df-board-total {
+  text-align: right;
+  white-space: nowrap;
+}
+.df-board-lives .df-lives-shown {
+  gap: 0;
+  flex-wrap: nowrap;
+}
+.df-board-lives .df-life {
+  width: var(--df-board-life-icon);
+}
+.df-board-mark {
+  text-align: center;
+  font-family: var(--df-font-family);
+  font-size: var(--df-font);
+}
+.df-board-mark.is-correct {
+  color: var(--df-correct);
+}
+.df-board-mark.is-wrong {
+  color: var(--df-wrong);
 }
