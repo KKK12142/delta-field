@@ -115,6 +115,8 @@ export class GbHud {
   private readonly answerSent = el('span', 'df-text');
   private readonly answerError = el('span', 'df-error');
   private readonly explain = el('span', 'df-text df-gb-explain');
+  /** 객관식 보기(카드에도 둔다) */
+  private readonly choices = el('ol', 'df-gb-choices');
   /** 힌트 수첩(학생): 방탈출에서 얻은 힌트 카드를 골든벨 중에도 본다. */
   readonly notebook = el('button', 'df-button df-button-small df-button-light', '힌트 수첩');
   private answerShown = false;
@@ -150,6 +152,7 @@ export class GbHud {
       this.head,
       this.timer,
       this.question,
+      this.choices,
       this.line,
       this.answerForm,
       this.answerSent,
@@ -197,6 +200,7 @@ export class GbHud {
     setText(this.line, v.line);
     setText(this.result, v.result);
     setText(this.explain, v.explain);
+    setList(this.choices, v.choices);
     this.result.classList.toggle('is-good', v.tone === 'good');
     this.result.classList.toggle('is-bad', v.tone === 'bad');
     setRanking(this.podium, this.ranking, v.ranking);

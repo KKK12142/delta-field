@@ -23,6 +23,9 @@ interface Cctv {
   sort: CctvSort;
 }
 
+/** 미션을 마치면 열린 그림(-open)으로 바꾸는 사물(문이 아닌 것) */
+const OPEN_WHEN_DONE: ReadonlySet<string> = new Set(['gate', 'timeCapsule']);
+
 /** 닫은 키가 곧바로 다시 살펴보기로 이어지지 않게 두는 틈(ms) */
 const REOPEN_GUARD = 250;
 
@@ -240,8 +243,9 @@ export class RoomScene extends MapScene {
     this.escapeShown = key;
     for (const o of this.room.objects) {
       const view = this.objectViews.get(o.id);
-      // 교문은 1부를 마친 학생 화면에서 열린 모양(gate-open)으로 보인다.
-      view?.setOpen(this.isOpenDoor(o) || (o.kind === 'gate' && !!me?.finished));
+      // 교문·타임캡슐은 그 미션을 마친 학생 화면에서 열린 모양(gate-open, timeCapsule-open)으로 보인다.
+      view?.setOpen(this.isOpenDoor(o) || (OPEN_WHEN_DONE.has(o.kind) && !!o.mission && this.hasDone(o.mission)));
+      view?.setDone(!!o.mission && this.hasDone(o.mission));
       view?.setHidden(this.isHidden(o));
       view?.setLit(this.isLit(o));
       view?.setMark(this.markOf(o));
@@ -252,9 +256,7 @@ export class RoomScene extends MapScene {
     this.place = '';
     this.updatePlace();
     // 연 문 위에 서 있던 사물 강조를 다시 고른다.
-    this.target = null;
-    this.highlight.clear();
-    this.hud.setTarget(null);
+    this.clearTarget();
   }
 
   /** 지금 장소 이름과 그 장소의 미션 수(예: "과학실 · 미션 1/4")를 안내에 보인다(장소가 바뀌었거나 진행이 바뀌었을 때). */
@@ -309,7 +311,8 @@ export class RoomScene extends MapScene {
   protected reserved(): Reserved {
     const cam = this.cameras.main;
     return {
-      top: this.css(size.reserveTop),
+      // 위쪽 안내는 지도 위에 겹쳐 띄운다(빈 띠를 두지 않는다, U3).
+      top: 0,
       bottom: 0,
       right: this.cctv ? Math.max(0, cam.width - this.css(this.cctv.panel.left)) : 0,
     };
@@ -510,9 +513,7 @@ export class RoomScene extends MapScene {
     this.cctv = { panel, following: null, view: best, sort: 'class' };
     this.hud.setCctv(true);
     this.joystick?.setHidden(true);
-    this.target = null;
-    this.highlight.clear();
-    this.hud.setTarget(null);
+    this.clearTarget();
     this.updateCctv();
     this.fitCamera();
   }
@@ -627,6 +628,14 @@ export class RoomScene extends MapScene {
 
   // ---- 살펴보기 ----
 
+  /** 살펴볼 대상을 비운다(강조, 이름표 판, 살펴보기 단추). */
+  private clearTarget() {
+    if (this.target) this.objectViews.get(this.target.id)?.setNear(false);
+    this.target = null;
+    this.highlight.clear();
+    this.hud.setTarget(null);
+  }
+
   /** 손이 닿는 거리 안에서 가장 가까운, 살펴볼 수 있는 사물 */
   private updateTarget() {
     let best: RoomObject | null = null;
@@ -643,6 +652,9 @@ export class RoomScene extends MapScene {
       }
     }
     if (best === this.target) return;
+    // 가까이 온 사물은 "!" 대신 "이름 · 살펴보기" 판을 보인다.
+    if (this.target) this.objectViews.get(this.target.id)?.setNear(false);
+    if (best) this.objectViews.get(best.id)?.setNear(true);
     this.target = best;
     this.highlight.clear();
     if (best) {
@@ -745,21 +757,18 @@ export class RoomScene extends MapScene {
     if (r.picked || r.opened) {
       if (r.picked) this.objectViews.get(o.id)?.setHidden(true);
       else this.objectViews.get(o.id)?.setOpen(true);
-      this.target = null;
-      this.highlight.clear();
-      this.hud.setTarget(null);
+      this.clearTarget();
     }
     const gains: string[] = [];
     if (r.opened) gains.push(`${name}${objectParticle(name)} 열었습니다. 지나갈 수 있습니다.`);
     if (r.item && !skipItem) gains.push(`${r.item}${objectParticle(r.item)} 얻었습니다.`);
     if (r.bonus) gains.push('보너스 미션을 마쳤습니다. 다음 골든벨을 하트 하나 더 들고 시작합니다.');
-    // 끝 지점(교문)은 "맞았습니다"만 있는 카드 없이 바로 1부 완료 장면을 띄운다.
-    if (lead || gains.length || r.after || r.hint) {
-      if (!(r.finished && !gains.length && !r.after && !r.hint)) {
-        await this.dialog.reward({ title: name, lead, gains, after: r.after, hint: r.hint });
-      }
+    // 끝 지점(교문)은 따로 카드를 띄우지 않고 1부 완료 장면에 그 글(맞았습니다가 아닌 자료의 글)을 앞에 붙인다.
+    const onlyLead = r.finished && !gains.length && !r.after && !r.hint;
+    if (!onlyLead && (lead || gains.length || r.after || r.hint)) {
+      await this.dialog.reward({ title: name, lead, gains, after: r.after, hint: r.hint });
     }
-    if (r.finished) await this.finishPart();
+    if (r.finished) await this.finishPart(onlyLead && !/맞았습니다\.$/.test(lead) ? lead : '');
   }
 
   // ---- 미니맵 ----
@@ -844,13 +853,13 @@ export class RoomScene extends MapScene {
   }
 
   /** 끝 지점(교문)을 마쳤을 때: 1부 완료와 걸린 시간을 알린다. 진행은 그대로 두고 계속 돌아다닌다. */
-  private async finishPart() {
+  private async finishPart(lead = '') {
     this.state.finishedAt ??= performance.now();
     const time = formatDuration(this.state.elapsedMs());
     await this.dialog.story(
       'finish',
       '1부 완료',
-      `${this.state.nickname}님이 1부를 마쳤습니다.\n걸린 시간: ${time}\n선생님이 2부를 열 때까지 학교를 둘러보며 남은 미션과 힌트 카드를 모을 수 있습니다.`,
+      `${lead ? `${lead}\n` : ''}${this.state.nickname}님이 1부를 마쳤습니다.\n걸린 시간: ${time}\n선생님이 2부를 열 때까지 학교를 둘러보며 남은 미션과 힌트 카드를 모을 수 있습니다.`,
     );
   }
 }

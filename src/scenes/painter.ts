@@ -7,17 +7,29 @@
 //   열린 모양은 <이름>-open.png. flip이면 좌우로 뒤집는다. 도트 하나는 size.dotScale 픽셀이다.
 import { GameObjects, Textures, type Scene } from 'phaser';
 import { isFloor, mapSize, tileOf, type ObjectKind, type Room, type RoomObject, type TILES, type TileChar } from '../data/room';
-import { alpha, color, fontFamily, size } from '../theme';
+import { alpha, color, fontFamily, fontFamilySmall, size } from '../theme';
+import { Plate } from './plate';
 
 type FloorId = Extract<(typeof TILES)[TileChar], { floor: true }>['id'];
 type WallId = Extract<(typeof TILES)[TileChar], { floor: false }>['id'];
 
-/** 이름표를 어두운 글자로 쓰는 밝은 사물 */
-const LIGHT_KINDS: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['desk', 'goalpost', 'item', 'timetable', 'calendar', 'lightBulb', 'sundial']);
+/** 그림자를 그리지 않는 사물: 벽에 거는 것, 문, 바닥에 놓인 작은 물건(꾸밈 사물은 flat으로 정한다) */
+const NO_SHADOW: ReadonlySet<ObjectKind> = new Set<ObjectKind>([
+  'blackboard', 'bulletinBoard', 'timetable', 'calendar', 'lightBulb', 'bookshelf', 'door', 'entrance', 'partDoor', 'gate', 'auditoriumDoor', 'item',
+]);
 
-/** 있는 그림 이름('tiles/wallTop', 'objects/door-open' …). 빌드할 때 public/sprites를 훑어 정한다(없는 그림을 부르지 않게). */
+/** "!" 표시를 달지 않는 미션 사물(문 종류. 가까이 가면 이름표만 보인다) */
+const NO_BADGE: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['door', 'entrance', 'partDoor', 'gate']);
+
+/**
+ * 있는 그림 이름('tiles/wallTop', 'objects/door-open', 'ui/mark' …). 빌드할 때 public/sprites를 훑어 정한다(없는 그림을 부르지 않게).
+ * ui는 맵 위에 쓰는 것만(표시, 이름표 판, 골든벨 하트·해골)
+ */
 const SPRITES: ReadonlySet<string> = new Set(
-  Object.keys(import.meta.glob('/public/sprites/{tiles,objects}/*.png')).map((p) => p.replace('/public/sprites/', '').replace(/\.png$/, '')),
+  Object.keys({
+    ...import.meta.glob('/public/sprites/{tiles,objects}/*.png'),
+    ...import.meta.glob('/public/sprites/ui/{mark,mark-done,panel-dark,tag-me,heart,heart-empty,skull}.png'),
+  }).map((p) => p.replace('/public/sprites/', '').replace(/\.png$/, '')),
 );
 
 /** 맵 그림을 불러오게 건다(장면의 preload에서). 이미 불러온 것은 건너뛴다. */
@@ -41,6 +53,13 @@ function variantAt(col: number, row: number, count: number) {
 
 /** 순서 맞추기 번호의 깊이: 사물·아바타(깊이 = 아래 끝 y 픽셀)보다 위 */
 const MARK_DEPTH = 900_000;
+/** "이름 · 살펴보기" 판의 깊이: 캐릭터에 가려지지 않게 맨 위 */
+const PLATE_DEPTH = 950_000;
+/** 사물 그림자의 깊이: 바닥(0) 위, 사물·아바타 아래 */
+const SHADOW_DEPTH = 1;
+
+/** 가까이 갔을 때 사물 위 판의 글 */
+const plateText = (name: string) => `${name} · 살펴보기`;
 
 /** 칸 하나의 도트 수(바닥을 구울 때 칸 하나의 픽셀) */
 const DOT_TILE = size.tile / size.dotScale;
@@ -59,6 +78,12 @@ export interface ObjectView {
   setName(name: string): void;
   /** 순서 맞추기: 몇째로 맞게 눌렀는지 사물 위에 번호로 보인다. 0이면 감춘다. */
   setMark(n: number): void;
+  /** 가까이 왔으면(살펴볼 대상) "!" 대신 "이름 · 살펴보기" 판을 보인다(M8). */
+  setNear(near: boolean): void;
+  /** 미션을 마쳤으면 "!"를 체크(mark-done)로 바꾼다. */
+  setDone(done: boolean): void;
+  /** 확인용: 보이는지, 위 표시("!"·체크 그림 이름, 안 보이면 null), 이름표 판 글(안 보이면 null), 그림자가 있는지, 지금 그림 이름 */
+  look(): { visible: boolean; badge: string | null; plate: string | null; shadow: boolean; texture: string | null };
 }
 
 export class MapPainter {
@@ -88,6 +113,12 @@ export class MapPainter {
           ctx.imageSmoothingEnabled = false;
           for (let row = r0; row < r0 + h; row++) {
             for (let col = c0; col < c0 + w; col++) this.cell(ctx, col, row, (col - c0) * t, (row - r0) * t);
+          }
+          if (this.room.pitch) {
+            ctx.save();
+            ctx.translate(-c0 * t, -r0 * t);
+            this.pitch(ctx);
+            ctx.restore();
           }
           tex.refresh();
           tex.setFilter(Textures.FilterMode.NEAREST);
@@ -127,6 +158,58 @@ export class MapPainter {
       name = `${tile.id}Top`;
     }
     if (!this.tile(ctx, `tiles/${name}`, col, row, x, y)) this.wall(ctx, tile.id, x, y, face);
+    if (ch === '#' && !face) this.wallEdges(ctx, col, row, x, y);
+  }
+
+  /**
+   * 벽 윗면 테(docs/art.md, scripts/art/mock.mjs의 wallEdges()): 윗면 칸의 변이 바닥이나 벽 앞면 칸과 닿으면 wallEdge<변>,
+   * 두 변이 벽 윗면이고 그 사이 대각선 칸만 트이면 wallCorner<구석>을 겹친다.
+   */
+  private wallEdges(ctx: CanvasRenderingContext2D, col: number, row: number, x: number, y: number) {
+    const L = this.room.layout;
+    const open = (c: number, r: number) => {
+      const k = L[r]?.[c];
+      return isFloor(k) || (k === '#' && isFloor(L[r + 1]?.[c]));
+    };
+    const n = open(col, row - 1);
+    const s = open(col, row + 1);
+    const w = open(col - 1, row);
+    const e = open(col + 1, row);
+    const edges: [boolean, string][] = [
+      [n, 'EdgeN'], [s, 'EdgeS'], [w, 'EdgeW'], [e, 'EdgeE'],
+      [!n && !w && open(col - 1, row - 1), 'CornerNW'], [!n && !e && open(col + 1, row - 1), 'CornerNE'],
+      [!s && !w && open(col - 1, row + 1), 'CornerSW'], [!s && !e && open(col + 1, row + 1), 'CornerSE'],
+    ];
+    for (const [on, d] of edges) if (on) this.tile(ctx, `tiles/wall${d}`, col, row, x, y);
+  }
+
+  /** 운동장 경기장 선(placement.md): 바깥 네모, 가운데 세로줄과 원, 양쪽 골 앞 네모. 도트 단위로 굽는다. */
+  private pitch(ctx: CanvasRenderingContext2D) {
+    const p = this.room.pitch!;
+    const T = DOT_TILE;
+    const lw = size.pitchLine;
+    const x0 = p.col * T;
+    const y0 = p.row * T + T / 2;
+    const x1 = (p.col + p.w) * T;
+    const y1 = (p.row + p.h) * T + T / 2;
+    const mx = Math.floor((x0 + x1) / 2);
+    const my = Math.floor((y0 + y1) / 2);
+    const boxW = 3 * T;
+    const boxH = 5 * T;
+    ctx.globalAlpha = alpha.pitchLine;
+    ctx.fillStyle = color.pitchLine;
+    const rects: [number, number, number, number][] = [
+      [x0, y0, x1 - x0 + lw, lw], [x0, y1, x1 - x0 + lw, lw], [x0, y0, lw, y1 - y0], [x1, y0, lw, y1 - y0], [mx, y0, lw, y1 - y0],
+      [x0, my - boxH / 2, boxW, lw], [x0, my + boxH / 2, boxW, lw], [x0 + boxW, my - boxH / 2, lw, boxH + lw],
+      [x1 - boxW, my - boxH / 2, boxW, lw], [x1 - boxW, my + boxH / 2, boxW, lw], [x1 - boxW, my - boxH / 2, lw, boxH + lw],
+    ];
+    for (const r of rects) ctx.fillRect(...r);
+    ctx.strokeStyle = color.pitchLine;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.arc(mx + lw / 2, my, 2 * T, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   /**
@@ -166,8 +249,10 @@ export class MapPainter {
     return (up || down) && L[row][col - 1] !== '%' && L[row][col + 1] !== '%';
   }
 
-  /** 타일 그림의 변형 하나를 칸에 그린다. 그림이 없으면 false */
+  /** 타일 그림의 변형 하나를 칸에 그린다(맵의 tileNames로 바꿔 쓸 수 있다). 그림이 없으면 false */
   private tile(ctx: CanvasRenderingContext2D, name: string, col: number, row: number, x: number, y: number) {
+    const alias = this.room.tileNames?.[name.replace('tiles/', '')];
+    if (alias) name = `tiles/${alias}`;
     if (!this.scene.textures.exists(name)) return false;
     const img = this.scene.textures.get(name).getSourceImage() as CanvasImageSource & { width: number };
     const v = variantAt(col, row, Math.max(1, Math.round(img.width / DOT_TILE)));
@@ -223,50 +308,100 @@ export class MapPainter {
     } else {
       body = this.scene.add.rectangle(x, y, o.w * t, o.h * t, color.object[o.kind]).setOrigin(0, 0).setDepth(depth);
     }
-    const label = o.mission
-      ? this.scene.add
-          .text(x + (o.w * t) / 2, y + (o.h * t) / 2, o.name, {
-            fontFamily,
-            fontSize: size.labelFont,
-            color: hasSprite || !LIGHT_KINDS.has(o.kind) ? color.labelOnDark : color.label,
+    const d = size.dotScale;
+    const scene = this.scene;
+    // 발밑 그림자(벽에 거는 것·바닥에 까는 것·문 빼고): 바닥 위, 사물 아래
+    const shadow =
+      hasSprite && !o.flat && !NO_SHADOW.has(o.kind)
+        ? scene.add
+            .ellipse(
+              x + (o.w * t) / 2,
+              depth - (size.shadowLift + size.shadowHeight / 2) * d,
+              o.w * t - 2 * size.shadowInset * d,
+              size.shadowHeight * d,
+              color.objectShadow,
+              alpha.objectShadow,
+            )
+            .setDepth(SHADOW_DEPTH)
+        : null;
+    /** 사물 그림의 위 끝(픽셀). 그림이 없으면 차지 칸의 위 끝 */
+    const top = () => Math.min(y, body instanceof GameObjects.Image ? body.y - body.displayHeight : y);
+    // 교실 이름판·현수막 글자: 그림 가운데
+    const sign = o.text
+      ? scene.add
+          .text(x + (o.w * t) / 2, (top() + depth) / 2, o.text, {
+            fontFamily: fontFamilySmall,
+            fontSize: size.signFont,
+            color: color.signText,
             resolution: size.textResolution,
-            ...(hasSprite ? { backgroundColor: color.labelBackground, padding: { x: size.labelPad, y: 1 } } : {}),
           })
           .setOrigin(0.5)
           .setDepth(depth + 1)
       : null;
+    // 미션 사물: 평소에는 위에 "!"(마치면 체크), 가까이 가면 "이름 · 살펴보기" 판(M8, 교사 결정). 문 종류는 "!" 없이 판만
+    const badge =
+      o.mission && !NO_BADGE.has(o.kind) && scene.textures.exists('ui/mark')
+        ? scene.add.image(x + (o.w * t) / 2, top() - size.markGap * d, 'ui/mark').setOrigin(0.5, 1).setScale(d).setDepth(depth + 1)
+        : null;
+    const plate = o.mission ? new Plate(scene, plateText(o.name)).setPosition(x + (o.w * t) / 2, top() - size.markGap * d).setDepth(PLATE_DEPTH).setVisible(false) : null;
+    if (plate) scene.add.existing(plate);
     let mark: GameObjects.Text | null = null;
-    const scene = this.scene;
+    let near = false;
+    let hidden = false;
+    let numbered = false;
+    /** "!"는 숨기지 않았고, 가까이 있지 않고, 순서 번호가 없을 때 보인다. */
+    const showBadge = () => badge?.setVisible(!hidden && !near && !numbered);
     return {
       setOpen(open: boolean) {
         const a = open ? alpha.openDoor : 1;
-        label?.setAlpha(a);
         // 연 문은 지나가는 길이므로 그 위에 선 캐릭터(깊이 = 발 y)보다 뒤에 그린다(문의 위 끝을 깊이로).
         body.setDepth(open ? y : depth);
-        label?.setDepth(open ? y + 1 : depth + 1);
         // 열린 그림이 있으면 바꿔 끼우고, 없으면 닫힌 모양을 흐리게 그린다.
         if (hasOpen && body instanceof GameObjects.Image) center(body.setTexture(open ? openName : name));
         else body.setAlpha(a);
       },
-      setHidden(hidden: boolean) {
-        body.setVisible(!hidden);
-        label?.setVisible(!hidden);
+      setHidden(h: boolean) {
+        hidden = h;
+        body.setVisible(!h);
+        shadow?.setVisible(!h);
+        sign?.setVisible(!h);
+        if (h) plate?.setVisible(false);
+        showBadge();
+        if (h) mark?.setVisible(false);
       },
       setLit(lit: boolean) {
         if (hasOn && body instanceof GameObjects.Image) center(body.setTexture(lit ? onName : name));
       },
       setName(text: string) {
-        if (label && label.text !== text) label.setText(text);
+        plate?.setText(plateText(text));
+      },
+      setNear(on: boolean) {
+        near = on;
+        plate?.setVisible(on && !hidden);
+        showBadge();
+      },
+      look() {
+        return {
+          visible: body.visible,
+          badge: badge?.visible ? badge.texture.key : null,
+          plate: plate?.visible ? plate.text : null,
+          shadow: shadow !== null,
+          texture: body instanceof GameObjects.Image ? body.texture.key : null,
+        };
+      },
+      setDone(done: boolean) {
+        badge?.setTexture(done && scene.textures.exists('ui/mark-done') ? 'ui/mark-done' : 'ui/mark');
       },
       setMark(n: number) {
+        numbered = n > 0;
+        showBadge();
         if (!n) {
           mark?.setVisible(false);
           return;
         }
-        // 사물 그림의 위 끝 바로 위(그림이 없으면 차지 칸의 위 끝)에 둔다. 캐릭터에 가려지지 않게 이름표보다 위에 그린다.
-        const top = Math.min(y, body instanceof GameObjects.Image ? body.y - body.displayHeight : y);
+        // 사물 그림의 위 끝 바로 위(그림이 없으면 차지 칸의 위 끝)에 "!" 대신 둔다. 캐릭터에 가려지지 않게 그린다.
         mark ??= scene.add
-          .text(x + (o.w * t) / 2, top, '', {
+          .text(x + (o.w * t) / 2, top() - size.markGap * d, '', {
             fontFamily,
             fontSize: size.stepMarkFont,
             color: color.stepMark,

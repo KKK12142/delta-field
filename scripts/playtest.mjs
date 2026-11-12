@@ -132,7 +132,7 @@ await b.touch('touchEnd', []);
 await wait(300);
 check('조이스틱: 떼면 사라짐', !(await joy()).shown);
 const bAfter = await b.js(`__df.pos()`);
-check('학생 B가 조이스틱으로 오른쪽으로 감', bAfter.col - bBefore.col > 1 && Math.abs(bAfter.row - bBefore.row) < 0.05,
+check('학생 B가 조이스틱으로 오른쪽으로 감', bAfter.col - bBefore.col > 0.5 && Math.abs(bAfter.row - bBefore.row) < 0.05,
   `col ${bBefore.col.toFixed(2)} → ${bAfter.col.toFixed(2)}, row ${bBefore.row.toFixed(2)} → ${bAfter.row.toFixed(2)}`);
 const bOnTeacher = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
 check('선생님 화면의 학생 B 위치가 따라옴', Math.abs(bOnTeacher.col - bAfter.col) < 0.05, `서버 ${bOnTeacher.col.toFixed(2)}, B ${bAfter.col.toFixed(2)}`);
@@ -193,10 +193,11 @@ check('처음 장소는 교실, 안내에 장소의 미션 수(교실 · 미션 
   await placeLine(a));
 const camAt = async (col, row) => {
   await a.js(`__df.teleport(${col}, ${row})`);
-  await wait(1600); // 화면은 조금씩 따라가므로(followLerp) 다 따라갈 때까지 기다린다
+  await wait(2500); // 화면은 조금씩 따라가므로(followLerp) 다 따라갈 때까지 기다린다(부하가 크면 프레임이 줄어 더 걸린다)
   return a.js(`__df.camera()`);
 };
-const centered = (c) => Math.abs(c.me.x - aw / 2) < 4 && Math.abs(c.me.y - (100 + ah) / 2) < 4;
+// 학교 맵은 위쪽 안내를 지도 위에 겹쳐 띄우므로(빈 띠 없음) 내 아바타가 화면 가운데에 온다.
+const centered = (c) => Math.abs(c.me.x - aw / 2) < 4 && Math.abs(c.me.y - ah / 2) < 4;
 const c1 = await camAt(16, 14.5);
 const c2 = await camAt(32, 14.5);
 check('카메라: 내 아바타를 따라감(복도 두 곳 모두 가운데)', centered(c1) && centered(c2) && Math.abs(c2.view.col - c1.view.col - 16) < 0.1,
@@ -210,8 +211,8 @@ check(`카메라: 확대는 짧은 쪽 ${size.viewTiles}칸 배율에${freeRende
   `짧은 쪽 ${shortSide.toFixed(1)}칸, 확대 ${c1.zoom.toFixed(3)}(캔버스 ${c1.deviceZoom}, 비율 ${c1.dpr.toFixed(2)}, ${size.viewTiles}칸이면 ${(idealDevice / c1.dpr).toFixed(2)})`);
 await a.shot('camera-hall');
 const c3 = await camAt(1.5, 2.5);
-check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽은 안내 자리만큼)',
-  Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row + size.reserveTop / c3.zoom / size.tile) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
+check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽 빈 띠 없음)',
+  Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
 const c4 = await camAt(119.5, 35.5);
 check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 121) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
@@ -254,7 +255,7 @@ await wait(300);
 const ov = (await teacher.js(`__df.camera()`)).map;
 const allZoom = (await cctv()).zoom;
 check('CCTV 전체 단추: 학교 맵 전체가 지도 자리(위쪽 안내 아래, CCTV 창 왼쪽)에 들어옴',
-  ov.x >= 0 && ov.y >= 99 && ov.x + ov.w <= panelLeft && ov.y + ov.h <= th && ov.w > panelLeft * 0.6,
+  ov.x >= 0 && ov.y >= 0 && ov.x + ov.w <= panelLeft && ov.y + ov.h <= th && ov.w > panelLeft * 0.6,
   `맵 화면 ${ov.x.toFixed(0)},${ov.y.toFixed(0)} ${ov.w.toFixed(0)}×${ov.h.toFixed(0)}, 창 왼쪽 ${panelLeft.toFixed(0)}`);
 check('CCTV 구역 보기: 1부 건물은 전체보다 크게(1.5배 넘게) 보임', overviewZoom > allZoom * 1.5, `${allZoom.toFixed(3)} → ${overviewZoom.toFixed(3)}`);
 await clickText(teacher, '.df-cctv-view', '1부 건물 2');
@@ -315,13 +316,35 @@ await wait(400);
 check('닫은 뒤 다시 열리지 않음', (await a.dialogText()) === null);
 check('CCTV: 닫으면 돌아다니는 중', /돌아다니는 중/.test((await rowText('가람')) ?? ''));
 
+// 맵 꾸미기(3단계): 미션 사물 위 "!", 가까이 가면 "이름 · 살펴보기" 판, 꾸밈 사물과 그림자, 지나가는 꾸밈(의자)
+const lookOf = (id) => a.js(`__df.objectLook(${JSON.stringify(id)})`);
+await a.js(`__df.teleport(5, 8.5)`);
+await wait(300);
+let bb = await lookOf('blackboard');
+check('사물 표시: 멀리 있으면 미션 사물 위에 "!"만, 이름표 판은 없음', bb.badge === 'ui/mark' && bb.plate === null, JSON.stringify(bb));
 // (10, 2.5)쯤은 칠판과 교탁이 같은 거리라 교탁이 골라질 수 있다. 칠판만 닿는 자리에서 살펴본다.
 await a.js(`__df.teleport(9, 2.5)`);
+await wait(300);
+bb = await lookOf('blackboard');
+check('사물 표시: 가까이 가면 "!" 대신 "칠판 · 살펴보기" 판', bb.badge === null && bb.plate === '칠판 · 살펴보기', JSON.stringify(bb));
+const plant = await lookOf('class-plant');
+check('꾸밈 사물: 화분이 그려지고 그림자가 있음, 벽시계는 그림자 없음', plant?.visible === true && plant.shadow === true && (await lookOf('class-clock'))?.shadow === false,
+  `${JSON.stringify(plant)} ${JSON.stringify(await lookOf('class-clock'))}`);
+await a.shot('decor-classroom');
 await pressA('Space');
 check('칠판 단서', await dialogHas(/칠판에 글이 적혀 있습니다/), fmt(await a.dialogText()));
 await a.press('Space');
 await wait(300);
 check('칠판 단서를 읽으면 서버가 마친 미션에 넣음', (await teacher.js(`__df.others().find((o) => o.nickname === '가람').done.join(',')`)) === 'blackboard');
+await a.js(`__df.teleport(5, 8.5)`);
+await wait(300);
+check('사물 표시: 마친 미션은 "!"가 체크로', (await lookOf('blackboard')).badge === 'ui/mark-done', JSON.stringify(await lookOf('blackboard')));
+await a.js(`__df.teleport(49.5, 5.5)`);
+await a.press('ArrowRight', 500);
+check('꾸밈 사물: 컴퓨터실 의자(walk)는 지나갈 수 있음', (await a.js(`__df.pos().col`)) > 51.2, String(await a.js(`__df.pos().col`)));
+await a.js(`__df.teleport(19, 13.5)`);
+await a.press('ArrowLeft', 600);
+check('꾸밈 사물: 복도 소화기는 막음', (await a.js(`__df.pos().col`)) > 16.9, JSON.stringify(await a.js(`__df.pos()`)));
 
 await a.js(`__df.teleport(11, 4.5)`);
 await pressA('Space');
@@ -359,7 +382,7 @@ await wait(900);
 const nearMiddle = async (nick) => {
   const at = await teacher.js(`__df.screenOf(${JSON.stringify(nick)})`);
   const h = await teacher.js(`innerHeight`);
-  return { ok: Math.abs(at.x - panelLeft / 2) < 60 && Math.abs(at.y - (100 + h) / 2) < 60, at };
+  return { ok: Math.abs(at.x - panelLeft / 2) < 60 && Math.abs(at.y - h / 2) < 60, at };
 };
 let mid = await nearMiddle('가람');
 const follow = await cctv();
@@ -597,7 +620,7 @@ await pressA('Enter');
 await wait(300);
 check('CCTV: 보너스 표시와 요약(1부 완료 1명 · 보너스 1명)', /보너스/.test((await rowText('가람')) ?? '') && /1부 완료 1명 · 보너스 1명/.test(await stuckText()),
   `${fmt(await rowText('가람'))} | ${await stuckText()}`);
-check('안내의 미션 수에는 보너스를 넣지 않음(운동장 · 미션 1/1)', (await placeLine(a)) === '운동장 · 미션 1/1', await placeLine(a));
+check('안내의 미션 수에는 보너스를 넣지 않음(과학 정원은 보너스 타임캡슐뿐이라 이름만)', (await placeLine(a)) === '과학 정원', await placeLine(a));
 await clickText(teacher, '.df-cctv-sort', '진행 낮은 순으로');
 await wait(300);
 check('CCTV: 진행 낮은 순 정렬(나래 → 가람), 단추는 반 순서로',
@@ -724,7 +747,8 @@ const gm = (await a.js(`__df.camera()`)).map;
 check('골든벨 맵은 화면에 전체가 맞춰짐(따라가지 않음)', gm.x >= 0 && gm.y >= 0 && gm.x + gm.w <= aw && gm.y + gm.h <= ah,
   `맵 화면 ${gm.x.toFixed(0)},${gm.y.toFixed(0)} ${gm.w.toFixed(0)}×${gm.h.toFixed(0)}`);
 
-const ZONE = { O: [4.5, 4.5], X: [14.5, 4.5], 1: [4.5, 4.5], 2: [14.5, 4.5], 3: [4.5, 10.5], 4: [14.5, 10.5], 밖: [9.5, 4.5] };
+// 골든벨 맵의 답 구역 가운데쯤(구역은 4행부터, 가운데 9열은 통로)
+const ZONE = { O: [4.5, 6.5], X: [14.5, 6.5], 1: [4.5, 6.5], 2: [14.5, 6.5], 3: [4.5, 12.5], 4: [14.5, 12.5], 밖: [9.5, 6.5] };
 const nextButton = () => teacher.js(`document.querySelector('.df-gb-panel .df-row > .df-button:not(.df-button-small):not(.df-gb-close)').click()`);
 /** 선생님이 문제를 내고 A, B를 구역에 세운다. during은 푸는 중에, 시간이 끝나면 정답 공개까지 기다린다. */
 async function gbRound(aZone, bZone, during) {

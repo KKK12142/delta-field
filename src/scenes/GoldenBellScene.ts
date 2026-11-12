@@ -40,7 +40,8 @@ export class GoldenBellScene extends MapScene {
     if (!zones) throw new Error('골든벨 맵 데이터에 답 구역(zones)이 없습니다.');
     this.zones = zones;
     this.zoneTexts = [];
-    this.zoneKey = '';
+    // 처음 그릴 때 반드시 맞추게(구역 판 감추기 포함) 어떤 상태와도 다른 값으로 둔다.
+    this.zoneKey = '-';
     this.hudBottom = 0;
     this.waiting = false;
     this.panel = null;
@@ -184,6 +185,11 @@ export class GoldenBellScene extends MapScene {
     const key = showZones ? `${gb.type}|${gb.choices.join('|')}|${gb.answer}` : '';
     if (key !== this.zoneKey) {
       this.zoneKey = key;
+      // 구역 판(pad-O·X, pad-1~4)은 이번 문제의 구역만 보인다(OX면 O·X 판, 객관식이면 보기 수만큼).
+      const labels = new Set(showZones ? activeZones(this.zones, gb.type, gb.choices.length).map((z) => z.label) : []);
+      for (const o of this.room.objects) {
+        if (o.id.startsWith('pad-')) this.objectViews.get(o.id)?.setHidden(!labels.has(o.id.slice(4)));
+      }
       this.drawZones(showZones ? activeZones(this.zones, gb.type, gb.choices.length) : [], gb.choices, gb.answer);
     }
   }
@@ -199,21 +205,29 @@ export class GoldenBellScene extends MapScene {
       this.zoneLayer.fillStyle(color.zone[z.label as keyof typeof color.zone] ?? color.zone.O, a);
       this.zoneLayer.fillRect(z.col * t, z.row * t, z.w * t, z.h * t);
       const cx = (z.col + z.w / 2) * t;
-      const label = this.add
-        .text(cx, z.row * t + size.zoneTextPad, z.label, {
-          fontFamily,
-          fontSize: size.zoneLabelFont, // 도트 글꼴은 굵은 꼴이 없어 굵게 하지 않는다
-          color: color.zoneLabel,
-          resolution: size.textResolution,
-        })
-        .setOrigin(0.5, 0)
-        .setDepth(ZONE_TEXT_DEPTH);
-      this.zoneTexts.push(label);
+      // 구역 이름(O·X, 1~4)은 바닥의 구역 판(pad-*)이 보인다. 판이 없는 맵이면 글자로 적는다.
+      const pad = this.room.objects.find((o) => o.id === `pad-${z.label}`);
+      let below = z.row * t + size.zoneTextPad;
+      if (pad) below = (pad.row + pad.h) * t + size.zoneTextPad;
+      else {
+        const label = this.add
+          .text(cx, below, z.label, {
+            fontFamily,
+            fontSize: size.zoneLabelFont,
+            color: color.zoneLabel,
+            resolution: size.textResolution,
+          })
+          .setOrigin(0.5, 0)
+          .setDepth(ZONE_TEXT_DEPTH);
+        this.zoneTexts.push(label);
+        below = label.y + label.height;
+      }
+      // 객관식 보기 글은 판 아래에 적는다(문제 카드에도 있다).
       const choice = /^\d$/.test(z.label) ? choices[Number(z.label) - 1] : undefined;
       if (choice) {
         this.zoneTexts.push(
           this.add
-            .text(cx, label.y + label.height, choice, {
+            .text(cx, below, choice, {
               fontFamily,
               fontSize: size.zoneTextFont,
               color: color.zoneLabel,
@@ -289,7 +303,7 @@ export class GoldenBellScene extends MapScene {
 }
 
 /** 머리 위 글을 바뀌었을 때만 고쳐 보인다. */
-function setTag(tag: Phaser.GameObjects.Text, text: string) {
+function setTag(tag: { text: string; setText(t: string): unknown; setVisible(v: boolean): unknown }, text: string) {
   if (tag.text !== text) tag.setText(text);
   tag.setVisible(true);
 }

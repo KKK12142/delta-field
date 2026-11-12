@@ -13,11 +13,13 @@ export const color = {
     computerFloor: { fill: 0xd8dce6, alt: 0xcfd4df, line: 0xb4bbc9 },
     libraryFloor: { fill: 0xb98f7a, alt: 0xb28872, line: null },
     roofFloor: { fill: 0xb7bcc0, alt: 0xb0b5b9, line: 0x9ca2a7 },
+    gardenGrass: { fill: 0x8fb36a, alt: 0x88ac63, line: null },
     stairs: { fill: 0xc9c4bb, alt: 0xbdb7ad, line: 0x9e978b },
     field: { fill: 0xd9c49c, alt: 0xd4bf96, line: null },
     wall: { top: 0xa59a8c, face: 0x8a7f72 },
     fence: { top: 0x7e8a68, face: 0x66714f },
     roof: { top: 0x6582a0, face: 0x4f6c89 }, // 강당 지붕(그림이 없을 때). 지붕은 앞면을 그리지 않는다
+    auditorium: { top: 0x6582a0, face: 0xa0624a }, // 강당 앞면 벽(그림이 없을 때)
   },
   avatarShadow: 0x000000,
   highlight: 0xf2b134,
@@ -44,6 +46,10 @@ export const color = {
   zoneLabel: '#2e2a26',
   // 골든벨: 머리 위 목숨
   livesText: '#d23c4e',
+  plateText: '#ffffff', // 이름표 판(어두운 판) 위 글자
+  signText: '#ffffff', // 교실 이름판·현수막 글자
+  objectShadow: 0x1d1531, // 사물 그림자
+  pitchLine: '#f4ecdc', // 운동장 경기장 선
   livesStroke: '#ffffff', // 배경 없이 띄우므로 테두리로 바닥과 구분한다
   // 사물 종류별 색(단순 도형 단계)
   object: {
@@ -77,6 +83,7 @@ export const color = {
     compassSign: 0x8a6d4a,
     sundial: 0xa8a39a,
     timeCapsule: 0x8a8f96,
+    decor: 0xb8b0a4,
     partDoor: 0x6b4a33,
     auditoriumDoor: 0x7a3f3f,
   },
@@ -174,6 +181,19 @@ export const size = {
   zoneTextPad: 12,
   livesFont: '12px',
   livesStroke: 3, // 하트 테두리 두께(픽셀)
+  livesGap: 1, // 머리 위 하트·해골 아이콘 사이(도트)
+  // 맵 위 이름표 판(ui/panel-dark·tag-me 9-slice, 도트 단위. 화면에서는 dotScale배): 사물 "이름 · 살펴보기", 캐릭터 닉네임
+  plateFont: '10px', // Galmuri9는 10px의 정수 배에서 또렷하다
+  plateSlice: 3, // 9-slice 자르기(도트)
+  platePadX: 4, // 글자 좌우 여백(도트, 자르기 포함)
+  platePadY: 3,
+  markGap: 2, // 사물 그림 위 끝과 "!" 표시 사이(도트)
+  signFont: '10px', // 교실 이름판 글자(Galmuri9, 판 너비 30도트에 네 글자까지)
+  // 사물 그림자(docs/art.md·placement.md): 차지 칸 너비 - 6도트, 높이 8도트 타원, 아래 끝에서 5도트 위
+  shadowInset: 3, // 좌우로 들이는 도트
+  shadowHeight: 8,
+  shadowLift: 5,
+  pitchLine: 2, // 경기장 선 두께(도트)
 } as const;
 
 /**
@@ -321,6 +341,8 @@ export const alpha = {
   zoneDim: 0.08, // 정답 공개: 나머지 구역
   outAvatar: 0.4, // 골든벨에서 탈락한 학생
   openDoor: 0.25, // 연 문(지나갈 수 있음)
+  objectShadow: 0.28, // 사물 그림자
+  pitchLine: 0.85, // 운동장 경기장 선
 } as const;
 
 /** 움직임 */
@@ -354,6 +376,9 @@ export const minimap = {
   mark: '#f2b134', // 알림 표시(2부가 열린 문, 모이는 강당)의 테
   markLine: 3, // 그 테의 두께(CSS 픽셀)
   markPad: 2, // 그 테를 사물 밖으로 띄우는 거리(CSS 픽셀)
+  icon: 12, // 작은 지도의 장소 아이콘(map/*.png 24×24를 반으로, CSS 픽셀)
+  iconBig: 24, // 큰 지도의 장소 아이콘(이름 위)
+  iconGap: 8, // 큰 지도에서 아이콘 아래 끝과 장소 가운데(이름) 사이
   smallWidth: 200, // 작은 지도 너비(CSS 픽셀). 높이는 맵 비율대로
   bigWidth: 1100, // 큰 지도 너비의 상한(화면이 좁으면 화면에 맞춤)
 } as const;
