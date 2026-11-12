@@ -1,0 +1,17 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 내 이름표(노란 테). 9-slice 3
+size 8x8
+cols 1
+palette
+o #0d0a18e6
+y #fdd516
+f #241b3dcc
+
+frame tag-me
+.oooooo.
+oyyyyyyo
+oyffffyo
+oyffffyo
+oyffffyo
+oyffffyo
+oyyyyyyo
+.oooooo.

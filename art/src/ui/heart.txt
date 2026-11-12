@@ -1,0 +1,19 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 골든벨 목숨 하트(가득)
+size 9x8
+cols 1
+palette
+o #1d1531
+r #e12a24
+h #f5735a
+w #f8f8f6
+d #8f221e
+
+frame heart
+.oo...oo.
+ohwo.ohro
+owhrorrro
+orrrrrrdo
+.orrrrdo.
+..orrdo..
+...odo...
+....o....

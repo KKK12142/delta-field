@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 크림 단추(고르기·보조 동작). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #ffffff
+f #f2e6c9
+s #dccba3
+d #b9a274
+
+frame btn-light
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+oddddddddddo
+.oooooooooo.

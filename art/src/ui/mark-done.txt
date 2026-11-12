@@ -1,0 +1,25 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 마친 미션 사물 위 표시(체크). 맵에서 2배
+size 12x14
+cols 1
+palette
+o #1d1531
+g #5b9137
+h #a6d36c
+d #30612b
+w #f8f8f6
+
+frame mark-done
+..oooooooo..
+.ohhhhggggo.
+ohhggggggggo
+ohggggggwwdo
+oggggggwwwdo
+ogwwgggwwgdo
+ogwwwgwwwgdo
+oggwwwwwggdo
+ogggwwwgggdo
+oggggwggggdo
+.oggggggddo.
+..ooddddoo..
+....oddo....
+.....oo.....

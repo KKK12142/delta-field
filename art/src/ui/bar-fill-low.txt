@@ -1,0 +1,17 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 얼마 안 남음(빨강). 시간 막대 안(바깥 막대의 안쪽 칸에 넣음). 9-slice 2
+size 6x8
+cols 1
+palette
+h #f5735a
+f #e12a24
+s #8f221e
+
+frame bar-fill-low
+hhhhhh
+hhhhhh
+ffffff
+ffffff
+ffffff
+ffffff
+ssssss
+ssssss

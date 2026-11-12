@@ -10,6 +10,8 @@
   - 실제 인물이나 기존 게임의 캐릭터·그림을 따라 하지 않는다.
 - 교사(2026-11-11): 캐릭터는 30×60도트, 화면에서 2배(60×120px). 타일·사물도 같은 2배 기준.
   처음에는 한 칸 48px(24도트)였으나 캐릭터가 20%쯤 커 보여, 캐릭터 그림은 그대로 두고 한 칸을 60px(30도트)로 키웠다. 캐릭터는 1×2칸이다.
+- 교사(2026-11-12, 화면 진단 뒤): UI는 밝은 종이 도트 테두리(시안 B, 9-slice)로 통일한다. 글꼴은 Galmuri(본문 Galmuri11, 이름표·작은 글 Galmuri9).
+  사물 이름표는 가까이 갈 때만 보이고 평소에는 작은 "!" 표시를 띄운다. 장식 소품은 모든 장소에 넣는다(아래 "UI 그림", "글꼴", "장식 소품").
 - 대장(잠정): 캐릭터는 네 방향 걷기와 서 있기. 투명 배경 PNG. 파일은 public/sprites/ 아래(Vite가 그대로 내어 줌).
 
 ## 규격
@@ -95,6 +97,56 @@
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
+| art/src/ui/<이름>.txt → public/sprites/ui/<이름>.png | UI 테두리(9-slice)·표시·하트(아래 "UI 그림") | 넣음 |
+| public/fonts/ | 웹 글꼴 Galmuri11·Galmuri9(woff2)와 라이선스 Galmuri-OFL.txt(아래 "글꼴") | 넣음 |
+
+## 글꼴(2026-11-12, 교사 결정)
+- Galmuri(만든 이 quiple(이민서), SIL Open Font License 1.1). 공식 배포처 GitHub 저장소 quiple/galmuri의 릴리스
+  **v2.40.4**(2026-07-12) `https://github.com/quiple/galmuri/releases/download/v2.40.4/Galmuri-v2.40.4.zip`
+  (sha256 c8b3d986…6e60e7)에서 아래 세 파일만 꺼냈다. 다른 굵기·크기(Bold, 7, 14, Mono, ttf)는 넣지 않았다.
+
+  | 파일 | 내용 | 맞는 크기(CSS px) |
+  |---|---|---|
+  | public/fonts/Galmuri11.woff2 | 본문(대화상자, 단추, 안내) | 12px, 큰 글은 24px(정수 배) |
+  | public/fonts/Galmuri9.woff2 | 이름표, 작은 글, CCTV 표시 | 10px(20px) |
+  | public/fonts/Galmuri-OFL.txt | 라이선스(원본 LICENSE.txt). 글꼴과 함께 둔다 | |
+- 도트 글꼴이라 정해진 크기의 정수 배에서만 또렷하다(12px가 아닌 14·15px이면 획이 1·2픽셀로 고르지 않다). 지금 theme의 labelFont 15px·nicknameFont 14px는 바꿔야 한다(맵 담당).
+- OFL: 글꼴을 고쳐 다시 내면 이름 'Galmuri'를 쓸 수 없다. 글꼴 파일만 따로 팔지 않는다. 프로그램에 넣어 함께 내는 것(공개 저장소 포함)은 된다.
+- 헤드리스 크롬에서 @font-face로 읽으면 WSL에서도 한글이 보인다(art/work/ui/preview.html. 이 컴퓨터에 한글 글꼴이 없어도 됨).
+
+## UI 그림(2026-11-12, 시안 B "종이 도트")
+글자판 art/src/ui/<이름>.txt → `pnpm art:grid to-png art/src/ui/<이름>.txt public/sprites/ui/<이름>.png`.
+색은 공용 색표의 외곽선(#1d1531)·흰색(#f8f8f6)과 theme의 단추 파랑(#3b6ea8)에 맞췄다.
+
+- 9-slice 테두리. "자르기"는 위·오른쪽·아래·왼쪽 모두 같은 값(도트). HTML(CSS)에서는 **3배**(도트 하나 = 3px), 맵(Phaser) 위에서는 다른 그림처럼 **2배**로 쓴다.
+  CSS 예: `border: 12px solid; border-image: url(sprites/ui/panel.png) 4 fill / 12px / 0 stretch; image-rendering: pixelated;`
+  (자르기 4도트 × 3배 = 테두리 12px. 안쪽 여백은 padding으로 따로 준다.)
+
+  | 그림 | 크기(도트) | 자르기 | CSS 테두리(3배) | 쓰는 곳 |
+  |---|---|---|---|---|
+  | panel | 12×12 | 4 | 12px | 대화상자, 위쪽 안내, CCTV 목록, 골든벨 카드, 첫 화면 카드 |
+  | panel-dark | 8×8 | 3 | 9px(맵 위 2배면 6px) | 이름표, CCTV의 지금 하는 일, 사물 "이름 · 살펴보기" 판. 반투명(외곽 e6, 안 cc) |
+  | tag-me | 8×8 | 3 | 9px(6px) | 내 이름표(노란 안테) |
+  | btn / btn-down | 12×12 | 4 | 12px | 파란 단추(확인, 주요 동작). -down은 눌린 모양: 위 2줄이 비고 아래 두께가 1줄 |
+  | btn-light / -down | 12×12 | 4 | 12px | 크림 단추(고르기, 보기, 보조 동작) |
+  | btn-gold / -down | 12×12 | 4 | 12px | 금색 단추(골든벨, 시작, 강조) |
+  | btn-off | 12×12 | 4 | 12px | 누를 수 없는 단추 |
+  | slot | 12×12 | 4 | 12px | 가진 물건 칸(움푹함). 아이콘 30×30을 2배(60px)로 안에 놓는다 |
+  | bar | 8×10 | 3 | 9px(맵 위 6px) | 시간 막대 바깥(빈 막대) |
+  | bar-fill / -warn / -low | 6×8 | 2 | 6px | 시간 막대 안. 남은 시간 50% 넘음 초록, 50% 이하 노랑, 20% 이하 빨강(제안). 너비는 남은 비율 |
+
+  - 단추 글자색: btn은 흰색, btn-light·btn-gold는 외곽선 색(#1d1531), btn-off는 theme textMuted.
+  - Phaser: `this.add.nineslice(x, y, 'ui-panel-dark', undefined, w, h, 3, 3, 3, 3).setScale(2)`(w·h는 도트 단위, 화면에서 2배).
+  - 3배가 아닌 배율(1.5배 화면 등)에서는 테두리 도트 폭이 고르지 않을 수 있다(헤드리스 DPR 1에서만 봤다).
+- 표시와 하트(가운데 아래가 기준점. 맵 위에서는 2배)
+
+  | 그림 | 크기(도트) | 쓰는 곳 |
+  |---|---|---|
+  | mark | 12×14 | 살펴볼 수 있는 사물 위 "!"(노랑 말풍선). 아래 꼭지가 사물 위쪽 가운데를 가리킨다 |
+  | mark-done | 12×14 | 마친 미션의 사물 위 체크(초록) |
+  | heart / heart-empty / heart-break | 9×8 | 골든벨 목숨: 남은 것, 잃은 것, 잃는 순간(금 간 것, 잠깐 보였다 heart-empty로) |
+  | skull | 9×9 | 골든벨 탈락 |
+- 미리보기: `art/work/ui/preview.html`을 public을 뿌리로 하는 서버에서 연다(글꼴·테두리·막대·하트를 한 판에).
 
 ## 캐릭터 구상(8가지, 교사 확인 전)
 공통: 고등학생, 2.5등신. 성별은 정하지 않고 머리 모양과 옷으로 구분한다. 교사가 8가지 구상을 그대로 쓰기로 했다(2026-11-11).
@@ -296,7 +348,7 @@
 ```
 size 30x60            프레임 크기
 cols 3                PNG로 만들 때 한 줄의 프레임 수
-palette               글자 색 [겹]. 겹이 없으면 base
+palette               글자 색 [겹]. 겹이 없으면 base. 색 뒤에 두 자리를 더 쓰면 불투명도(#241b3dcc, UI 그림만)
 o #2b2433 line
 s #f2c9a0 body
 h #3a2a20 hair

@@ -1,0 +1,17 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 넉넉함(초록). 시간 막대 안(바깥 막대의 안쪽 칸에 넣음). 9-slice 2
+size 6x8
+cols 1
+palette
+h #a6d36c
+f #5b9137
+s #30612b
+
+frame bar-fill
+hhhhhh
+hhhhhh
+ffffff
+ffffff
+ffffff
+ffffff
+ssssss
+ssssss

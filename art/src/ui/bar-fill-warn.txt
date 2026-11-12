@@ -1,0 +1,17 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 절반 아래(노랑). 시간 막대 안(바깥 막대의 안쪽 칸에 넣음). 9-slice 2
+size 6x8
+cols 1
+palette
+h #ffe9a3
+f #f2c94c
+s #d1860c
+
+frame bar-fill-warn
+hhhhhh
+hhhhhh
+ffffff
+ffffff
+ffffff
+ffffff
+ssssss
+ssssss

@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 금색 단추(강조: 골든벨·시작). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #ffe9a3
+f #f2c94c
+s #d9ab2a
+d #a87d12
+
+frame btn-gold
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+oddddddddddo
+.oooooooooo.

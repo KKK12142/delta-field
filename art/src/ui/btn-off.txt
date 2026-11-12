@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 누를 수 없는 단추. 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #dfe5ec
+f #b9c4d1
+s #a5b1c0
+d #8a96a6
+
+frame btn-off
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+oddddddddddo
+.oooooooooo.

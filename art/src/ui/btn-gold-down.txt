@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 금색 단추(강조: 골든벨·시작) 눌린 모양(아래 두께가 없고 2도트 내려감). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #ffe9a3
+f #f2c94c
+s #d9ab2a
+d #a87d12
+
+frame btn-gold-down
+............
+............
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+.oooooooooo.

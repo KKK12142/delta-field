@@ -1,0 +1,18 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 골든벨 탈락 해골
+size 9x9
+cols 1
+palette
+o #1d1531
+w #f8f8f6
+s #d6c5b4
+
+frame skull
+..ooooo..
+.owwwwwo.
+owwwwwwso
+owoowoowo
+owoowoowo
+owwwowwso
+.oswwwso.
+.owowowo.
+..ooooo..

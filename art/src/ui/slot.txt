@@ -1,0 +1,22 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 물건 칸(움푹한 칸). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+d #b39964
+f #f2e6c9
+h #f8f8f6
+
+frame slot
+.oooooooooo.
+oddddddddddo
+odffffffffho
+odffffffffho
+odffffffffho
+odffffffffho
+odffffffffho
+odffffffffho
+odffffffffho
+odffffffffho
+ohhhhhhhhhho
+.oooooooooo.

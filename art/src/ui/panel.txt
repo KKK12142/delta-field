@@ -1,0 +1,22 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 종이 패널(대화상자·안내·카드). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #f8f8f6
+f #fff3d6
+s #e3cf9f
+
+frame panel
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+ohffffffffso
+ohffffffffso
+ohffffffffso
+ohffffffffso
+ohffffffffso
+ohffffffffso
+ohffffffffso
+osssssssssso
+.oooooooooo.

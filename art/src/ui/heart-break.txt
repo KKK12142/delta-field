@@ -1,0 +1,19 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 골든벨 목숨 하트(잃는 순간, 금 간 것)
+size 9x8
+cols 1
+palette
+o #1d1531
+r #e12a24
+h #f5735a
+k #3d3456
+d #8f221e
+
+frame heart-break
+.oo...oo.
+ohro.okko
+orrrookko
+orrrdokko
+.orrokko.
+..ordoko.
+...odo...
+....o....

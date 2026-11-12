@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 파란 단추(확인·주요 동작). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #7fa9e8
+f #3b6ea8
+s #2f5a99
+d #22437a
+
+frame btn
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+oddddddddddo
+.oooooooooo.

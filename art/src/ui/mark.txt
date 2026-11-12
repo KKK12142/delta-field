@@ -1,0 +1,24 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 살펴볼 수 있는 사물 위 표시(!). 맵에서 2배
+size 12x14
+cols 1
+palette
+o #1d1531
+y #fdd516
+h #fff3a6
+d #d1860c
+
+frame mark
+..oooooooo..
+.ohhhhyyyyo.
+ohhyyooyyyyo
+ohyyyooyyydo
+oyyyyooyyydo
+oyyyyooyyydo
+oyyyyooyyydo
+oyyyyyyyyydo
+oyyyyooyyydo
+oyyyyooyyydo
+.oyyyyyyddo.
+..ooddddoo..
+....oddo....
+.....oo.....

@@ -4,6 +4,7 @@
 //   cols 3              PNG로 만들 때 한 줄의 프레임 수
 //   palette             아래 줄마다: 글자 색 [겹 이름]. 겹 이름이 없으면 base
 //   o #2b2433 line
+//   t #241b3dcc         뒤 두 자리는 불투명도(없으면 ff). UI 그림(반투명 이름표 바탕)에만 쓴다
 //   frame down-stand    프레임 이름. 다음 줄부터 세로 크기만큼 그림. '.'은 투명
 //
 // 사용:
@@ -86,7 +87,7 @@ function toPng() {
         if (ch === '.') return;
         const p = palette.get(ch);
         if (layers && !layers.includes(p.layer)) return;
-        sheet.data.set([...p.rgb, 255], ((y0 + y) * sheet.width + x0 + x) * 4);
+        sheet.data.set([...p.rgb, p.alpha ?? 255], ((y0 + y) * sheet.width + x0 + x) * 4);
       });
     });
   });
