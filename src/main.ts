@@ -43,6 +43,8 @@ const ctx: MapContext = {
   net,
   schoolPos: null,
   askedEscape: false,
+  introVersion: -1,
+  seen: { part: 0, gathering: false },
 };
 
 // 화면을 그리는 방식은 src/render.ts(주소의 ?render=). 게임 크기를 화면(CSS) 크기×비율로 잡고,

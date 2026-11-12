@@ -6,6 +6,7 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { YAMLParseError, parse } from 'yaml';
 import school from '../src/data/school.json' with { type: 'json' };
+import { loadRoom, partOf } from '../src/data/room.ts';
 import { DOOR_KINDS, MAX_CODE_DIGITS, MISSION_TYPES, type EscapeFileInfo, type HintCard, type MissionType } from '../shared/escape.ts';
 import { GB_MAX_ANSWER, matchAnswer, normalizeAnswer } from '../shared/goldenbell.ts';
 import { CLASS_GROUPS } from '../shared/protocol.ts';
@@ -16,6 +17,8 @@ export interface MissionQuiz {
   choices: string[];
   answer: number;
   answers: string[];
+  /** 같은 자물쇠를 CLUE_AFTER번 틀리면 보일 실마리 한 줄(반 자물쇠는 반마다). 없으면 '' */
+  clue: string;
 }
 
 export interface Mission {
@@ -49,6 +52,14 @@ export interface Mission {
   order: string[];
   /** order: 사물 id → 살펴볼 때 보이는 글 */
   texts: Record<string, string>;
+  /** 같은 자물쇠를 CLUE_AFTER번 틀리면 보일 실마리(반 자물쇠에 반 실마리가 없을 때도 쓴다). 없으면 '' */
+  clue: string;
+  /** 같은 부의 힌트 카드를 이만큼 모아야 살펴볼 수 있다(0이면 조건 없음) */
+  requiresHints: number;
+  /** 보너스 미션: 마치면 다음 골든벨 시작 때 하트 +1. 장소의 미션 수에 넣지 않는다. */
+  bonus: boolean;
+  /** 미션 사물이 놓인 부(1·2, 여러 사물이면 가장 이른 부) */
+  part: number;
 }
 
 export interface EscapeSet {
@@ -60,6 +71,10 @@ export interface EscapeSet {
   labels: Record<string, string>;
   /** 힌트 카드(파일에 적은 순서) */
   hints: HintCard[];
+  /** 힌트 카드 id → 그 카드를 주는 미션의 부(주는 미션이 없으면 1) */
+  hintParts: Record<string, number>;
+  /** 입장 직후 보이는 이야기 카드 글. 없으면 '' */
+  intro: string;
   missions: Map<string, Mission>;
 }
 
@@ -69,6 +84,12 @@ const isEscapeFile = (name: string) => /\.ya?ml$/i.test(name);
 
 /** 맵의 미션 id → 그 미션을 단 사물들 */
 const MAP_MISSIONS = new Map<string, { id: string; kind: string }[]>();
+const SCHOOL = loadRoom(school);
+/** 미션 id → 그 미션 사물이 놓인 부(가장 이른 부) */
+const MISSION_PARTS = new Map<string, number>();
+for (const o of SCHOOL.objects) {
+  if (o.mission) MISSION_PARTS.set(o.mission, Math.min(MISSION_PARTS.get(o.mission) ?? 2, partOf(SCHOOL, o)));
+}
 /** 맵의 사물 id → 미션 id */
 export const OBJECT_MISSIONS = new Map<string, string>();
 /** 이름표 글의 가장 긴 글자 수 */
@@ -132,7 +153,7 @@ function parseQuiz(raw: Record<string, unknown>, where: string, errors: string[]
     if (!Number.isInteger(answer) || answer < 1 || answer > Math.max(choices.length, 1)) {
       errors.push(`${where}: answer는 1~${Math.max(choices.length, 1)} 사이의 보기 번호로 씁니다.`);
     }
-    return errors.length === before ? { question, choices, answer, answers: [] } : null;
+    return errors.length === before ? { question, choices, answer, answers: [], clue: textOf(raw.clue) } : null;
   }
   const list = Array.isArray(raw.answers) ? raw.answers : raw.answers === undefined ? [] : [raw.answers];
   const answers = list.map(textOf);
@@ -141,7 +162,7 @@ function parseQuiz(raw: Record<string, unknown>, where: string, errors: string[]
   } else if (answers.some((a) => a.length > GB_MAX_ANSWER)) {
     errors.push(`${where}: answers(정답)는 ${GB_MAX_ANSWER}자 안으로 씁니다.`);
   }
-  return errors.length === before ? { question, choices: [], answer: 0, answers } : null;
+  return errors.length === before ? { question, choices: [], answer: 0, answers, clue: textOf(raw.clue) } : null;
 }
 
 export function parseEscapeSet(text: string, file: string): EscapeSet {
@@ -201,6 +222,11 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
     if (gives && !(gives in items)) errors.push(`${where}: gives의 아이템 "${gives}"가 items에 없습니다.`);
     if (hint && !hintIds.has(hint)) errors.push(`${where}: hint의 힌트 카드 "${hint}"가 hints에 없습니다.`);
     if (m.example !== undefined && typeof m.example !== 'boolean') errors.push(`${where}: example은 true 또는 false로 씁니다.`);
+    if (m.bonus !== undefined && typeof m.bonus !== 'boolean') errors.push(`${where}: bonus는 true 또는 false로 씁니다.`);
+    const requiresHints = m.requiresHints === undefined ? 0 : Number(m.requiresHints);
+    if (!Number.isInteger(requiresHints) || requiresHints < 0) errors.push(`${where}: requiresHints는 0 이상의 정수(모아야 할 힌트 카드 수)로 씁니다.`);
+    const clue = textOf(m.clue);
+    if (clue && !['quiz', 'code', 'open', 'exit'].includes(type)) errors.push(`${where}: clue(실마리)는 quiz, code, open, exit 미션에만 씁니다.`);
 
     const text = textOf(m.text);
     let quiz: MissionQuiz | null = null;
@@ -272,10 +298,23 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
       needs,
       order,
       texts,
+      clue,
+      requiresHints,
+      bonus: m.bonus === true,
+      part: MISSION_PARTS.get(id) ?? 1,
     });
   }
+  const hintParts: Record<string, number> = {};
+  for (const h of hints) {
+    const givers = [...missions.values()].filter((m) => m.hint === h.id);
+    hintParts[h.id] = givers.length ? Math.min(...givers.map((m) => m.part)) : 1;
+  }
+  for (const m of missions.values()) {
+    const same = Object.values(hintParts).filter((part) => part === m.part).length;
+    if (m.requiresHints > same) errors.push(`${m.id} 미션: requiresHints(${m.requiresHints})가 ${m.part}부 힌트 카드 수(${same})보다 많습니다.`);
+  }
   if (errors.length) throw new Error(errors.join('\n'));
-  return { file, title, items, labels, hints, missions };
+  return { file, title, items, labels, hints, hintParts, intro: textOf(root.intro), missions };
 }
 
 /** 이 학생(반)에게 낼 문제. 반 자물쇠에서 학생의 반 문제가 없으면(선생님, 반 없음) 반 목록 순서로 처음 있는 문제 */

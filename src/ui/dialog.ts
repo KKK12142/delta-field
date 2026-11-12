@@ -8,10 +8,35 @@ export interface QuizView {
   choices: string[];
   /** 교사가 바꿔 넣을 예시 문제 */
   example: boolean;
+  /** 이미 여러 번 틀려 보이는 실마리(없으면 '') */
+  clue: string;
 }
 
-/** 답을 서버에 보내 채점한 결과: 맞음, 틀림, 또는 낼 수 없는 까닭(글) */
-export type QuizCheck = (answer: string) => Promise<boolean | string>;
+/** 답을 서버에 보내 채점한 결과: 맞음, 틀림, 또는 낼 수 없는 까닭(글). 틀린 수가 쌓이면 실마리(clue)가 온다. */
+export type QuizCheck = (answer: string) => Promise<boolean | string | { clue: string }>;
+
+/** 미션을 마친 보상 카드 한 장: 맞음(또는 단서 글) + 얻은 것 + 이어지는 글 + 힌트 카드 */
+export interface RewardCard {
+  title: string;
+  /** 맨 위 글: "맞았습니다." 또는 단서·줍기 글 */
+  lead: string;
+  /** 얻은 것 한 줄씩: "교실 문 열쇠를 얻었습니다.", "교실 문을 열었습니다. 지나갈 수 있습니다." */
+  gains: string[];
+  /** 마친 뒤 이어지는 글(자료의 after) */
+  after: string;
+  hint: NoteCard | null;
+}
+
+/** 실마리 한 줄을 보이는 칸(퀴즈·숫자 자물쇠 창). 글이 없으면 감춘다. */
+function clueLine() {
+  const node = el('p', 'df-text df-clue');
+  const set = (text: string) => {
+    node.hidden = !text;
+    node.textContent = text ? `실마리: ${text}` : '';
+  };
+  set('');
+  return { node, set };
+}
 
 /** 창이 뜬 뒤 이 시간(ms) 동안은 키로 누른 것을 받지 않는다. */
 const OPEN_GUARD_MS = 200;
@@ -110,6 +135,8 @@ export class Dialog {
       const panel = this.panel(title);
       if (quiz.example) panel.append(el('span', 'df-badge', '예시 문제'));
       panel.append(el('p', 'df-text', quiz.question));
+      const clue = clueLine();
+      clue.set(quiz.clue);
       const feedback = el('p', 'df-text df-feedback');
       feedback.hidden = true;
       const row = el('div', 'df-row');
@@ -135,6 +162,7 @@ export class Dialog {
             finish(true);
             return true;
           }
+          if (typeof result === 'object' && result.clue) clue.set(result.clue);
           showWrong(typeof result === 'string' ? result : quiz.choices.length ? '틀렸습니다. 다른 답을 고릅니다.' : '틀렸습니다. 다시 써서 냅니다.');
         } catch {
           showWrong('서버에서 답을 받지 못했습니다. 잠시 뒤 다시 냅니다.');
@@ -194,7 +222,7 @@ export class Dialog {
         panel.append(form);
         queueMicrotask(() => input.focus());
       }
-      panel.append(feedback, row);
+      panel.append(feedback, clue.node, row);
       close.addEventListener('click', () => finish(false));
       this.open(panel, (e) => {
         if (e.key === 'Escape') finish(false);
@@ -208,11 +236,13 @@ export class Dialog {
    * 숫자 자물쇠: 번호 단추(0~9)를 눌러 digits자리를 채우고 "열기"를 누른다(키보드 숫자·Backspace·Enter도 된다).
    * 번호는 check(서버 채점)로 맞춰 보고, 맞으면 true, 닫으면 false. 틀리면 칸을 비우고 다시 누른다.
    */
-  code(title: string, text: string, digits: number, example: boolean, check: QuizCheck): Promise<boolean> {
+  code(title: string, text: string, digits: number, example: boolean, check: QuizCheck, clueText = ''): Promise<boolean> {
     return new Promise((resolve) => {
       const panel = this.panel(title);
       if (example) panel.append(el('span', 'df-badge', '예시 문제'));
       panel.append(el('p', 'df-text', text));
+      const clue = clueLine();
+      clue.set(clueText);
       const display = el('div', 'df-code-display');
       display.setAttribute('aria-live', 'polite');
       const feedback = el('p', 'df-text df-feedback');
@@ -249,6 +279,7 @@ export class Dialog {
             finish(true);
             return;
           }
+          if (typeof result === 'object' && result.clue) clue.set(result.clue);
           feedback.textContent = typeof result === 'string' ? result : '번호가 맞지 않습니다. 다시 누릅니다.';
         } catch {
           feedback.textContent = '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 엽니다.';
@@ -275,7 +306,7 @@ export class Dialog {
       const close = el('button', 'df-button df-button-light', '닫기');
       close.addEventListener('click', () => finish(false));
       row.append(close);
-      panel.append(display, pad, feedback, row);
+      panel.append(display, pad, feedback, clue.node, row);
       show();
       this.open(panel, (e) => {
         if (e.key === 'Escape') finish(false);
@@ -283,6 +314,64 @@ export class Dialog {
         else if (e.key === 'Backspace') erase();
         else if (e.key === 'Enter') void submit();
       });
+    });
+  }
+
+  /**
+   * 보상 카드 한 장(미션을 마쳤을 때): 맞음·단서 글, 얻은 것, 이어지는 글, 힌트 카드를 한 창에 보인다.
+   * 힌트 카드가 있으면 단추는 "수첩에 넣기"다. 겉모양은 화면 담당(df-reward 아래 클래스).
+   */
+  reward(card: RewardCard): Promise<void> {
+    return new Promise((resolve) => {
+      const panel = this.panel(card.title);
+      panel.classList.add('df-reward');
+      if (card.lead) panel.append(el('p', 'df-text df-reward-lead', card.lead));
+      if (card.gains.length) {
+        const list = el('ul', 'df-reward-gains');
+        for (const g of card.gains) list.append(el('li', 'df-reward-gain', g));
+        panel.append(list);
+      }
+      if (card.after) panel.append(el('p', 'df-text df-reward-after', card.after));
+      if (card.hint) {
+        const hint = el('section', 'df-card df-reward-hint');
+        hint.append(el('span', 'df-muted', '힌트 카드'), el('strong', '', card.hint.title), el('p', 'df-text', card.hint.text));
+        panel.append(hint);
+      }
+      const row = el('div', 'df-row');
+      const ok = el('button', 'df-button', card.hint ? '수첩에 넣기' : '확인');
+      row.append(ok);
+      panel.append(row);
+      const done = () => {
+        this.close();
+        resolve();
+      };
+      ok.addEventListener('click', done);
+      this.open(panel, (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') done();
+      });
+      ok.focus();
+    });
+  }
+
+  /** 이야기 카드(입장 직후)나 1부 완료처럼 한 장면을 보이는 창. 겉모양은 화면 담당(df-story, kind별 is-<kind>). */
+  story(kind: 'intro' | 'finish', title: string, text: string, buttonText = '확인'): Promise<void> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      panel.classList.add('df-story', `is-${kind}`);
+      panel.append(el('div', 'df-story-art'), el('p', 'df-text df-story-text', text));
+      const row = el('div', 'df-row');
+      const ok = el('button', 'df-button', buttonText);
+      row.append(ok);
+      panel.append(row);
+      const done = () => {
+        this.close();
+        resolve();
+      };
+      ok.addEventListener('click', done);
+      this.open(panel, (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') done();
+      });
+      ok.focus();
     });
   }
 

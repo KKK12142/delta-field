@@ -41,6 +41,30 @@ function setRanking(podium: HTMLElement, list: HTMLElement, rows: RankRow[]) {
   podium.hidden = rows.length === 0;
 }
 
+/** 순위 줄 목록만(시상대 없이): 합산 순위에 쓴다. 줄 모양은 setRanking과 같다. */
+function setRankList(list: HTMLElement, rows: RankRow[]) {
+  const key = JSON.stringify(rows);
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  list.replaceChildren(
+    ...rows.map((r) => {
+      const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
+      li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
+      return li;
+    }),
+  );
+  list.hidden = rows.length === 0;
+}
+
+/** 글 목록: 달라졌을 때만 다시 만든다(반 대항). */
+function setList(list: HTMLElement, rows: string[]) {
+  const key = rows.join('\n');
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  list.replaceChildren(...rows.map((r) => el('li', '', r)));
+  list.hidden = rows.length === 0;
+}
+
 const MARK: Record<AnswerGroup['mark'], string> = { correct: '정답', accepted: '선생님이 인정', wrong: '오답', none: '오답' };
 
 /** 골든벨 위쪽: 문제 카드(왼쪽)와 내 상태(오른쪽, 학생만) */
@@ -58,6 +82,10 @@ export class GbHud {
   private readonly result = el('span', 'df-text df-gb-result');
   private readonly podium = el('div', 'df-podium');
   private readonly ranking = el('ol', 'df-gb-ranking');
+  /** 끝났을 때 합산 순위·반 대항(두 판 넘게 했을 때) */
+  private readonly totalsTitle = el('strong', 'df-gb-totals-title');
+  private readonly totals = el('ol', 'df-gb-ranking df-gb-totals');
+  private readonly classes = el('ol', 'df-gb-ranking df-gb-classes');
   private readonly mine = el('div', 'df-hud-box df-gb-mine');
   private readonly lives = el('strong', 'df-gb-lives');
   private readonly score = el('span', 'df-text');
@@ -113,6 +141,9 @@ export class GbHud {
       this.explain,
       this.podium,
       this.ranking,
+      this.totalsTitle,
+      this.totals,
+      this.classes,
       this.status,
     );
     this.notebook.addEventListener('click', () => {
@@ -152,6 +183,9 @@ export class GbHud {
     this.result.classList.toggle('is-good', v.tone === 'good');
     this.result.classList.toggle('is-bad', v.tone === 'bad');
     setRanking(this.podium, this.ranking, v.ranking);
+    setText(this.totalsTitle, v.totalsTitle);
+    setRankList(this.totals, v.totals);
+    setList(this.classes, v.classes);
   }
 
   /** 남은 시간 막대: 처음 본 값이 전체, 50% 이하 노랑, 20% 이하 빨강(theme timeBar) */
@@ -179,9 +213,9 @@ export class GbHud {
     setText(this.status, text ?? '');
   }
 
-  /** 힌트 수첩 단추에 얻은 수/전체를 적는다. */
-  setHints(got: number, total: number) {
-    const label = `힌트 수첩 ${got}/${total}`;
+  /** 힌트 수첩 단추에 얻은 수를 적는다(예: "1부 3/8 · 2부 0/8"). */
+  setHints(summary: string) {
+    const label = `힌트 수첩 ${summary}`;
     if (this.notebook.textContent !== label) this.notebook.textContent = label;
   }
 
@@ -217,11 +251,24 @@ export class GbPanel {
   private readonly ranking = el('ol', 'df-gb-ranking df-cctv-list');
   /** 되돌릴 수 없는 단추라 다음 단추와 떨어진 왼쪽에, 크림색으로 둔다. */
   private readonly end = el('button', 'df-button df-button-small df-button-light', '골든벨 끝내기');
+  /** 마감(푸는 중에만). 모두 답을 내면 is-ready로 강조한다. */
+  private readonly close = el('button', 'df-button df-gb-close', '마감');
+  /** 끝났을 때 합산 순위·반 대항과 합계를 처음으로 돌리는 단추 */
+  private readonly totalsTitle = el('strong', 'df-gb-totals-title');
+  private readonly totals = el('ol', 'df-gb-ranking df-gb-totals df-cctv-list');
+  private readonly classes = el('ol', 'df-gb-ranking df-gb-classes');
+  private readonly resetTotal = el('button', 'df-button df-button-small df-gb-reset', '합계 처음으로');
   /** 단답형 정답 공개 뒤 낸 답 묶음 */
   private readonly answers = el('ul', 'df-gb-answers df-cctv-list');
   private readonly onAccept: (key: string, accept: boolean) => void;
 
-  constructor(handlers: { next: () => void; end: () => void; accept: (key: string, accept: boolean) => void }) {
+  constructor(handlers: {
+    next: () => void;
+    end: () => void;
+    accept: (key: string, accept: boolean) => void;
+    close: () => void;
+    resetTotal: () => void;
+  }) {
     this.onAccept = handlers.accept;
     const head = el('div', 'df-cctv-title');
     head.append(this.title, this.status);
@@ -233,12 +280,20 @@ export class GbPanel {
       this.end.blur();
       handlers.end();
     });
+    this.close.addEventListener('click', () => {
+      this.close.blur();
+      handlers.close();
+    });
+    this.resetTotal.addEventListener('click', () => {
+      this.resetTotal.blur();
+      handlers.resetTotal();
+    });
     const row = el('div', 'df-row df-row-split');
-    row.append(this.end, this.next);
+    row.append(this.end, this.close, this.next);
     this.node.setAttribute('aria-label', '골든벨 진행');
     this.answers.hidden = true;
     this.podium.hidden = true;
-    this.node.append(head, this.counts, row, this.answers, this.podium, this.ranking);
+    this.node.append(head, this.counts, row, this.answers, this.podium, this.ranking, this.totalsTitle, this.totals, this.classes, this.resetTotal);
     uiRoot().append(this.node);
   }
 
@@ -261,7 +316,17 @@ export class GbPanel {
       this.next.disabled = !v.next.enabled || waiting;
     }
     this.end.disabled = waiting;
+    // setText는 글이 있으면 보이게 하므로 글을 먼저 넣고 숨김을 정한다.
+    setText(this.close, v.close?.ready ? '마감(모두 냄)' : '마감');
+    this.close.hidden = v.close === null;
+    this.close.disabled = waiting;
+    this.close.classList.toggle('is-ready', v.close?.ready === true);
     setRanking(this.podium, this.ranking, v.ranking);
+    setText(this.totalsTitle, v.totalsTitle);
+    setRankList(this.totals, v.totals);
+    setList(this.classes, v.classes);
+    this.resetTotal.hidden = !v.canReset;
+    this.resetTotal.disabled = waiting;
     this.showAnswers(v.answers, waiting);
   }
 

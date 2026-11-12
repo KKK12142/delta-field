@@ -17,6 +17,13 @@
 export const MISSION_TYPES = ['clue', 'quiz', 'code', 'pickup', 'deliver', 'order', 'open', 'exit'] as const;
 export type MissionType = (typeof MISSION_TYPES)[number];
 
+/** 같은 자물쇠(quiz·code·문제 있는 문)를 이만큼 틀리면 실마리(자료의 clue)를 보인다(2026-11-12 교사 결정). */
+export const CLUE_AFTER = 3;
+
+/** 선생님 CCTV의 막힌 학생: 미션을 마치지 못한 채 이 시간(초)을 넘겼거나, 한 자물쇠를 STUCK_WRONGS번 넘게 틀림(대장 결정) */
+export const STUCK_SECONDS = 300;
+export const STUCK_WRONGS = 3;
+
 /** 숫자 자물쇠 번호의 가장 긴 자릿수 */
 export const MAX_CODE_DIGITS = 8;
 
@@ -50,6 +57,8 @@ export interface MissionReward {
   opened: boolean;
   /** 1부를 마쳤으면(exit 미션) true */
   finished: boolean;
+  /** 보너스 미션을 마쳤으면 true(다음 골든벨 시작 때 하트 +1) */
+  bonus: boolean;
   /** 주운 물건이면 true(그 사물이 화면에서 사라진다) */
   picked: boolean;
   /** 마친 뒤 보이는 글(자료 파일의 after). 없으면 '' */
@@ -69,8 +78,8 @@ export interface MissionReward {
 export type MissionView =
   | { kind: 'none' | 'locked' | 'done'; text: string }
   | { kind: 'clue'; text: string; reward: MissionReward }
-  | { kind: 'quiz'; question: string; choices: string[]; example: boolean; mission: MissionType }
-  | { kind: 'code'; text: string; digits: number; example: boolean }
+  | { kind: 'quiz'; question: string; choices: string[]; example: boolean; mission: MissionType; clue: string }
+  | { kind: 'code'; text: string; digits: number; example: boolean; clue: string }
   | { kind: 'order'; text: string; step: number; total: number; pressedAt: number };
 
 /**
@@ -96,6 +105,8 @@ export interface MissionAnswerMessage {
 export interface MissionAnswerReply {
   correct: boolean;
   reward: MissionReward | null;
+  /** 같은 자물쇠를 CLUE_AFTER번 넘게 틀렸으면 보일 실마리 한 줄(자료의 clue). 없으면 '' */
+  clue: string;
   /** 낼 수 없으면 그 까닭 */
   error: string | null;
 }

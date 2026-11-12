@@ -7,6 +7,7 @@ import characters from '../src/data/characters.json' with { type: 'json' };
 import {
   GB_LIVES,
   GB_MAX_ANSWER,
+  GB_MAX_LIVES,
   activeZones,
   answerDisplay,
   answerKey,
@@ -107,6 +108,10 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     checkTeacher(options?.password);
     this.roomId = freeCode();
     this.state.code = this.roomId;
+    // 방의 시계(초). 막힌 학생을 셀 때 쓴다.
+    this.clock.setInterval(() => {
+      this.state.now += 1;
+    }, 1000);
 
     this.onMessage('move', (client: Client, message: MoveMessage) => {
       const player = this.state.players.get(client.sessionId);
@@ -142,7 +147,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     });
     this.onMessage('missionAnswer', (client: Client, message: MissionAnswerMessage): MissionAnswerReply => {
       const p = this.state.players.get(client.sessionId);
-      if (!p || p.map !== 'school') return { correct: false, reward: null, error: '지금은 답을 낼 수 없습니다.' };
+      if (!p || p.map !== 'school') return { correct: false, reward: null, clue: '', error: '지금은 답을 낼 수 없습니다.' };
       return this.escape.answer(p, message?.object, message?.answer);
     });
     this.onMessage('missionPress', (client: Client, message: { object?: unknown }): MissionPressReply => {
@@ -164,6 +169,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('gbGatherCancel', (client: Client) => this.gbGatherCancel(client));
     this.onMessage('openPart', (client: Client, message: { part?: unknown }) => this.openPart(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
+    this.onMessage('gbClose', (client: Client) => this.gbClose(client));
+    this.onMessage('gbResetTotal', (client: Client) => this.gbResetTotal(client));
     this.onMessage('gbEnd', (client: Client) => this.gbEnd(client));
     this.onMessage('gbSubmit', (client: Client, message: GbSubmitMessage) => this.gbSubmit(client, message));
     this.onMessage('gbAccept', (client: Client, message: GbAcceptMessage) => this.gbAccept(client, message));
@@ -189,6 +196,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     player.classGroup = !teacher && classGroupName(String(options?.classGroup ?? '')) ? String(options.classGroup) : '';
     player.col = school.start.col;
     player.row = school.start.row;
+    player.lastProgressAt = this.state.now;
     // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.
     if (this.state.goldenbell.phase !== '') this.enterGoldenBell(player);
     this.state.players.set(client.sessionId, player);
@@ -224,12 +232,16 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     return this.state.players.get(client.sessionId)?.role === 'teacher';
   }
 
-  /** 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 학교 맵의 자리는 화면이 기억한다. */
+  /**
+   * 골든벨 맵의 출발 자리(spawn) 안에 세우고 목숨·점수를 처음으로 되돌린다. 학교 맵의 자리는 화면이 기억한다.
+   * 보너스 미션을 마쳐 남은 하트가 있으면 목숨 +1(최대 GB_MAX_LIVES)로 시작하고 하트를 쓴다.
+   */
   private enterGoldenBell(p: Player) {
     p.map = 'goldenbell';
     p.col = GB_SPAWN.col + Math.random() * GB_SPAWN.w;
     p.row = GB_SPAWN.row + Math.random() * GB_SPAWN.h;
-    p.gbLives = GB_LIVES;
+    p.gbLives = p.bonusHeart ? Math.min(GB_MAX_LIVES, GB_LIVES + 1) : GB_LIVES;
+    p.bonusHeart = false;
     p.gbScore = 0;
     p.gbOut = false;
     p.gbRevive = 0;
@@ -281,6 +293,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.index = -1;
     this.clearQuestion();
     gb.phase = 'ready';
+    // 앞 판의 점수를 합계에 넣고 새 판을 센다(합산 순위).
+    for (const p of this.state.players.values()) p.gbTotal += p.gbScore;
+    this.state.gbRounds += 1;
     for (const p of this.state.players.values()) this.enterGoldenBell(p);
     console.log(`방 ${this.roomId}: 골든벨 "${set.title}"(${set.questions.length}문제)을 시작했습니다.`);
   }
@@ -333,6 +348,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     if (message?.part !== 2) return refuse('열 수 있는 부는 2부입니다.');
     if (this.state.part === 2) return refuse('2부는 이미 열려 있습니다.');
     this.state.part = 2;
+    this.escape.resetProgressClock();
     console.log(`방 ${this.roomId}: 2부를 열었습니다.`);
     return ok;
   }
@@ -458,7 +474,32 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.total = 0;
     gb.index = -1;
     for (const p of this.state.players.values()) p.map = 'school';
+    this.escape.resetProgressClock();
     console.log(`방 ${this.roomId}: 골든벨을 끝냈습니다.`);
+    return ok;
+  }
+
+  /** 마감: 푸는 중인 문제의 남은 시간을 0으로 하고 바로 채점해 정답을 공개한다. */
+  private gbClose(client: Client): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 마감할 수 있습니다.');
+    const gb = this.state.goldenbell;
+    if (gb.phase !== 'question') return refuse('문제를 푸는 중에만 마감할 수 있습니다.');
+    this.timer?.clear();
+    this.timer = null;
+    gb.timeLeft = 0;
+    this.reveal();
+    return ok;
+  }
+
+  /** 합산 순위를 처음으로: 앞 판들의 합계를 지운다. 골든벨을 하는 중이면 이번 판부터 다시 센다. */
+  private gbResetTotal(client: Client): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 합계를 처음으로 돌릴 수 있습니다.');
+    const playing = this.state.goldenbell.phase !== '';
+    for (const p of this.state.players.values()) {
+      p.gbTotal = 0;
+      if (!playing) p.gbScore = 0;
+    }
+    this.state.gbRounds = playing ? 1 : 0;
     return ok;
   }
 

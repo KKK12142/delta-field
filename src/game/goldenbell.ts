@@ -9,6 +9,7 @@ import {
   zoneAt,
   type Zones,
 } from '../../shared/goldenbell.ts';
+import { CLASS_GROUPS } from '../../shared/protocol.ts';
 import type { GoldenBell, Player } from '../../shared/schema.ts';
 
 /** 학생에게 보이는 결과의 느낌(색) */
@@ -37,6 +38,10 @@ export interface CardView {
   tone: Tone;
   /** 끝났을 때의 순위(학생은 위쪽 몇 명과 나) */
   ranking: RankRow[];
+  /** 끝났을 때, 두 판 넘게 했으면 합산 순위(위쪽 몇 명과 나)와 반 대항. 제목은 totalsTitle */
+  totalsTitle: string;
+  totals: RankRow[];
+  classes: string[];
   /** 단답형 답 칸을 보일지(학생, 푸는 중) */
   answerBox: boolean;
   /** 해설(정답 공개 때, 문제 파일에 있으면) */
@@ -57,7 +62,15 @@ export interface PanelView {
   counts: string[];
   /** 다음 단추. null이면 감춘다. */
   next: { label: string; enabled: boolean } | null;
+  /** 마감 단추(푸는 중에만). ready면 모두 답을 내 강조한다. null이면 감춘다. */
+  close: { ready: boolean } | null;
   ranking: RankRow[];
+  /** 끝났을 때 합산 순위·반 대항(두 판 넘게 했을 때). 제목은 totalsTitle */
+  totalsTitle: string;
+  totals: RankRow[];
+  classes: string[];
+  /** 합계를 처음으로 돌리는 단추를 보일지(앞 판 합계가 있을 때) */
+  canReset: boolean;
   /** 단답형 정답 공개 뒤 낸 답 묶음(같은 꼴의 답끼리) */
   answers: AnswerGroup[];
 }
@@ -110,6 +123,46 @@ export function ranking(players: Player[], me?: Player): RankRow[] {
   }));
 }
 
+/** 합산 점수(앞 판들 + 이번 판) */
+const totalOf = (p: Player) => p.gbTotal + p.gbScore;
+
+/** 합산 순위 제목: 판이 둘이면 "1부+2부 합계" */
+export function totalsTitle(rounds: number) {
+  return `${Array.from({ length: rounds }, (_, i) => `${i + 1}부`).join('+')} 합계`;
+}
+
+/** 합산 순위(같은 점수는 같은 등수). score는 합산 점수 */
+export function totalRanking(players: Player[], me?: Player): RankRow[] {
+  const list = students(players).sort((a, b) => totalOf(b) - totalOf(a) || a.nickname.localeCompare(b.nickname, 'ko'));
+  return list.map((p) => ({
+    rank: list.filter((q) => totalOf(q) > totalOf(p)).length + 1,
+    nickname: p.nickname,
+    score: totalOf(p),
+    character: p.character,
+    me: p === me,
+  }));
+}
+
+/** 학생 화면의 순위: 위쪽 몇 명과, 그 안에 없으면 내 줄 */
+function topAndMe(all: RankRow[]): RankRow[] {
+  const top = all.slice(0, RANKING_FOR_STUDENTS);
+  const mine = all.find((r) => r.me);
+  return mine && !top.includes(mine) ? [...top, mine] : top;
+}
+
+/** 반 대항(대장 결정: 반마다 학생 수가 달라 합산 점수의 평균으로 견준다). 평균이 높은 반부터 */
+export function classRanking(players: Player[]): string[] {
+  const list = students(players);
+  return CLASS_GROUPS.map((g) => {
+    const members = list.filter((p) => p.classGroup === g.id);
+    const avg = members.length ? members.reduce((sum, p) => sum + totalOf(p), 0) / members.length : 0;
+    return { name: g.name, avg, n: members.length };
+  })
+    .filter((c) => c.n > 0)
+    .sort((a, b) => b.avg - a.avg)
+    .map((c, i) => `${i + 1}위 ${c.name} 평균 ${c.avg.toFixed(1)}점(${c.n}명)`);
+}
+
 /** 한 문제의 내 결과. 단답형은 내 답과, 선생님이 인정한 답이면 그것도 앞에 붙인다. */
 function resultOf(gb: GoldenBell, p: Player): { text: string; tone: Tone } {
   const r = judgedText(p, gb.type === 'short' ? '답을 내지 않아 틀린 것으로 셉니다. ' : '구역 밖에 있어 틀린 것으로 셉니다. ', gb.nonsense);
@@ -127,7 +180,7 @@ function judgedText(p: Player, noAnswer: string, nonsense: boolean): { text: str
         ? { text: `맞았습니다. ${left}문제를 더 맞히면 다시 살아납니다.`, tone: 'good' }
         : { text: '맞았습니다. 점수가 1점 올랐습니다.', tone: 'good' };
     case 'heart':
-      return { text: `맞았습니다. 하트 +1 · 목숨 ${p.gbLives}개(최대 ${GB_LIVES}개)`, tone: 'good' };
+      return { text: `맞았습니다. 하트 +1 · 목숨 ${p.gbLives}개(넌센스로는 ${GB_LIVES}개까지)`, tone: 'good' };
     case 'revived':
       return { text: `맞았습니다. 목숨 ${GB_REVIVE_LIVES}개로 다시 살아났습니다.`, tone: 'good' };
     case 'wrong':
@@ -145,9 +198,11 @@ function judgedText(p: Player, noAnswer: string, nonsense: boolean): { text: str
   }
 }
 
-export function cardView(gb: GoldenBell, me: Player | undefined, players: Player[], teacher: boolean): CardView {
+export function cardView(gb: GoldenBell, me: Player | undefined, players: Player[], teacher: boolean, rounds: number): CardView {
   const n = gb.index + 1;
-  const view: CardView = { head: '', question: '', timeLeft: null, line: '', result: '', tone: '', ranking: [], answerBox: false, explain: '' };
+  const view: CardView = {
+    head: '', question: '', timeLeft: null, line: '', result: '', tone: '', ranking: [], totalsTitle: '', totals: [], classes: [], answerBox: false, explain: '',
+  };
   switch (gb.phase) {
     case 'ready':
       view.head = `골든벨 · ${gb.title}`;
@@ -182,13 +237,15 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
     case 'end': {
       view.head = `골든벨 · ${gb.title}`;
       view.question = '골든벨이 끝났습니다.';
-      if (me && !teacher) view.line = `내 점수 ${me.gbScore}점`;
+      if (me && !teacher) view.line = rounds > 1 ? `내 점수 ${me.gbScore}점 · ${totalsTitle(rounds)} ${totalOf(me)}점` : `내 점수 ${me.gbScore}점`;
       // 선생님은 오른쪽 창에서 모든 학생의 순위를 본다. 학생은 위쪽 몇 명과, 그 안에 없으면 내 줄을 덧붙여 본다.
       if (!teacher) {
-        const all = ranking(players, me);
-        const top = all.slice(0, RANKING_FOR_STUDENTS);
-        const mine = all.find((r) => r.me);
-        view.ranking = mine && !top.includes(mine) ? [...top, mine] : top;
+        view.ranking = topAndMe(ranking(players, me));
+        if (rounds > 1) {
+          view.totalsTitle = totalsTitle(rounds);
+          view.totals = topAndMe(totalRanking(players, me));
+          view.classes = classRanking(players);
+        }
       }
       break;
     }
@@ -209,10 +266,13 @@ export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
 }
 
 /** 선생님 창. 지금 구역마다 몇 명이 서 있는지, 정답 공개 뒤에는 맞힌 수와 남은 학생 수를 보인다. */
-export function panelView(gb: GoldenBell, players: Player[], zones: Zones): PanelView {
+export function panelView(gb: GoldenBell, players: Player[], zones: Zones, rounds: number): PanelView {
   const list = students(players);
   const n = gb.index + 1;
-  const view: PanelView = { title: `골든벨 · ${gb.title}`, status: '', counts: [], next: null, ranking: [], answers: [] };
+  const view: PanelView = {
+    title: `골든벨 · ${gb.title}`, status: '', counts: [], next: null, close: null, ranking: [], totalsTitle: '', totals: [], classes: [],
+    canReset: rounds > 1, answers: [],
+  };
   const alive = list.filter((p) => !p.gbOut).length;
   const survivors = `남은 학생 ${alive}명 · 탈락 ${list.length - alive}명`;
   switch (gb.phase) {
@@ -226,10 +286,13 @@ export function panelView(gb: GoldenBell, players: Player[], zones: Zones): Pane
       view.next = { label: '다음 문제', enabled: false };
       if (gb.type === 'short') {
         view.counts = [`답을 낸 학생 ${gb.submitted}명 · 내지 않은 학생 ${Math.max(0, list.length - gb.submitted)}명`, survivors];
+        view.close = { ready: list.length > 0 && gb.submitted >= list.length };
         break;
       }
       const active = activeZones(zones, gb.type, gb.choices.length);
       const count = (label: string) => list.filter((p) => zoneAt(active, p.col, p.row) === label).length;
+      // OX·객관식은 모두 어느 구역에 서 있으면 답을 낸 것으로 본다.
+      view.close = { ready: list.length > 0 && count('') === 0 };
       view.counts = [
         [...active.map((z) => `${z.label} ${count(z.label)}명`), `구역 밖 ${count('')}명`].join(' · '),
         survivors,
@@ -248,6 +311,11 @@ export function panelView(gb: GoldenBell, players: Player[], zones: Zones): Pane
       view.status = '모든 문제를 마쳤습니다.';
       view.counts = [survivors];
       view.ranking = ranking(players);
+      if (rounds > 1) {
+        view.totalsTitle = totalsTitle(rounds);
+        view.totals = totalRanking(players);
+        view.classes = classRanking(players);
+      }
       break;
   }
   return view;
