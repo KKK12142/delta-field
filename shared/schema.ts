@@ -35,9 +35,17 @@ export const Player = schema(
     pressed: t.array('string'),
     /** 얻은 힌트 카드 id(글은 서버가 그 학생에게만 보낸다) */
     hints: t.array('string'),
+    /** 미션 id → 그 자물쇠(quiz·code·문제 있는 문)에서 틀린 수. 3번 틀리면 실마리가 보이고, 선생님 CCTV의 막힌 학생에 쓴다. */
+    wrongs: t.map('uint8'),
+    /** 마지막으로 미션을 마친(또는 2부가 열리거나 골든벨에서 돌아온) 때. 방의 시계(ClassState.now, 초) */
+    lastProgressAt: t.uint32().default(0),
+    /** 보너스 미션을 마쳐 다음 골든벨 시작 때 받을 하트 +1이 남아 있으면 true(받으면 false) */
+    bonusHeart: t.boolean().default(false),
     // 골든벨(규칙은 shared/goldenbell.ts)
     gbLives: t.uint8().default(GB_LIVES),
     gbScore: t.uint16().default(0),
+    /** 이 방에서 앞서 한 골든벨 판들의 점수 합(합산 순위 = gbTotal + gbScore). 선생님이 처음으로 돌릴 수 있다. */
+    gbTotal: t.uint16().default(0),
     gbOut: t.boolean().default(false),
     /** 탈락한 뒤 맞힌 수 */
     gbRevive: t.uint8().default(0),
@@ -103,6 +111,12 @@ export const Escape = schema(
     labels: t.map('string'),
     /** 힌트 카드 수 */
     hintTotal: t.uint8().default(0),
+    /** 힌트 카드 id → 그 카드를 주는 미션 사물의 부(1·2). 힌트 수첩의 "1부 3/8 · 2부 0/8"에 쓴다. */
+    hintParts: t.map('uint8'),
+    /** 보너스 미션 id(bonus: true). 장소의 미션 수에서 뺀다. */
+    bonus: t.array('string'),
+    /** 입장 직후 보이는 이야기 카드 글(자료 파일의 intro). 없으면 '' */
+    intro: t.string().default(''),
   },
   'Escape',
 );
@@ -122,6 +136,10 @@ export const ClassState = schema(
     gatherLeft: t.uint16().default(0),
     /** 강당으로 모으기: 시작할 골든벨 이름 */
     gatherTitle: t.string().default(''),
+    /** 방의 시계: 방을 만든 뒤 지난 초. 막힌 학생(Player.lastProgressAt)을 셀 때 쓴다. */
+    now: t.uint32().default(0),
+    /** 합산 순위에 든 골든벨 판 수(시작할 때 1씩 는다. 선생님이 합계를 처음으로 돌리면 다시 센다) */
+    gbRounds: t.uint8().default(0),
   },
   'ClassState',
 );

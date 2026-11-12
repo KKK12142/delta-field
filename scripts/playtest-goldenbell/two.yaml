@@ -1,0 +1,5 @@
+# pnpm playtest 확인용 두 번째 판(합산 순위, 마감). 제한 시간이 길어 선생님이 마감 단추로 끝낸다.
+title: 확인용 2판
+questions:
+  - { type: ox, question: 두 번째 판 1, answer: O, seconds: 60 }
+  - { type: ox, question: 두 번째 판 2, answer: X, seconds: 60 }

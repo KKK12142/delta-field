@@ -25,6 +25,10 @@ export interface MapContext {
   schoolPos: { col: number; row: number } | null;
   /** 선생님: 방탈출 자료를 고르라고 이미 물었으면 true(이 접속에서 한 번만 묻는다) */
   askedEscape: boolean;
+  /** 이야기 카드(자료의 intro)를 보인 자료 버전(이 접속에서 자료마다 한 번) */
+  introVersion: number;
+  /** 화면이 알고 있는 열린 부·강당으로 모으기(바뀌면 가운데 알림을 띄운다. 골든벨에 다녀와도 다시 띄우지 않게 여기 둔다) */
+  seen: { part: number; gathering: boolean };
 }
 
 /** 다른 접속자의 아바타. 서버가 알려 준 위치(target)로 부드럽게 따라간다. */
@@ -412,6 +416,7 @@ export abstract class MapScene extends Scene {
             pressed: [...p.pressed],
             gbLives: p.gbLives,
             gbScore: p.gbScore,
+            gbTotal: p.gbTotal,
             gbOut: p.gbOut,
             gbRevive: p.gbRevive,
             gbResult: p.gbResult,

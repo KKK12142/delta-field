@@ -1,3 +1,4 @@
+import { motion } from '../theme';
 import { el, uiRoot } from './dom';
 import { itemIcon } from './pictures';
 
@@ -27,6 +28,9 @@ export class Hud {
   /** 강당으로 모으기 남은 시간과 안내(모두에게) */
   private readonly notice = el('div', 'df-hud-box df-hud-notice');
   private readonly left = el('div', 'df-hud-column');
+  /** 화면 가운데 큰 알림 */
+  private readonly bannerNode = el('div', 'df-banner');
+  private bannerTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly touch: boolean;
 
   constructor(goal: string, touch: boolean, teacher: boolean) {
@@ -56,15 +60,27 @@ export class Hud {
     );
     this.top.append(this.left, this.right);
     this.action.disabled = true;
-    uiRoot().append(this.top, this.action);
+    this.bannerNode.hidden = true;
+    this.bannerNode.setAttribute('role', 'status');
+    uiRoot().append(this.top, this.action, this.bannerNode);
     this.setItems([]);
     this.setCctv(false);
   }
 
-  /** 힌트 수첩 단추에 얻은 수/전체를 적는다. */
-  setHints(got: number, total: number) {
-    const label = `힌트 수첩 ${got}/${total}`;
+  /** 힌트 수첩 단추에 얻은 수를 적는다(예: "1부 3/8 · 2부 0/8"). */
+  setHints(summary: string) {
+    const label = `힌트 수첩 ${summary}`;
     if (this.notebook.textContent !== label) this.notebook.textContent = label;
+  }
+
+  /** 화면 가운데 큰 알림을 잠깐(motion.bannerMs) 띄운다. 겉모양은 화면 담당(df-banner). */
+  banner(title: string, text: string) {
+    this.bannerNode.replaceChildren(el('strong', 'df-banner-title', title), el('span', 'df-banner-text', text));
+    this.bannerNode.hidden = false;
+    clearTimeout(this.bannerTimer);
+    this.bannerTimer = setTimeout(() => {
+      this.bannerNode.hidden = true;
+    }, motion.bannerMs);
   }
 
   /** 강당으로 모으기 안내(null이면 감춘다). 글이 달라졌을 때만 바꾼다. */
@@ -86,9 +102,9 @@ export class Hud {
     this.part.disabled = part >= 2;
   }
 
-  /** 지금 서 있는 장소 이름(교실, 복도 등) */
-  setPlace(name: string) {
-    this.place.textContent = name;
+  /** 지금 서 있는 장소 이름(교실, 복도 등)과 그 장소의 미션 수(예: "과학실 · 미션 1/4") */
+  setPlace(text: string) {
+    if (this.place.textContent !== text) this.place.textContent = text;
   }
 
   /** 가진 물건: 아이콘 칸(아이콘이 없으면 이름을 적은 칸). 이름은 늘 글로도 넣어 둔다(읽어 주기·확인용). */
@@ -169,7 +185,9 @@ export class Hud {
   }
 
   destroy() {
+    clearTimeout(this.bannerTimer);
     this.top.remove();
     this.action.remove();
+    this.bannerNode.remove();
   }
 }

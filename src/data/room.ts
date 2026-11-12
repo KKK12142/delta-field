@@ -68,6 +68,7 @@ export const OBJECT_KINDS = [
   'goalpost',
   'compassSign',
   'sundial',
+  'timeCapsule', // 과학 정원의 보너스 미션 사물(열면 timeCapsule-open)
   // 문(장소 사이)과 출구, 강당 입구
   'door',
   'entrance',
