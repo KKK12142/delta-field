@@ -3,10 +3,8 @@ import type { AnswerGroup, BoardRow, CardView, MineView, PanelView, RankRow } fr
 import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
 import { CLASS_GROUPS } from '../../shared/protocol.ts';
-import { emblem, face, uiIcon } from './pictures';
+import { MEDAL, emblem, face, uiIcon } from './pictures';
 
-/** 1·2·3위 메달(public/sprites/ui/medal-*.png) */
-const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: 'medal-bronze' };
 /** 목숨 글자를 그림으로(public/sprites/ui): ♥ 남은 목숨, ♡ 잃은 목숨, 💀 탈락 */
 const LIFE_ICON: Record<string, string> = { '♥': 'heart', '♡': 'heart-empty', '💀': 'skull' };
 

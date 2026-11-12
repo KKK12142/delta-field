@@ -1,6 +1,7 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
+import { CLASS_GROUPS } from '../../shared/protocol.ts';
 import { el, uiRoot } from './dom';
-import { face, objectPicture, pixelImage, uiIcon } from './pictures';
+import { MEDAL, emblem, face, objectPicture, pixelImage, uiIcon } from './pictures';
 
 /** 미션 문제(정답은 서버만 안다). choices가 비어 있으면 단답형 */
 export interface QuizView {
@@ -385,11 +386,19 @@ export class Dialog {
     return new Promise((resolve) => {
       const panel = this.panel(v.title);
       panel.classList.add('df-mini-result');
-      for (const line of v.lines) panel.append(el('p', 'df-text df-mini-line', line));
+      for (const line of v.lines) {
+        // 겉모양: 이긴 반 줄은 크게, 앞에 그 반 상징(하트 +1 그림은 CSS)
+        const won = line.includes('이겼습니다') ? CLASS_GROUPS.find((g) => line.startsWith(g.name)) : undefined;
+        const p = el('p', won ? 'df-text df-mini-line is-win' : 'df-text df-mini-line');
+        if (won) p.append(emblem(won.id));
+        p.append(line);
+        panel.append(p);
+      }
       const list = el('ol', 'df-mini-rank');
       for (const r of v.rows) {
         const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
-        li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', r.score));
+        const medal = MEDAL[r.rank] ? uiIcon('ui', MEDAL[r.rank], 'df-rank-medal') : el('span', 'df-rank-medal');
+        li.append(medal, face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', r.score));
         list.append(li);
       }
       list.hidden = v.rows.length === 0;

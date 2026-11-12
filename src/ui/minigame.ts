@@ -39,6 +39,8 @@ export class MiniHud {
     setText(this.help, v.help);
     this.score.hidden = v.score === '';
     this.help.hidden = v.help === '';
+    // 겉모양: 공 피하기에서 맞아 구경하는 학생은 진행 칸을 눈에 띄게
+    this.box.classList.toggle('is-out', v.score.startsWith('맞아서'));
   }
 
   /** 시작 전 세기(3·2·1). 0이면 감춘다. */

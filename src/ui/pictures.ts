@@ -35,6 +35,9 @@ export function uiIcon(dir: string, name: string, className: string) {
   return img;
 }
 
+/** 1·2·3위 메달(public/sprites/ui/medal-*.png) */
+export const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: 'medal-bronze' };
+
 /** 반 상징(public/sprites/ui/emblem-<반 id>.png) */
 export function emblem(classGroup: string) {
   return uiIcon('ui', `emblem-${classGroup}`, 'df-emblem');

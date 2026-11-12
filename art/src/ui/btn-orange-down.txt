@@ -1,0 +1,23 @@
+# UI 그림 글자판(docs/art.md "UI 그림"). 주황 단추 눌린 모양. btn.txt의 색만 바꿈(화면 담당). 9-slice 4
+size 12x12
+cols 1
+palette
+o #1d1531
+h #f2a07a
+f #c0603a
+s #a54e2c
+d #7f3a20
+
+frame btn-orange-down
+............
+............
+.oooooooooo.
+ohhhhhhhhhho
+ohffffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+offfffffffso
+oddddddddddo
+.oooooooooo.

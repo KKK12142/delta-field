@@ -1302,16 +1302,18 @@ span.df-rank-medal {
 }
 
 
-/* ---- 미니게임(맵 담당이 넣은 뼈대. 겉모양은 화면 담당이 맞춘다) ---- */
+/* ---- 미니게임(동작은 맵 담당, src/ui/minigame.ts) ---- */
+/* 위쪽 가운데 진행 칸: 골든벨 안내와 같은 종이 패널. 남은 시간 글 칸은 너비를 고정해 칸이 흔들리지 않게 한다. */
 #ui > .df-mini {
   position: absolute;
   top: var(--df-mini-top);
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100vw - 2 * var(--df-margin));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--df-gap-small);
+  gap: var(--df-hud-gap);
   padding: var(--df-panel-pad);
   border-style: solid;
   border-color: transparent;
@@ -1321,11 +1323,31 @@ span.df-rank-medal {
   pointer-events: none;
   text-align: center;
 }
+.df-mini-title {
+  padding: var(--df-badge-pad);
+  border: var(--df-badge-border) solid var(--df-text);
+  background: var(--df-badge);
+  color: var(--df-badge-text);
+}
+.df-mini-time {
+  min-width: var(--df-mini-time-width);
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+  white-space: nowrap;
+}
 .df-mini-help {
   font-family: var(--df-font-family-small);
   font-size: var(--df-font-small);
   color: var(--df-text-muted);
 }
+/* 공 피하기에서 맞아 구경하는 학생: 빨간 표시(태블릿에서 왼쪽 안내와 겹치지 않게 글 크기는 본문 그대로) */
+#ui > .df-mini.is-out .df-mini-score {
+  padding: var(--df-hud-pad);
+  border: var(--df-badge-border) solid var(--df-text);
+  background: var(--df-wrong);
+  color: var(--df-button-text);
+}
+/* 시작 전 세기(3·2·1) */
 #ui > .df-mini-count {
   position: absolute;
   top: 40%;
@@ -1333,10 +1355,13 @@ span.df-rank-medal {
   transform: translate(-50%, -50%);
   font-size: var(--df-mini-count-font);
   line-height: 1;
-  color: var(--df-panel);
-  -webkit-text-stroke: 4px var(--df-text);
+  color: var(--df-badge);
+  -webkit-text-stroke: var(--df-badge-border) var(--df-text);
+  paint-order: stroke fill;
   pointer-events: none;
 }
+
+/* 줄다리기: 어두운 바탕 위에 종이 판(양쪽 반·줄), 아래에 큰 당기기 단추 */
 #ui > .df-tug {
   position: absolute;
   inset: 0;
@@ -1346,50 +1371,93 @@ span.df-rank-medal {
   justify-content: center;
   gap: var(--df-gap);
   background: var(--df-tug-backdrop);
-  color: var(--df-panel);
+  color: var(--df-button-text);
   pointer-events: auto;
   touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
 }
 .df-tug-head {
   display: flex;
   gap: var(--df-gap);
   align-items: baseline;
   font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+.df-tug-time {
+  min-width: var(--df-mini-time-width);
+  text-align: left;
+  white-space: nowrap;
 }
 .df-tug-field {
+  box-sizing: border-box;
+  width: min(var(--df-tug-field-width), calc(100vw - 2 * var(--df-margin)));
   display: flex;
   align-items: center;
   gap: var(--df-gap);
-  width: min(900px, calc(100vw - 2 * var(--df-margin)));
+  padding: var(--df-panel-pad);
+  border-style: solid;
+  border-color: transparent;
+  border-width: var(--df-skin-border);
+  border-image: var(--df-skin-panel);
+  image-rendering: pixelated;
+  color: var(--df-text);
 }
 .df-tug-side {
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--df-gap-small);
+  gap: var(--df-hud-gap);
 }
 .df-tug-emblem {
   width: var(--df-tug-emblem);
   height: var(--df-tug-emblem);
   image-rendering: pixelated;
 }
-.df-tug-side.is-science .df-tug-name { color: var(--df-tug-science); }
-.df-tug-side.is-aisw .df-tug-name { color: var(--df-tug-aisw); }
+.df-tug-name {
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+.df-tug-side.is-science .df-tug-name {
+  color: var(--df-tug-science);
+}
+.df-tug-side.is-aisw .df-tug-name {
+  color: var(--df-tug-aisw);
+}
+.df-tug-avg {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  color: var(--df-text-muted);
+}
+/* 줄: 줄 그림(3배)이 리본과 함께 움직인다. 가운데 노란 기준선이 그대로 있어 어느 쪽으로 끌려가는지 보인다. */
 .df-tug-rope {
   position: relative;
   flex: 1;
   height: var(--df-tug-mark-size);
+  overflow: hidden;
+}
+.df-tug-rope::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - var(--df-tug-center-line) / 2);
+  top: 0;
+  bottom: 0;
+  width: var(--df-tug-center-line);
+  background: repeating-linear-gradient(var(--df-tug-center) 0 var(--df-tug-center-line), transparent 0 calc(2 * var(--df-tug-center-line)));
+  outline: var(--df-badge-border) solid var(--df-text);
+  z-index: 1;
 }
 .df-tug-line {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: -50%;
+  right: -50%;
   top: 50%;
   height: var(--df-tug-rope-height);
-  transform: translateY(-50%);
-  background: url("/sprites/mini/rope.png") repeat-x left center / auto 100%;
+  transform: translate(calc(var(--df-tug, 0) * -22.5%), -50%);
+  background: var(--df-skin-rope) repeat-x left center / auto 100%;
   image-rendering: pixelated;
+  transition: transform 0.15s linear;
 }
 .df-tug-mark {
   position: absolute;
@@ -1400,20 +1468,95 @@ span.df-rank-medal {
   transform: translate(-50%, -50%);
   image-rendering: pixelated;
   transition: left 0.15s linear;
+  z-index: 2;
 }
+/* 당기기: 9-slice 큰 단추. 수과학반 파랑, AI.SW반 주황(btn-orange), 반이 없으면(선생님) 누를 수 없는 모양 */
 .df-tug-pull {
-  width: var(--df-tug-pull-size);
-  height: var(--df-tug-pull-size);
-  border-radius: 50%;
-  font-size: var(--df-font-title);
+  box-sizing: border-box;
+  width: min(var(--df-tug-pull-width), calc(100vw - 2 * var(--df-margin)));
+  height: var(--df-tug-pull-height);
+  padding: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: var(--df-skin-border);
+  border-radius: 0;
+  border-image: var(--df-skin-btn);
+  background: none;
+  image-rendering: pixelated;
+  color: var(--df-button-text);
   font-family: var(--df-font-family);
+  font-size: var(--df-font-huge);
+  cursor: pointer;
   touch-action: none;
 }
-.df-tug-pull.is-science { background: var(--df-tug-science); color: var(--df-panel); }
-.df-tug-pull.is-aisw { background: var(--df-tug-aisw); color: var(--df-panel); }
-.df-tug-help { margin: 0; font-size: var(--df-font-small); font-family: var(--df-font-family-small); }
-.df-choice-icon {
+.df-tug-pull:active:not(:disabled) {
+  border-image: var(--df-skin-btn-down);
+  padding-top: var(--df-badge-border);
+}
+.df-tug-pull.is-aisw {
+  border-image: var(--df-skin-btn-orange);
+}
+.df-tug-pull.is-aisw:active:not(:disabled) {
+  border-image: var(--df-skin-btn-orange-down);
+}
+.df-tug-pull:disabled {
+  border-image: var(--df-skin-btn-off);
+  color: var(--df-button-off-text);
+  cursor: default;
+}
+.df-tug-mine {
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+.df-tug-help {
+  margin: 0;
+  font-size: var(--df-font-small);
+  font-family: var(--df-font-family-small);
+}
+
+/* 미니게임 결과: 골든벨 순위와 같은 줄(메달·얼굴·내 줄 강조), 이긴 반 줄은 크게(반 상징, 하트 +1) */
+.df-mini-line.is-win {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap-small);
+  padding: var(--df-hud-pad);
+  border: var(--df-badge-border) solid var(--df-text);
+  background: var(--df-row-me);
+  font-size: var(--df-font-title);
+  line-height: 1.25;
+}
+.df-mini-line.is-win::after {
+  content: '';
+  flex: none;
   width: var(--df-icon-size);
   height: var(--df-icon-size);
+  background: var(--df-skin-heart-plus) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+.df-mini-rank {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.df-mini-mine {
+  align-self: flex-start;
+  padding: var(--df-badge-pad);
+  border: var(--df-badge-border) solid var(--df-text);
+  background: var(--df-badge);
+}
+
+/* 선생님 고르기: 아이콘(2배)을 왼쪽에, 이름과 설명을 오른쪽에 */
+.df-choice:has(> .df-choice-icon) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--df-gap);
+}
+.df-choice-icon {
+  grid-row: 1 / span 2;
+  width: var(--df-choice-icon);
+  height: var(--df-choice-icon);
   image-rendering: pixelated;
 }

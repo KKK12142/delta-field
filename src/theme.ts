@@ -106,7 +106,8 @@ export const uiColor = {
   // 미니게임 줄다리기(반 색, 줄 바탕). 겉모양은 화면 담당이 맞춘다.
   tugScience: '#3b6ea8',
   tugAisw: '#c0603a',
-  tugBackdrop: 'rgba(29, 21, 49, 0.72)',
+  tugBackdrop: 'rgba(29, 21, 49, 0.9)', // 줄다리기 창 뒤(맵이 거의 보이지 않게)
+  tugCenter: '#fdd516', // 줄다리기 가운데 기준선(tag-me 노랑)
   startBackground: '#8aa37a', // 첫 화면 바탕(배경 그림이 오기 전까지)
   buttonText: '#ffffff', // 파란 단추(btn)
   buttonLightText: '#1d1531', // 크림·금색 단추(btn-light, btn-gold)
@@ -305,7 +306,12 @@ export const uiSize = {
   // 미니게임(동작 담당이 넣은 뼈대 크기)
   miniCountFont: '96px', // 시작 전 세기(Galmuri11 8배)
   miniTop: '12px', // 위쪽 가운데 진행 칸의 위 여백
-  tugPullSize: '200px', // 줄다리기 "당기기" 단추 지름(태블릿 두 손가락으로 연타)
+  tugPullWidth: '360px', // 줄다리기 "당기기" 단추(9-slice, 태블릿 두 손가락으로 연타하기 좋게 넓게)
+  tugPullHeight: '168px',
+  tugFieldWidth: '900px', // 줄다리기 판(양쪽 반·줄) 너비의 상한
+  tugCenterLine: '6px', // 가운데 기준선 굵기(도트 2개)
+  miniTimeWidth: '8em', // 미니게임 남은 시간 글 칸(가장 긴 '남은 시간 120초'가 들어가는 너비)
+  choiceIcon: '60px', // 선생님 고르기 단추의 아이콘(30도트 2배)
   tugEmblem: '90px', // 반 상징(30도트 × 3)
   tugRopeHeight: '36px', // 줄(rope 30×12 도트 × 3)
   tugMarkSize: '90px', // 가운데 리본(30도트 × 3)
@@ -344,6 +350,9 @@ export const uiSkin = {
   heartPlus: 'url("/sprites/ui/heart-plus.png")', // 하트 +1(보너스)
   story: 'url("/sprites/ui/story.png")', // 이야기 카드(입장 직후)
   finish: 'url("/sprites/ui/finish.png")', // 1부 완료
+  btnOrange: nine('btn-orange', 4), // 줄다리기 AI.SW반 당기기(btn 색만 바꿈)
+  btnOrangeDown: nine('btn-orange-down', 4),
+  rope: 'url("/sprites/mini/rope.png")', // 줄다리기 줄(30×12, 가로로 이어 붙임)
 } as const;
 
 /** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */
