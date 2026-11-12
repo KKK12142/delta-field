@@ -186,6 +186,21 @@
   flex: 1;
   min-width: 0;
 }
+/* 숫자 자물쇠 */
+.df-code-display {
+  align-self: center;
+  font-size: var(--df-font-title);
+  font-weight: bold;
+  letter-spacing: var(--df-code-spacing);
+}
+.df-code-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--df-gap);
+}
+.df-code-pad .df-code-key {
+  text-align: center;
+}
 /* 힌트 수첩 */
 .df-cards {
   display: flex;

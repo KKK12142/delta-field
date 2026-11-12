@@ -163,6 +163,88 @@ export class Dialog {
     });
   }
 
+  /**
+   * 숫자 자물쇠: 번호 단추(0~9)를 눌러 digits자리를 채우고 "열기"를 누른다(키보드 숫자·Backspace·Enter도 된다).
+   * 번호는 check(서버 채점)로 맞춰 보고, 맞으면 true, 닫으면 false. 틀리면 칸을 비우고 다시 누른다.
+   */
+  code(title: string, text: string, digits: number, example: boolean, check: QuizCheck): Promise<boolean> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      if (example) panel.append(el('span', 'df-badge', '예시 문제'));
+      panel.append(el('p', 'df-text', text));
+      const display = el('div', 'df-code-display');
+      display.setAttribute('aria-live', 'polite');
+      const feedback = el('p', 'df-text df-feedback');
+      feedback.hidden = true;
+      const pad = el('div', 'df-code-pad');
+      let entered = '';
+      let busy = false;
+      const show = () => {
+        display.textContent = [...Array(digits)].map((_, i) => entered[i] ?? '_').join(' ');
+        open.disabled = busy || entered.length !== digits;
+      };
+      const finish = (correct: boolean) => {
+        this.close();
+        resolve(correct);
+      };
+      const press = (d: string) => {
+        if (busy || entered.length >= digits) return;
+        entered += d;
+        feedback.hidden = true;
+        show();
+      };
+      const erase = () => {
+        if (busy) return;
+        entered = entered.slice(0, -1);
+        show();
+      };
+      const submit = async () => {
+        if (busy || entered.length !== digits) return;
+        busy = true;
+        show();
+        try {
+          const result = await check(entered);
+          if (result === true) {
+            finish(true);
+            return;
+          }
+          feedback.textContent = typeof result === 'string' ? result : '번호가 맞지 않습니다. 다시 누릅니다.';
+        } catch {
+          feedback.textContent = '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 엽니다.';
+        }
+        feedback.classList.add('is-wrong');
+        feedback.hidden = false;
+        entered = '';
+        busy = false;
+        show();
+      };
+      for (const d of ['1', '2', '3', '4', '5', '6', '7', '8', '9']) {
+        const b = el('button', 'df-choice df-code-key', d);
+        b.addEventListener('click', () => press(d));
+        pad.append(b);
+      }
+      const back = el('button', 'df-choice df-code-key', '지우기');
+      back.addEventListener('click', erase);
+      const zero = el('button', 'df-choice df-code-key', '0');
+      zero.addEventListener('click', () => press('0'));
+      const open = el('button', 'df-button df-code-key', '열기');
+      open.addEventListener('click', () => void submit());
+      pad.append(back, zero, open);
+      const row = el('div', 'df-row');
+      const close = el('button', 'df-button', '닫기');
+      close.addEventListener('click', () => finish(false));
+      row.append(close);
+      panel.append(display, pad, feedback, row);
+      show();
+      this.open(panel, (e) => {
+        if (e.key === 'Escape') finish(false);
+        else if (/^\d$/.test(e.key)) press(e.key);
+        else if (e.key === 'Backspace') erase();
+        else if (e.key === 'Enter') void submit();
+      });
+    });
+  }
+
   /** 힌트 수첩: 얻은 힌트 카드를 모두 보인다. */
   notebook(cards: NoteCard[], total: number): Promise<void> {
     return new Promise((resolve) => {

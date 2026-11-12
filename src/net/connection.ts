@@ -133,14 +133,14 @@ export class Net {
     return this.room.request('escapeLoad', { file });
   }
 
-  /** 미션을 단 사물을 살펴본다. 단서는 이때 마친다. */
-  missionOpen(id: string): Promise<MissionView> {
-    return this.room.request('missionOpen', { id });
+  /** 미션을 단 사물(object: 사물 id)을 살펴본다. 단서·줍기·가져다주기·순서 맞추기는 이때 채점한다. */
+  missionOpen(object: string): Promise<MissionView> {
+    return this.room.request('missionOpen', { object });
   }
 
-  /** 미션 문제의 답을 낸다(객관식은 1부터의 보기 번호). */
-  missionAnswer(id: string, answer: string): Promise<MissionAnswerReply> {
-    const message: MissionAnswerMessage = { id, answer };
+  /** 미션 문제·숫자 자물쇠의 답을 낸다(객관식은 1부터의 보기 번호, 숫자 자물쇠는 번호). */
+  missionAnswer(object: string, answer: string): Promise<MissionAnswerReply> {
+    const message: MissionAnswerMessage = { object, answer };
     return this.room.request('missionAnswer', message);
   }
 

@@ -6,7 +6,7 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { YAMLParseError, parse } from 'yaml';
 import school from '../src/data/school.json' with { type: 'json' };
-import { DOOR_KINDS, MISSION_TYPES, type EscapeFileInfo, type HintCard, type MissionType } from '../shared/escape.ts';
+import { DOOR_KINDS, MAX_CODE_DIGITS, MISSION_TYPES, type EscapeFileInfo, type HintCard, type MissionType } from '../shared/escape.ts';
 import { GB_MAX_ANSWER, matchAnswer, normalizeAnswer } from '../shared/goldenbell.ts';
 import { CLASS_GROUPS } from '../shared/protocol.ts';
 
@@ -39,6 +39,16 @@ export interface Mission {
   done: string;
   /** 교사가 바꿔 넣을 예시 문제이면 true(문제 창에 "예시 문제"가 보인다) */
   example: boolean;
+  /** 마친 뒤 보이는 글(예: 숫자 자물쇠 번호의 실마리) */
+  after: string;
+  /** code: 숫자 자물쇠 번호(숫자 글) */
+  code: string;
+  /** deliver: 가져와야 하는 아이템 id(마치면 내려놓아 가진 물건에서 빠진다) */
+  needs: string[];
+  /** order: 살펴볼 사물 id의 맞는 순서 */
+  order: string[];
+  /** order: 사물 id → 살펴볼 때 보이는 글 */
+  texts: Record<string, string>;
 }
 
 export interface EscapeSet {
@@ -55,11 +65,14 @@ const dir = process.env.DF_ESCAPE_DIR ? resolve(process.env.DF_ESCAPE_DIR) : fil
 
 const isEscapeFile = (name: string) => /\.ya?ml$/i.test(name);
 
-/** 맵의 미션 id → 그 미션을 단 사물 종류들 */
-const MAP_MISSIONS = new Map<string, string[]>();
-for (const o of school.objects as { kind: string; mission?: string }[]) {
+/** 맵의 미션 id → 그 미션을 단 사물들 */
+const MAP_MISSIONS = new Map<string, { id: string; kind: string }[]>();
+/** 맵의 사물 id → 미션 id */
+export const OBJECT_MISSIONS = new Map<string, string>();
+for (const o of school.objects as { id: string; kind: string; mission?: string }[]) {
   if (!o.mission) continue;
-  MAP_MISSIONS.set(o.mission, [...(MAP_MISSIONS.get(o.mission) ?? []), o.kind]);
+  MAP_MISSIONS.set(o.mission, [...(MAP_MISSIONS.get(o.mission) ?? []), o]);
+  OBJECT_MISSIONS.set(o.id, o.mission);
 }
 
 const CLASS_IDS: string[] = CLASS_GROUPS.map((g) => g.id);
@@ -162,8 +175,9 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
     const where = `${id} 미션`;
     const before = errors.length;
     const type = textOf(m.type) as MissionType;
-    const kinds = MAP_MISSIONS.get(id);
-    if (!kinds) errors.push(`${where}: 맵(school.json)에 mission이 "${id}"인 사물이 없습니다.`);
+    const objects = MAP_MISSIONS.get(id);
+    const kinds = objects?.map((o) => o.kind);
+    if (!objects) errors.push(`${where}: 맵(school.json)에 mission이 "${id}"인 사물이 없습니다.`);
     if (!MISSION_TYPES.includes(type)) errors.push(`${where}: type은 ${MISSION_TYPES.join(', ')} 가운데 하나로 씁니다.`);
     if (type === 'open' && kinds?.some((k) => !(DOOR_KINDS as readonly string[]).includes(k))) {
       errors.push(`${where}: open(문) 미션은 맵의 문 사물(${DOOR_KINDS.join(', ')})에만 둡니다.`);
@@ -195,8 +209,39 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
     }
     const hasQuiz = m.classes !== undefined || m.question !== undefined;
     if (type === 'clue' && !text) errors.push(`${where}: clue(단서) 미션은 text(글)를 씁니다.`);
-    if (type === 'clue' && hasQuiz) errors.push(`${where}: clue(단서) 미션에는 문제를 쓰지 않습니다(문제는 type: quiz).`);
+    if (hasQuiz && !['quiz', 'open', 'exit'].includes(type)) {
+      errors.push(`${where}: question·classes(문제)는 quiz, open, exit 미션에만 씁니다.`);
+    }
     if (type === 'quiz' && !hasQuiz) errors.push(`${where}: quiz 미션은 question(문제)이나 classes(반 자물쇠)를 씁니다.`);
+
+    // 숫자 자물쇠: 번호는 0으로 시작할 수 있어 글(큰따옴표)로 받는다.
+    let code = '';
+    if (type === 'code') {
+      if (typeof m.code === 'number') errors.push(`${where}: code(번호)는 큰따옴표로 감싸 씁니다. 예: code: "0412"`);
+      code = typeof m.code === 'string' ? m.code.trim() : '';
+      if (typeof m.code !== 'number' && !new RegExp(`^\\d{1,${MAX_CODE_DIGITS}}$`).test(code)) {
+        errors.push(`${where}: code(번호)는 숫자 1~${MAX_CODE_DIGITS}자리로 씁니다.`);
+      }
+    }
+    if (type === 'pickup' && !gives) errors.push(`${where}: pickup(줍기) 미션은 gives(주울 아이템)를 씁니다.`);
+    const needs = Array.isArray(m.needs) ? m.needs.map(textOf) : m.needs === undefined ? [] : [textOf(m.needs)];
+    if (type === 'deliver') {
+      if (!needs.length) errors.push(`${where}: deliver(가져다주기) 미션은 needs(가져올 아이템 목록)를 씁니다.`);
+      for (const n of needs) if (!(n in items)) errors.push(`${where}: needs의 아이템 "${n}"가 items에 없습니다.`);
+    }
+    const order = Array.isArray(m.order) ? m.order.map(textOf) : [];
+    const texts: Record<string, string> = {};
+    if (type === 'order') {
+      const own = new Set(objects?.map((o) => o.id) ?? []);
+      if (order.length < 2) errors.push(`${where}: order(순서)는 맵 사물 id를 2개 이상 [사물1, 사물2]처럼 씁니다.`);
+      for (const o of order) {
+        if (!own.has(o)) errors.push(`${where}: order의 "${o}"는 맵에서 mission이 "${id}"인 사물이 아닙니다.`);
+      }
+      for (const [o, t] of Object.entries(objectOf(m.texts) ?? {})) {
+        if (!own.has(o)) errors.push(`${where}: texts의 "${o}"는 맵에서 mission이 "${id}"인 사물이 아닙니다.`);
+        texts[o] = textOf(t);
+      }
+    }
     if (errors.length !== before) continue;
     missions.set(id, {
       id,
@@ -210,6 +255,11 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
       hint,
       done: textOf(m.done),
       example: m.example === true,
+      after: textOf(m.after),
+      code,
+      needs,
+      order,
+      texts,
     });
   }
   if (errors.length) throw new Error(errors.join('\n'));

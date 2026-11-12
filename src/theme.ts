@@ -52,6 +52,7 @@ export const color = {
     door: 0x6b4a33,
     entrance: 0x5d7f95,
     gate: 0x55585c,
+    item: 0xd9a441,
   },
 } as const;
 
@@ -154,6 +155,7 @@ export const uiSize = {
   cctvWidth: '300px',
   cctvRowPad: '8px 10px',
   gbQuestionFont: '20px',
+  codeSpacing: '6px', // 숫자 자물쇠 번호 칸 사이
   // 첫 화면 캐릭터 고르기: 시트(90×240)의 앞모습 서기 프레임(30×60, 왼쪽에서 30)을 2배로 보인다.
   charFaceWidth: '60px',
   charFaceHeight: '120px',

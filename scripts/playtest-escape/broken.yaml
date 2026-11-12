@@ -3,3 +3,4 @@ title: 틀린 자료
 missions:
   no-such-object: { type: clue, text: 맵에 없는 미션 }
   teacher-desk: { type: quiz, question: 보기가 하나, choices: [가], answer: 1, hint: no-hint }
+  locker: { type: code, code: 3141 }

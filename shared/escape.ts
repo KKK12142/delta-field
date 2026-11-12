@@ -6,11 +6,18 @@
  * 미션 종류
  * - clue: 글(단서)을 보인다. 살펴보면 바로 마친다.
  * - quiz: 문제(객관식이나 단답형)를 맞히면 마친다. 반마다 다른 문제(반 자물쇠)를 낼 수 있다.
+ * - code: 숫자 자물쇠. 번호를 단추로 눌러 맞히면 마친다.
+ * - pickup: 바닥에 놓인 물건. 살펴보면 아이템으로 주워 들고 다닌다(그 학생 화면에서 물건이 사라진다).
+ * - deliver: 놓을 곳. 필요한 아이템(needs)을 모두 들고 살펴보면 내려놓고 마친다.
+ * - order: 순서 맞추기. 같은 미션을 단 사물 여러 개를 맞는 순서로 살펴보면 마친다. 틀리면 처음부터 다시 한다.
  * - open: 문. (문제를 맞히면) 열려 지나갈 수 있다. 학생마다 따로 열린다.
  * - exit: 출구. (문제를 맞히면) 탈출한다.
  */
-export const MISSION_TYPES = ['clue', 'quiz', 'open', 'exit'] as const;
+export const MISSION_TYPES = ['clue', 'quiz', 'code', 'pickup', 'deliver', 'order', 'open', 'exit'] as const;
 export type MissionType = (typeof MISSION_TYPES)[number];
+
+/** 숫자 자물쇠 번호의 가장 긴 자릿수 */
+export const MAX_CODE_DIGITS = 8;
 
 /** 열린 문처럼 지나갈 수 있게 되는 사물 종류(open 미션은 이 사물에만 둔다) */
 export const DOOR_KINDS = ['door', 'entrance'] as const;
@@ -42,6 +49,10 @@ export interface MissionReward {
   opened: boolean;
   /** 탈출했으면 true */
   escaped: boolean;
+  /** 주운 물건이면 true(그 사물이 화면에서 사라진다) */
+  picked: boolean;
+  /** 마친 뒤 보이는 글(자료 파일의 after). 없으면 '' */
+  after: string;
 }
 
 /**
@@ -50,15 +61,20 @@ export interface MissionReward {
  * - locked: 필요한 아이템이 없음. done: 이미 마침. 둘 다 text를 보인다.
  * - clue: 단서 글. 살펴보는 순간 마친 것으로 치고 reward를 준다.
  * - quiz: 문제. choices가 비어 있으면 단답형이다. 답은 missionAnswer로 낸다.
+ * - code: 숫자 자물쇠. digits자리 번호를 missionAnswer로 낸다.
+ * - step: 순서 맞추기에서 사물 하나를 살펴봄. 맞으면 step(지금까지 맞힌 수)이 늘고, 틀리면 wrong이고 step은 0으로 돌아간다.
+ *   마지막 순서까지 맞히면 reward가 있다.
  */
 export type MissionView =
   | { kind: 'none' | 'locked' | 'done'; text: string }
   | { kind: 'clue'; text: string; reward: MissionReward }
-  | { kind: 'quiz'; question: string; choices: string[]; example: boolean; mission: MissionType };
+  | { kind: 'quiz'; question: string; choices: string[]; example: boolean; mission: MissionType }
+  | { kind: 'code'; text: string; digits: number; example: boolean }
+  | { kind: 'step'; text: string; step: number; total: number; wrong: boolean; reward: MissionReward | null };
 
-/** 학생이 미션 문제의 답을 낸다. 객관식은 보기 번호(1부터)를 글로, 단답형은 쓴 글 */
+/** 학생이 미션 문제의 답을 낸다. object는 살펴본 사물 id. 객관식은 보기 번호(1부터)를 글로, 단답형은 쓴 글, 숫자 자물쇠는 번호 */
 export interface MissionAnswerMessage {
-  id: string;
+  object: string;
   answer: string;
 }
 

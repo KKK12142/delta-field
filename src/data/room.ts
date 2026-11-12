@@ -48,6 +48,8 @@ export const OBJECT_KINDS = [
   'door',
   'entrance',
   'gate',
+  // 바닥에 놓인 작은 물건(주워 가는 미션)
+  'item',
 ] as const;
 export type ObjectKind = (typeof OBJECT_KINDS)[number];
 
