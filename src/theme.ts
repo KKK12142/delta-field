@@ -257,7 +257,7 @@ export const uiSize = {
 
 /** 9-slice 그림(public/sprites/ui, docs/art.md "UI 그림")의 border-image 값. 도트 하나를 uiDot 픽셀로 그린다. */
 const uiDot = 3;
-const nine = (name: string, cut: number) => `url("sprites/ui/${name}.png") ${cut} fill / ${cut * uiDot}px / 0 stretch`;
+const nine = (name: string, cut: number) => `url("/sprites/ui/${name}.png") ${cut} fill / ${cut * uiDot}px / 0 stretch`;
 export const uiSkin = {
   panel: nine('panel', 4),
   panelDark: nine('panel-dark', 3),
@@ -270,12 +270,12 @@ export const uiSkin = {
   btnOff: nine('btn-off', 4),
   slot: nine('slot', 4),
   bar: nine('bar', 3),
-  barFill: `url("sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
-  barFillWarn: `url("sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
-  barFillLow: `url("sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFill: `url("/sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillWarn: `url("/sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillLow: `url("/sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
   // 9-slice가 아닌 바탕 그림
-  startImage: 'url("sprites/ui/title-bg.png")', // 첫 화면 배경(256×171, 화면을 덮도록 키운다)
-  megaphone: 'url("sprites/ui/megaphone.png")', // 강당으로 모으기 안내
+  startImage: 'url("/sprites/ui/title-bg.png")', // 첫 화면 배경(256×171, 화면을 덮도록 키운다)
+  megaphone: 'url("/sprites/ui/megaphone.png")', // 강당으로 모으기 안내
 } as const;
 
 /** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */
@@ -286,7 +286,8 @@ export const timeBar = { warn: 0.5, low: 0.2 } as const;
  * src/ui/fonts.ts가 처음에 읽어 두고, 다 읽은 뒤 게임 화면을 시작한다. 못 읽으면 뒤의 시스템 글꼴로 보인다.
  */
 const systemFonts = 'system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
-export const fontFiles = { Galmuri11: 'fonts/Galmuri11.woff2', Galmuri9: 'fonts/Galmuri9.woff2' } as const;
+// 주소는 '/'로 시작한다(CSS 변수의 상대 주소는 빌드한 CSS 파일 기준으로 풀려 /assets/ 아래를 찾는다).
+export const fontFiles = { Galmuri11: '/fonts/Galmuri11.woff2', Galmuri9: '/fonts/Galmuri9.woff2' } as const;
 export const fontFamily = `Galmuri11, ${systemFonts}`;
 export const fontFamilySmall = `Galmuri9, ${systemFonts}`;
 /** 글꼴을 이 시간(ms) 안에 못 읽으면 기다리지 않고 시작한다. */
