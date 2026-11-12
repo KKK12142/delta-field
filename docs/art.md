@@ -101,6 +101,7 @@
 | art/src/icons/<아이템 id>.txt | 아이템 아이콘 글자판(열쇠) | 넣음 |
 | art/src/faces/char-0N.txt → public/sprites/faces/char-0N.png | 캐릭터 얼굴(CCTV·순위) | 넣음 |
 | art/src/map/<장소>.txt → public/sprites/map/<장소>.png | 미니맵 장소 아이콘 24×24 | 넣음 |
+| art/src/mini/<이름>.txt → public/sprites/mini/<이름>.png | 미니게임 그림(보물, 공, 줄) | 넣음 |
 | art/src/ui/<이름>.txt → public/sprites/ui/<이름>.png | UI 테두리(9-slice)·표시·하트(아래 "UI 그림") | 넣음 |
 | public/fonts/ | 웹 글꼴 Galmuri11·Galmuri9(woff2)와 라이선스 Galmuri-OFL.txt(아래 "글꼴") | 넣음 |
 
@@ -391,6 +392,23 @@
   - 140~149줄: 아래 기둥 윗면. 17행 벽 윗면으로 이어진다
 - 깊이: 게임은 연 문을 차지 칸 위 끝 깊이로 그려(painter.ts setOpen) 지나가는 캐릭터가 문 위에 보인다. 닫힌 문은 지금처럼 아래 끝 깊이. 바꿀 것은 없다.
 - 모형 판: mock.mjs의 사물 `under: true`가 게임의 연 문 깊이와 같다(.run/ui-audit/partdoor/).
+
+## 미니게임(2026-11-12, 교사 결정: 보물찾기 함께 줍기, 운동장 공 피하기, 반 대항 줄다리기)
+생성 1장(set-mini, small-set 2×2: 나무 보물 상자, 금 보물 상자, 고무공, 감은 줄), **45.7크레딧**. 나머지는 그 색으로 `node scripts/art/mini.mjs`가 글자판을 짠다.
+화면에서는 다른 사물처럼 2배. 띠(여러 프레임)는 가로로 이어져 있다(Phaser spritesheet frameWidth 30).
+
+| 그림(public/sprites/) | 크기 | 내용 |
+|---|---|---|
+| mini/treasure | 30×30 | 나무 보물 상자(너비 28로 맞춤, 흙·나무 바닥에서 보이게 짙은 외곽선과 쇠띠) |
+| mini/treasure-gold | 30×30 | 금 보물 상자(보석 셋, 3점) |
+| mini/treasure-shine | 120×30(30×30 4프레임) | 보물과 같은 자리에 겹치는 반짝임. 초당 6프레임 되풀이 |
+| mini/ball | 120×30(30×30 4프레임) | 피구공 지름 24, 아래 끝 27줄. 오른쪽으로 구를 때 0→3, 왼쪽이면 3→0 |
+| mini/ball-shadow | 30×30 | 반투명 그림자(공 아래 끝 27줄에 맞음). 공이 뜨면 그림자는 땅에 둔다 |
+| mini/rope | 30×12 | 줄다리기 줄 조각. 꼬임 박자 6도트라 가로로 이어 붙여도 끊기지 않는다. 세로 가운데를 줄 가운데에 |
+| mini/rope-mark | 30×30 | 줄 가운데 리본(감는 띠 + 나비 매듭 + 꼬리). 세로 가운데 15줄을 줄 가운데에 |
+| ui/icon-treasure, icon-ball, icon-rope | 30×30 | 선생님 미니게임 고르기 단추 아이콘(다른 ui 아이콘과 같은 크기, 그림 너비 26) |
+
+- 확인판: .run/ui-audit/mini/(floors-x2.png 운동장·교실 바닥 위, rope-x2.png 줄 이음, icons-x4.png). 만드는 스크립트 .run/ui-audit/mini/preview.mjs.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.
