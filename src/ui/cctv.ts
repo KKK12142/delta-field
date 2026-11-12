@@ -16,6 +16,14 @@ export interface CctvHandlers {
   back: () => void;
   /** CCTV 모드를 끌 때 */
   close: () => void;
+  /** 구역 보기 단추를 눌렀을 때(null은 전체) */
+  view: (id: string | null) => void;
+}
+
+/** CCTV 구역 보기 단추 하나(맵의 views) */
+export interface CctvView {
+  id: string;
+  name: string;
 }
 
 /** 선생님의 CCTV 모드 오른쪽 창. 전체 보기에서는 학생 목록을, 따라가기에서는 그 학생의 정보를 보인다. */
@@ -32,8 +40,11 @@ export class CctvPanel {
   private readonly detailItems = el('span', 'df-text');
   private readonly rows = new Map<string, Row>();
   private order = '';
+  /** 구역 보기 단추들(전체 + 맵의 구역). 학생 수를 함께 적는다. */
+  private readonly views = el('div', 'df-cctv-views');
+  private readonly viewButtons = new Map<string | null, { node: HTMLButtonElement; name: string }>();
 
-  constructor(handlers: CctvHandlers, touch: boolean) {
+  constructor(handlers: CctvHandlers, touch: boolean, views: CctvView[] = []) {
     const head = el('div', 'df-cctv-head');
     const title = el('div', 'df-cctv-title');
     title.append(el('strong', '', 'CCTV'), this.info);
@@ -65,8 +76,20 @@ export class CctvPanel {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')?.dataset.id;
       if (id) handlers.pick(id);
     });
+    for (const v of [{ id: null, name: '전체' }, ...views]) {
+      const node = el('button', 'df-button df-button-small df-cctv-view', v.name);
+      node.type = 'button';
+      node.addEventListener('click', () => {
+        node.blur();
+        handlers.view(v.id);
+      });
+      this.views.append(node);
+      this.viewButtons.set(v.id, { node, name: v.name });
+    }
+    this.views.setAttribute('aria-label', '구역 보기');
+    this.views.hidden = views.length === 0;
     this.node.setAttribute('aria-label', 'CCTV');
-    this.node.append(head, this.empty, this.list, this.detail);
+    this.node.append(head, this.views, this.empty, this.list, this.detail);
     uiRoot().append(this.node);
   }
 
@@ -80,10 +103,20 @@ export class CctvPanel {
     setText(this.info, `방 코드 ${code} · 학생 ${studentCount}명\n${perClass}`);
   }
 
+  /** 구역 보기 단추: 지금 고른 구역(null은 전체)과 구역마다 학생 수 */
+  setViews(active: string | null, counts: Map<string | null, number>) {
+    for (const [id, b] of this.viewButtons) {
+      setText(b.node, `${b.name} ${counts.get(id) ?? 0}`);
+      const pressed = String(id === active);
+      if (b.node.getAttribute('aria-pressed') !== pressed) b.node.setAttribute('aria-pressed', pressed);
+    }
+  }
+
   /** 전체 보기: 학생 목록(이미 정렬한 순서대로) */
   showList(students: StudentView[]) {
     this.detail.hidden = true;
     this.list.hidden = false;
+    this.views.hidden = this.viewButtons.size <= 1;
     this.empty.hidden = students.length > 0;
     const seen = new Set<string>();
     for (const s of students) {
@@ -108,6 +141,7 @@ export class CctvPanel {
 
   /** 따라가기: 한 학생의 정보 */
   showDetail(s: StudentView) {
+    this.views.hidden = true;
     this.list.hidden = true;
     this.empty.hidden = true;
     this.detail.hidden = false;

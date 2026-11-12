@@ -3,7 +3,7 @@
 import { Scene } from 'phaser';
 import type { MapId } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
-import { isFloor, mapSize, type Room, type RoomObject } from '../data/room';
+import { isFloor, mapSize, type Rect, type Room, type RoomObject } from '../data/room';
 import type { RunState } from '../game/state';
 import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
@@ -166,13 +166,12 @@ export abstract class MapScene extends Scene {
     return { w: cols * size.tile, h: rows * size.tile };
   }
 
-  /** 맵 전체가 가리는 것 없는 자리에 들어가는 확대 배율 */
-  protected fitZoom({ top, bottom, right }: Reserved) {
+  /** 맵 전체(또는 w×h 픽셀)가 가리는 것 없는 자리에 들어가는 확대 배율 */
+  protected fitZoom({ top, bottom, right }: Reserved, w = this.mapPixels().w, h = this.mapPixels().h) {
     const cam = this.cameras.main;
-    const map = this.mapPixels();
     return Math.min(
       this.css(size.zoomMax),
-      Math.max(this.css(size.zoomMin), Math.min((cam.width - right) / map.w, (cam.height - top - bottom) / map.h) * size.viewMargin),
+      Math.max(this.css(size.zoomMin), Math.min((cam.width - right) / w, (cam.height - top - bottom) / h) * size.viewMargin),
     );
   }
 
@@ -190,14 +189,20 @@ export abstract class MapScene extends Scene {
 
   /** 맵 전체를 가리는 것 없는 자리의 가운데에 맞춘다(골든벨, CCTV 전체 보기). */
   protected fitCamera() {
+    const { cols, rows } = mapSize(this.room);
+    this.fitRect({ col: 0, row: 0, w: cols, h: rows });
+  }
+
+  /** 맵의 한 네모(칸 단위)를 가리는 것 없는 자리의 가운데에 맞춘다(CCTV 구역 보기). */
+  protected fitRect(rect: Rect) {
     const cam = this.cameras.main;
     const r = this.reserved();
-    const zoom = this.fitZoom(r);
-    const map = this.mapPixels();
+    const t = size.tile;
+    const zoom = this.fitZoom(r, rect.w * t, rect.h * t);
     cam.stopFollow();
     cam.removeBounds();
     cam.setZoom(zoom);
-    cam.centerOn(map.w / 2 + r.right / 2 / zoom, map.h / 2 - (r.top - r.bottom) / 2 / zoom);
+    cam.centerOn((rect.col + rect.w / 2) * t + r.right / 2 / zoom, (rect.row + rect.h / 2) * t - (r.top - r.bottom) / 2 / zoom);
   }
 
   /**

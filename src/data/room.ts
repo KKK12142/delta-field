@@ -131,6 +131,8 @@ export interface Room {
   /** 시작 위치(칸 좌표, 칸 가운데는 .5) */
   start: { col: number; row: number };
   objects: RoomObject[];
+  /** 선생님 CCTV의 구역 보기(넓은 맵을 나눠 크게 본다). 없으면 전체 보기만 */
+  views?: (Rect & { id: string; name: string })[];
   /** 골든벨 맵: 답 구역 */
   zones?: Zones;
   /** 골든벨 맵: 서버가 학생의 발밑을 처음 세우는 곳(벽과 구역에 닿지 않게 띄워 둔다) */
@@ -201,6 +203,9 @@ export function loadRoom(data: unknown): Room {
     errors.push('답 구역은 OX 2개, 객관식 4개여야 합니다.');
   }
   if (room.spawn && !inside(room.spawn)) errors.push('spawn이 맵 밖으로 나갑니다.');
+  for (const v of room.views ?? []) {
+    if (!inside(v)) errors.push(`CCTV 구역 '${v.id}'가 맵 밖으로 나갑니다.`);
+  }
   if (errors.length) throw new Error(`맵 '${room.id}' 데이터 오류\n- ${errors.join('\n- ')}`);
   return room;
 }

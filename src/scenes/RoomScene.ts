@@ -15,6 +15,8 @@ interface Cctv {
   panel: CctvPanel;
   /** 따라가는 학생의 접속 id. 전체 보기면 null */
   following: string | null;
+  /** 전체 보기에서 비추는 구역 id(맵의 views). null이면 맵 전체 */
+  view: string | null;
 }
 
 /** 닫은 키가 곧바로 다시 살펴보기로 이어지지 않게 두는 틈(ms) */
@@ -113,6 +115,7 @@ export class RoomScene extends MapScene {
         const following = this.cctv.following ? this.net.room.state.players.get(this.cctv.following) : undefined;
         return {
           following: following?.nickname ?? null,
+          view: this.cctv.view,
           zoom: cam.zoom / this.dpr,
           center: { col: cam.midPoint.x / size.tile, row: cam.midPoint.y / size.tile },
           tags: [...this.remotes.values()].filter((r) => r.avatar.tag?.visible).map((r) => r.avatar.tag!.text),
@@ -255,7 +258,7 @@ export class RoomScene extends MapScene {
   }
 
   /**
-   * 평소에는 내 아바타를 따라간다(맵 밖은 비추지 않는다). CCTV 전체 보기는 학교 맵 전체를 맞추고,
+   * 평소에는 내 아바타를 따라간다(맵 밖은 비추지 않는다). CCTV 전체 보기는 고른 구역(views, 고르지 않으면 학교 맵 전체)을 맞추고,
    * 학생을 고르면 그 학생을 내 화면과 같은 배율로 따라간다(그 학생이 가운데에 오게, 맵 밖도 비춘다).
    */
   protected fitCamera() {
@@ -264,7 +267,9 @@ export class RoomScene extends MapScene {
       return;
     }
     const following = this.cctv.following ? this.remotes.get(this.cctv.following) : undefined;
+    const view = this.room.views?.find((v) => v.id === this.cctv?.view);
     if (following) this.followCamera(following.avatar, false);
+    else if (view) this.fitRect(view);
     else super.fitCamera();
   }
 
@@ -382,10 +387,20 @@ export class RoomScene extends MapScene {
         pick: (id) => this.follow(id),
         back: () => this.unfollow(),
         close: () => this.exitCctv(),
+        view: (id) => this.showView(id),
       },
       this.touch,
+      this.room.views ?? [],
     );
-    this.cctv = { panel, following: null };
+    // 처음에는 학생이 가장 많은 구역을 비춘다(아무도 없으면 맵 전체).
+    const counts = this.viewCounts();
+    let best: string | null = null;
+    let most = 0;
+    for (const v of this.room.views ?? []) {
+      const n = counts.get(v.id) ?? 0;
+      if (n > most) [best, most] = [v.id, n];
+    }
+    this.cctv = { panel, following: null, view: best };
     this.hud.setCctv(true);
     this.joystick?.setHidden(true);
     this.target = null;
@@ -404,6 +419,26 @@ export class RoomScene extends MapScene {
     this.hud.setCctv(false);
     this.joystick?.setHidden(false);
     this.fitCamera();
+  }
+
+  /** 구역 보기: 그 구역만 크게 비춘다(null은 맵 전체). 따라가던 학생이 있으면 전체 보기로 돌아온다. */
+  private showView(id: string | null) {
+    if (!this.cctv) return;
+    this.cctv.view = id;
+    this.cctv.following = null;
+    this.updateCctv();
+    this.fitCamera();
+  }
+
+  /** 구역마다(null은 전체) 들어 있는 학생 수 */
+  private viewCounts() {
+    const students = this.net.students(this.mapId);
+    const counts = new Map<string | null, number>([[null, students.length]]);
+    for (const v of this.room.views ?? []) {
+      const n = students.filter(([, p]) => p.col >= v.col && p.col < v.col + v.w && p.row >= v.row && p.row < v.row + v.h).length;
+      counts.set(v.id, n);
+    }
+    return counts;
   }
 
   private follow(id: string) {
@@ -439,6 +474,7 @@ export class RoomScene extends MapScene {
       tag.setVisible(s.tag !== null);
     }
     cctv.panel.setInfo(this.net.code, students.length, classCounts(students));
+    cctv.panel.setViews(cctv.view, this.viewCounts());
     const followed = students.find((s) => s.id === cctv.following);
     if (cctv.following && !followed) {
       // 따라가던 학생이 나갔으면 전체 보기로 돌아간다.

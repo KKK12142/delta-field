@@ -380,6 +380,19 @@
   gap: var(--df-hud-gap);
   white-space: pre-line;
 }
+/* CCTV 구역 보기 단추(전체, 1부 건물, 2부 건물, 운동장) */
+.df-cctv-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--df-hud-gap-wide);
+}
+.df-cctv-views .df-button-small {
+  margin-top: 0;
+}
+.df-cctv-view[aria-pressed='false'] {
+  background: var(--df-choice);
+  color: var(--df-text);
+}
 .df-cctv-empty {
   margin: 0;
 }

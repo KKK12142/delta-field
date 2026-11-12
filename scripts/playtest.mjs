@@ -186,6 +186,8 @@ check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽은 안�
 const c4 = await camAt(119.5, 35.5);
 check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 121) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
+await a.js(`__df.teleport(46.5, 35.5)`);
+await wait(200);
 check('장소: 운동장', (await placeOf(a)) === '운동장');
 await a.js(`__df.teleport(11.5, 8.5)`);
 await wait(300);
@@ -211,13 +213,23 @@ check('CCTV: 처음에는 교실에서 돌아다니는 중, 힌트 0/4', /교실
   fmt(await rowText('가람')));
 check('CCTV: 오른쪽 안내와 살펴보기 단추를 감춤',
   (await teacher.js(`document.querySelector('.df-action').hidden && !document.querySelector('.df-hud').innerText.includes('가진 물건')`)) === true);
+const viewText = () => teacher.js(`[...document.querySelectorAll('.df-cctv-view')].map((b) => b.textContent + ':' + b.getAttribute('aria-pressed')).join(',')`);
+check('CCTV 구역 보기: 처음에는 학생이 가장 많은 구역(1부 건물)을 비추고 구역마다 학생 수',
+  (await viewText()) === '전체 2:false,1부 건물 2:true,2부 건물 0:false,운동장 0:false' && (await cctv()).view === 'building1', await viewText());
 const overviewZoom = (await cctv()).zoom;
 const panelLeft = await teacher.js(`document.querySelector('.df-cctv').getBoundingClientRect().left`);
 const th = await teacher.js(`innerHeight`);
+await teacher.shot('cctv-building1');
+await clickText(teacher, '.df-cctv-view', '전체 2');
+await wait(300);
 const ov = (await teacher.js(`__df.camera()`)).map;
-check('CCTV 전체 보기: 학교 맵 전체가 지도 자리(위쪽 안내 아래, CCTV 창 왼쪽)에 들어옴',
+const allZoom = (await cctv()).zoom;
+check('CCTV 전체 단추: 학교 맵 전체가 지도 자리(위쪽 안내 아래, CCTV 창 왼쪽)에 들어옴',
   ov.x >= 0 && ov.y >= 99 && ov.x + ov.w <= panelLeft && ov.y + ov.h <= th && ov.w > panelLeft * 0.6,
   `맵 화면 ${ov.x.toFixed(0)},${ov.y.toFixed(0)} ${ov.w.toFixed(0)}×${ov.h.toFixed(0)}, 창 왼쪽 ${panelLeft.toFixed(0)}`);
+check('CCTV 구역 보기: 1부 건물은 전체보다 크게(1.5배 넘게) 보임', overviewZoom > allZoom * 1.5, `${allZoom.toFixed(3)} → ${overviewZoom.toFixed(3)}`);
+await clickText(teacher, '.df-cctv-view', '1부 건물 2');
+await wait(300);
 const tPos = await teacher.js(`__df.pos()`);
 await teacher.press('ArrowRight', 400);
 const tPos2 = await teacher.js(`__df.pos()`);
