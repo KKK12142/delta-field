@@ -605,6 +605,7 @@ export class RoomScene extends MapScene {
     const name = this.nameOf(o);
     this.busy = true;
     this.setActivity('look', o.id);
+    this.dialog.setSubject(o);
     let reward: MissionReward | null = null;
     /** 답을 서버에 내고 맞았는지 받는다(맞으면 얻은 것을 reward에 둔다). */
     const check = async (answer: string) => {
@@ -648,6 +649,7 @@ export class RoomScene extends MapScene {
     } finally {
       this.busy = false;
       this.setActivity('', '');
+      this.dialog.setSubject(null);
     }
   }
 

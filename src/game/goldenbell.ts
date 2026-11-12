@@ -14,17 +14,29 @@ import type { GoldenBell, Player } from '../../shared/schema.ts';
 /** 학생에게 보이는 결과의 느낌(색) */
 export type Tone = '' | 'good' | 'bad';
 
+/** 순위 한 줄. 화면이 얼굴(캐릭터)과 시상대를 그리고 "1위 닉네임 3점"으로 적는다. */
+export interface RankRow {
+  rank: number;
+  nickname: string;
+  score: number;
+  character: string;
+  /** 이 화면의 학생 자신 */
+  me: boolean;
+}
+
 /** 위쪽 문제 카드 */
 export interface CardView {
   head: string;
   question: string;
+  /** 문제를 푸는 동안 남은 시간(초). 푸는 중이 아니면 null(화면은 처음 본 값을 전체로 삼아 시간 막대를 그린다) */
+  timeLeft: number | null;
   /** 안내 또는 정답 */
   line: string;
   /** 내 결과(학생만) */
   result: string;
   tone: Tone;
-  /** 끝났을 때의 순위(학생은 위쪽 몇 명만) */
-  ranking: string[];
+  /** 끝났을 때의 순위(학생은 위쪽 몇 명과 나) */
+  ranking: RankRow[];
   /** 단답형 답 칸을 보일지(학생, 푸는 중) */
   answerBox: boolean;
   /** 해설(정답 공개 때, 문제 파일에 있으면) */
@@ -45,7 +57,7 @@ export interface PanelView {
   counts: string[];
   /** 다음 단추. null이면 감춘다. */
   next: { label: string; enabled: boolean } | null;
-  ranking: string[];
+  ranking: RankRow[];
   /** 단답형 정답 공개 뒤 낸 답 묶음(같은 꼴의 답끼리) */
   answers: AnswerGroup[];
 }
@@ -86,10 +98,16 @@ function students(players: Player[]) {
   return players.filter((p) => p.role === 'student' && p.map === 'goldenbell');
 }
 
-/** 점수 순위. 같은 점수는 같은 등수, 같은 점수끼리는 닉네임 순 */
-export function ranking(players: Player[]): string[] {
+/** 점수 순위. 같은 점수는 같은 등수, 같은 점수끼리는 닉네임 순. me는 이 화면의 학생 */
+export function ranking(players: Player[], me?: Player): RankRow[] {
   const list = students(players).sort((a, b) => b.gbScore - a.gbScore || a.nickname.localeCompare(b.nickname, 'ko'));
-  return list.map((p) => `${list.filter((q) => q.gbScore > p.gbScore).length + 1}위 ${p.nickname} ${p.gbScore}점`);
+  return list.map((p) => ({
+    rank: list.filter((q) => q.gbScore > p.gbScore).length + 1,
+    nickname: p.nickname,
+    score: p.gbScore,
+    character: p.character,
+    me: p === me,
+  }));
 }
 
 /** 한 문제의 내 결과. 단답형은 내 답과, 선생님이 인정한 답이면 그것도 앞에 붙인다. */
@@ -129,7 +147,7 @@ function judgedText(p: Player, noAnswer: string, nonsense: boolean): { text: str
 
 export function cardView(gb: GoldenBell, me: Player | undefined, players: Player[], teacher: boolean): CardView {
   const n = gb.index + 1;
-  const view: CardView = { head: '', question: '', line: '', result: '', tone: '', ranking: [], answerBox: false, explain: '' };
+  const view: CardView = { head: '', question: '', timeLeft: null, line: '', result: '', tone: '', ranking: [], answerBox: false, explain: '' };
   switch (gb.phase) {
     case 'ready':
       view.head = `골든벨 · ${gb.title}`;
@@ -140,6 +158,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
     case 'question':
       view.head = `${n}/${gb.total}번 문제 · ${kindText(gb)} · 남은 시간 ${gb.timeLeft}초`;
       view.question = gb.question;
+      view.timeLeft = gb.timeLeft;
       view.line =
         gb.type === 'short'
           ? '답을 써서 냅니다. 시간 안에는 고쳐 낼 수 있고, 마지막에 낸 답으로 채점합니다.'
@@ -164,8 +183,13 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
       view.head = `골든벨 · ${gb.title}`;
       view.question = '골든벨이 끝났습니다.';
       if (me && !teacher) view.line = `내 점수 ${me.gbScore}점`;
-      // 선생님은 오른쪽 창에서 모든 학생의 순위를 본다.
-      if (!teacher) view.ranking = ranking(players).slice(0, RANKING_FOR_STUDENTS);
+      // 선생님은 오른쪽 창에서 모든 학생의 순위를 본다. 학생은 위쪽 몇 명과, 그 안에 없으면 내 줄을 덧붙여 본다.
+      if (!teacher) {
+        const all = ranking(players, me);
+        const top = all.slice(0, RANKING_FOR_STUDENTS);
+        const mine = all.find((r) => r.me);
+        view.ranking = mine && !top.includes(mine) ? [...top, mine] : top;
+      }
       break;
     }
   }

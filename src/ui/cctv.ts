@@ -1,8 +1,11 @@
 import type { StudentView } from '../game/cctv';
 import { el, uiRoot } from './dom';
+import { face, setFace } from './pictures';
 
 interface Row {
   node: HTMLButtonElement;
+  face: HTMLElement;
+  character: string;
   name: HTMLElement;
   className: HTMLElement;
   progress: HTMLElement;
@@ -34,6 +37,7 @@ export class CctvPanel {
   private readonly list = el('div', 'df-cctv-list');
   private readonly detail = el('div', 'df-cctv-detail');
   private readonly detailName = el('strong', 'df-cctv-name');
+  private readonly detailFace = face('');
   private readonly detailClass = el('span', 'df-text');
   private readonly detailDoing = el('span', 'df-text');
   private readonly detailProgress = el('span', 'df-text');
@@ -48,14 +52,16 @@ export class CctvPanel {
     const head = el('div', 'df-cctv-head');
     const title = el('div', 'df-cctv-title');
     title.append(el('strong', '', 'CCTV'), this.info);
-    const close = el('button', 'df-button df-button-small', 'CCTV 끄기');
+    const close = el('button', 'df-button df-button-small df-button-light', 'CCTV 끄기');
     close.addEventListener('click', handlers.close);
     head.append(title, close);
 
-    const back = el('button', 'df-button df-button-small df-cctv-back', '전체 보기');
+    const back = el('button', 'df-button df-button-small df-button-light df-cctv-back', '전체 보기');
     back.addEventListener('click', handlers.back);
+    const detailHead = el('div', 'df-cctv-detail-head');
+    detailHead.append(this.detailFace, this.detailName);
     this.detail.append(
-      this.detailName,
+      detailHead,
       el(
         'span',
         'df-muted df-cctv-hint',
@@ -122,6 +128,12 @@ export class CctvPanel {
     for (const s of students) {
       seen.add(s.id);
       const row = this.rows.get(s.id) ?? this.addRow(s.id);
+      if (row.character !== s.character) {
+        row.character = s.character;
+        setFace(row.face, s.character);
+      }
+      const state = `df-cctv-row is-${s.state}`;
+      if (row.node.className !== state) row.node.className = state;
       setText(row.name, s.nickname);
       setText(row.className, s.className);
       setText(row.progress, s.progress);
@@ -146,6 +158,7 @@ export class CctvPanel {
     this.empty.hidden = true;
     this.detail.hidden = false;
     setText(this.detailName, s.nickname);
+    setFace(this.detailFace, s.character);
     setText(this.detailClass, s.className || '없음');
     setText(this.detailDoing, s.doing);
     setText(this.detailProgress, s.progress);
@@ -162,6 +175,8 @@ export class CctvPanel {
     node.dataset.id = id;
     const row: Row = {
       node,
+      face: face('', 'df-cctv-face'),
+      character: '',
       name: el('strong', 'df-cctv-row-name'),
       className: el('span', 'df-muted df-cctv-row-class'),
       progress: el('span', 'df-muted'),
@@ -169,7 +184,8 @@ export class CctvPanel {
     };
     const head = el('span', 'df-cctv-row-head');
     head.append(row.name, row.className);
-    node.append(head, row.progress, row.doing);
+    row.progress.classList.add('df-cctv-progress');
+    node.append(row.face, head, row.progress, row.doing);
     this.rows.set(id, row);
     return row;
   }
