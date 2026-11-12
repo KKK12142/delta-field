@@ -1,0 +1,23 @@
+# 줄다리기 줄 조각(30×12, 가로로 이어 붙임. 세로 가운데를 줄 가운데에 맞춤) (scripts/art/mini.mjs가 만듦)
+size 30x12
+cols 1
+palette
+o #1d1531
+a #fcd88d
+c #cb8447
+d #b9612a
+f #8a4610
+
+frame rope
+oooooooooooooooooooooooooooooo
+daaacfdaaacfdaaacfdaaacfdaaacf
+aaacfdaaacfdaaacfdaaacfdaaacfd
+aacfdaaacfdaaacfdaaacfdaaacfda
+ccfdaaccfdaaccfdaaccfdaaccfdaa
+cfdaaccfdaaccfdaaccfdaaccfdaac
+fdaaccfdaaccfdaaccfdaaccfdaacc
+daaccfdaaccfdaaccfdaaccfdaaccf
+aaccfdaaccfdaaccfdaaccfdaaccfd
+dddfdddddfdddddfdddddfdddddfdd
+ddfdddddfdddddfdddddfdddddfddd
+oooooooooooooooooooooooooooooo

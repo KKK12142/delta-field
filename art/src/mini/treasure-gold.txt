@@ -1,0 +1,50 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/mini/treasure-gold.png
+size 30x30
+cols 1
+palette
+a #fcc116
+b #c87a02
+c #0b1139
+d #974c18
+e #fbd88d
+f #6c1f1e
+g #fdfcf8
+h #1ab4fb
+i #0273e9
+j #17a127
+k #b91b25
+l #f42c38
+m #4a5473
+n #c27135
+
+frame treasure-gold
+..............................
+..............................
+..............................
+..............................
+..............................
+..............................
+..............................
+....ccaaccccccccccccccaccc....
+...cbdaadbbbbbbbbbbbbdaabbc...
+..ccaeeebaeeeeeaaaaaadeebac...
+..caaeebaeeeeeaaaaagaaeeeaa...
+.ccabeebaeeaaaaaaaagaabeebac..
+.cabeeebaaaaaaaaaaggggbeeebc..
+.cbbeebaaaaaaaaaaaagaabeeebc..
+.cbdaadbbbbbbbbbbbbgbbdaaadc..
+.cbdaadbbbbbbbbbbbbbbbbaaadc..
+.cbdaaabbbbbdeeeebbbbbdaaadc..
+.cbdaaddddbbeaaaadbbdddaaadc..
+.cdebbbeaaddachhcaddaaabbedc..
+.caaaadaffaachghhcaaccadaaac..
+.cccccagglfahhiiicajgjjacccc..
+..cdbfalkkfahhiiicacjjjaffbc..
+..cbdfafkkabamiicabajjcbfdbc..
+..cbdafaaabcaaccabcaccafadbc..
+..cbdaafbfdbcaaaadbdfffaadbc..
+..cbdaadbbbbbddddbbbbbfaadbc..
+..cbdaabaaaaaaaaaaaaaabaadbc..
+..ccnaadbbbbbbbbbbbbbbdaadcc..
+...ccaaccccccccccccccccaacc...
+....cccc..............cccc....

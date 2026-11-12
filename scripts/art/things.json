@@ -478,6 +478,11 @@
       "prompt": "object-single.txt",
       "size": "40 game pixels wide and about 44 game pixels tall in total",
       "desc": "the same time capsule box as in the reference image but open: the lid lifted up and tilted back, inside a rolled paper letter tied with a red ribbon, a small toy rocket and a glowing yellow crystal, same colors, grass and pixel size as the reference"
+    },
+    {
+      "id": "set-mini",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a small wooden treasure chest, closed, warm brown planks with bright iron bands and a shiny brass lock, a thick dark outline so it stands out on any floor. Top-right: a golden treasure chest, closed, made of shiny gold with three bright gems (red, blue, green) on the front and a small sparkle, clearly richer than the wooden one. Bottom-left: a round red rubber playground dodgeball with two curved darker red seam lines and a white highlight at the upper left, seen straight on. Bottom-right: a neatly coiled thick beige tug-of-war rope with a twisted strand pattern and a red ribbon tied around the coil, seen from above."
     }
   ]
 }
