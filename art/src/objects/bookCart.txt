@@ -1,0 +1,74 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/bookCart.png
+size 60x52
+cols 1
+palette
+a #211e36
+b #b14d33
+c #ec9853
+d #db7c3b
+e #fac97f
+f #753424
+g #fbe9c2
+h #449b42
+i #a64fd6
+j #3f90eb
+k #3066b3
+l #713594
+m #fccb0b
+n #b2b9ef
+o #5d5c73
+p #82de79
+
+frame bookCart
+....aaaaa..........................................aaaaa....
+...ageeeda........................................adeeega...
+..ageeddda.........................aaaaaaaggaaaga.adddeega..
+.ageedddda........................aagggaagggaggga.addddeega.
+.agedbffda........................aagggaaggaaggga.adbbddega.
+ageddaabda........................agggaagggaggglaaadbaaddega
+addaa.abdaeaaaaaaaaaaaaaaaaaaaaaaahhhhakkkkaiiilaeadba.aadda
+adda..abdacceaaaaaaaaaaaaaaccceccappphajjkkannilacadba..adda
+adda..abacccannnjjjjjjjjjjjacccccapphhajjkkaniilacadba..adda
+adda..aecccannnjjjjjjjjjjjkacccccahhhhakkkkaiiilaccaba..adda
+adda..aeccannjjjjjjjjjjjjkkacccccahhhhakkkkaiiilacccaa..adda
+adda.aeccajnnjjjjjjjjjjjkkeaaacccahhhhakkkkaiiilaccccea.adda
+adda.aeccakkkkkkkkkkkkkkkeeabacccahhhhakkkkaiiilaccccea.adda
+addaaecccakkggggggggggggeeabbacccahhhhakkkkaiiilaccccceaadda
+addaaecccakkggggggggggggeabbbacccahhhhakkkkaiiilaccccceaadda
+addaecccabaaaaaaaaaaaaaaabbbeacccahhhhakkkkaiiilacccccceadda
+addaecccacccbcccccdddddbbbbeaacccaeeeeaeeeeaeeelacccccceadda
+addaccccabbbbbbbbbgggggeeeeaaccccahhhhakkkaaiiilacccccceadda
+addfccccabbbbbbbbbggggggggeacccccahhhhakkkkaiiiaccccccccfdda
+addfcccccaaaaaaaaaaaaaaaaaacccccccaaaacaaaacaaacccccccccfdda
+addfccccccccccccccccccccccccccccccccccccccccccccccccccccfdda
+addfeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefdda
+addfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfdda
+addfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfdda
+addaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadda
+addfaffffaggggagggaagggaagggaffffffffffffffffffffffffffafdda
+addfafffaggggaggggaggggagggdaffffffffffffffffffffffffffafdda
+addfaffajgggahgggabbggammmmdafffffffaaaaaaaaaaaaaaaffffafdda
+addfaffajjnjahhhhacbbbammmmdaffffffannniiiiiiiiiiiiafffafdda
+addfaffannnjappphacccbagggmdafffffannniiiiiiiiiiiilafffafdda
+addfaffannjjapphhaccbbaggmmdaffffanniiiiiiiiiiiiillafffafdda
+addfaffajjjjahhhhabbbbammmmdafffaiiiiiiiiiiiiiiilleafffafdda
+addfaffajjjjahhhhabbbbammmmdafffallllllllllllllleeaaaffafdda
+addfaffajjjjahhhhabbbbammmmdafffalllllggggggggggeaahaffafdda
+addfaffajjjjahhhhabbbbammmmdaffaalllllggggggggggahhhaffafdda
+addfaffajjjjahhhhabbbbammmmdabbahaaaaaaaaaaaaaaaahheaffafdda
+addffccajeeeaheeeabeeeaeeeedaccapppppphhhhhhhhhhhheeaccffdda
+addfcccakkkkahhhhabbbbammmmdaccahhhhhhhggggggggggeeaccccfdda
+addfcccakkkkahhhhabbbbammmmacccahhhhhhhggggggggggeacccccfdda
+addfcccaaaaacaaaacaaaacaaaacccccaaaaaaaaaaaaaaaaaaccccccfdda
+addfeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefdda
+addfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfdda
+addfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfdda
+addfbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadda
+.aaaaadaaa........................................adddddaaa.
+...addddda........................................addddda...
+....aaaaaaa......................................aoaaaaa....
+...aannnooa......................................aonnnoaa...
+...aonnooaa......................................aonnoooa...
+...aoooooaa......................................aooooo.....
+....aooooa........................................aoooo.....
+.....aaaa..........................................aaaa.....

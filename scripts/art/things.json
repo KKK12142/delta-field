@@ -65,6 +65,21 @@
       "id": "roofTop",
       "prompt": "roof-sample.txt",
       "desc": "school auditorium roof of muted slate-blue standing-seam metal sheets, slightly weathered, light gray-blue ridge cap and trim"
+    },
+    {
+      "id": "gardenGrass",
+      "prompt": "floor-patch.txt",
+      "desc": "neatly trimmed short green lawn grass of a small school science garden, tiny lighter and darker grass tufts, no lines"
+    },
+    {
+      "id": "roofConcrete",
+      "prompt": "floor-patch.txt",
+      "desc": "flat school rooftop floor of light gray concrete paving slabs, each slab exactly 30 by 30 game pixels with a thin darker joint line, a few tiny stains and cracks"
+    },
+    {
+      "id": "auditoriumFace",
+      "prompt": "wall-strip.txt",
+      "desc": "outside front wall of a school auditorium: light warm-gray brick wall with thin mortar lines, a dark slate-blue roof eave shadow band along the top, a darker stone base strip along the bottom"
     }
   ],
   "objects": [
@@ -244,6 +259,139 @@
       "prompt": "door.txt",
       "size": "60 game pixels wide and 40 game pixels tall",
       "desc": "large closed double doors of a school auditorium: two tall dark red wooden door leaves with brass handles in the middle and small round windows, inside a stone gray frame"
+    },
+    {
+      "id": "set-classroom",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a school chair seen from above, light wooden seat and a dark metal frame, backrest at the top edge. Top-right: a round white wall clock seen straight on (front view), dark rim, two black hands, no numbers. Bottom-left: a green leafy potted plant in a terracotta pot. Bottom-right: a small gray plastic classroom trash bin with a darker rim."
+    },
+    {
+      "id": "set-hall",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a red fire extinguisher standing on the floor, black hose and a silver handle. Top-right: a white floor-standing water dispenser with a blue water bottle on top and a small tap. Bottom-left: an emergency eye-wash and shower station: a green metal pole with a round shower head on top and a small basin. Bottom-right: a yellow triangular safety warning sign plate seen straight on (front view), plain inside, no symbols or letters."
+    },
+    {
+      "id": "set-room",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a blue office chair on five wheels seen from above, backrest at the top edge. Top-right: a light gray office laser printer with a paper tray. Bottom-left: a desk globe with blue oceans and green land on a wooden stand. Bottom-right: a white wooden louvered weather instrument box (Stevenson screen) on four thin legs."
+    },
+    {
+      "id": "set-keys",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a brass door key lying flat, seen straight from above, with a round red plastic tag. Top-right: a silver key lying flat, seen straight from above, with a round blue plastic tag. Bottom-left: a large gold key lying flat, seen straight from above, with a round green plastic tag. Bottom-right: a round soft orange bean bag chair seen from above."
+    },
+    {
+      "id": "set-outdoor",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a black and white soccer ball. Top-right: an orange traffic cone with a white stripe. Bottom-left: a green outdoor trash bin with a lid. Bottom-right: a square wooden planter box full of small red and yellow flowers."
+    },
+    {
+      "id": "bench",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 30 game pixels tall in total",
+      "desc": "long wooden bench without a backrest: light wooden slats on top, two dark metal legs near the ends"
+    },
+    {
+      "id": "sink",
+      "prompt": "object-single.txt",
+      "size": "60 game pixels wide and about 45 game pixels tall in total",
+      "desc": "science lab sink counter: a white counter top with a square stainless steel basin and a tall curved silver faucet, light gray cabinet front below with two doors"
+    },
+    {
+      "id": "serverRack",
+      "prompt": "object-single.txt",
+      "size": "30 game pixels wide and about 70 game pixels tall in total",
+      "desc": "tall dark gray computer server rack cabinet with a glass front door, rows of small blinking green and blue lights"
+    },
+    {
+      "id": "sofa",
+      "prompt": "object-single.txt",
+      "size": "60 game pixels wide and about 40 game pixels tall in total",
+      "desc": "small two-seat library sofa with soft mustard yellow cushions and a wooden base, backrest at the top"
+    },
+    {
+      "id": "bookCart",
+      "prompt": "object-single.txt",
+      "size": "60 game pixels wide and about 40 game pixels tall in total",
+      "desc": "library book cart on small wheels: a wooden two-shelf cart with a few colorful books lying and standing on it"
+    },
+    {
+      "id": "flagpole",
+      "prompt": "object-single.txt",
+      "size": "30 game pixels wide and about 100 game pixels tall in total",
+      "desc": "school flagpole: a tall thin silver pole on a square stone base, a plain light blue flag with no symbol hanging near the top"
+    },
+    {
+      "id": "stands",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 40 game pixels tall in total",
+      "desc": "low outdoor concrete spectator stands with three steps rising toward the top, light gray concrete with blue plastic seat strips on each step"
+    },
+    {
+      "id": "waterTap",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 35 game pixels tall in total",
+      "desc": "outdoor school washing trough: a long light gray concrete basin with silver taps along the back edge"
+    },
+    {
+      "id": "flowerBed",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 30 game pixels tall in total",
+      "desc": "low flower bed with a gray stone border filled with dark soil, green leaves and small red, yellow and white flowers"
+    },
+    {
+      "id": "handrail",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 20 game pixels tall in total",
+      "desc": "metal stair handrail seen from above at a slight angle: a round silver rail held by short vertical posts every 15 pixels"
+    },
+    {
+      "id": "window",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 26 game pixels tall",
+      "desc": "school corridor window in a cream wall: a white window frame split into two sliding glass panes showing light blue sky with a faint white reflection stripe, a narrow gray sill at the bottom"
+    },
+    {
+      "id": "periodicTable",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 26 game pixels tall",
+      "desc": "large periodic table poster on a wall: a white sheet with a thin dark frame, filled with a grid of small colored squares in blocks of blue, green, yellow and pink, no letters"
+    },
+    {
+      "id": "whiteboard",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 26 game pixels tall",
+      "desc": "whiteboard on a wall: a white glossy board in a thin silver aluminium frame, a marker tray at the bottom with a red and a blue marker"
+    },
+    {
+      "id": "mathPoster",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 26 game pixels tall",
+      "desc": "math classroom poster: a cream sheet showing simple colored geometric shapes (a triangle, a circle, a square, a graph curve), thin wooden frame, no letters or numbers"
+    },
+    {
+      "id": "curtain",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 30 game pixels tall",
+      "desc": "heavy dark red velvet stage curtain hanging in vertical folds, a gold fringe along the top"
+    },
+    {
+      "id": "banner",
+      "prompt": "wall-object.txt",
+      "size": "60 game pixels wide and 24 game pixels tall",
+      "desc": "plain horizontal cloth banner hanging on a wall: deep blue cloth with a gold border and small gold rings at the top corners, the middle left completely blank for text added later"
+    },
+    {
+      "id": "stage",
+      "prompt": "object-sample.txt",
+      "size": "60 game pixels wide and about 50 game pixels tall in total",
+      "desc": "low wooden school auditorium stage platform: warm brown wooden floor boards on top seen from above, a dark red front face with a thin gold trim, two short steps at the front"
+    },
+    {
+      "id": "auditoriumBigDoor",
+      "prompt": "door.txt",
+      "size": "60 game pixels wide and 30 game pixels tall",
+      "desc": "wide entrance of a school auditorium: two big glass double doors with dark blue-gray metal frames and silver push bars, a gray stone frame around them"
     }
   ]
 }

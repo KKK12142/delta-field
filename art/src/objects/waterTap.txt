@@ -1,0 +1,43 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/waterTap.png
+size 90x22
+cols 1
+palette
+a #929699
+b #dfdfde
+c #191f4e
+d #5e6368
+e #292d54
+f #a6acb1
+g #7c8286
+h #bdcbd0
+i #3e425c
+j #acbfc7
+k #fbfcfb
+l #7a8d9b
+m #6c737a
+n #03040a
+o #1d0c5b
+
+frame waterTap
+.cccc.....ccccc.......cccc...........cccc...........cccc........cccc.......ccccc.....cccc.
+cbbbb.....cjffc.......cfff...........cfff...........cfff........jfff.......cfffc.....bbbb.
+bbbbmbbbbbbbjbbbbbbbbbbchbbbbbbbbbbbbbchbbbbbbbbbbbbbchbbbbbbbbbbccbbbbbbbbbbhbbbbbbbmbbbb
+ddddbbbbbbbcjcbbbbbbbbbkfcbbbbbbbbbbbbkfcbbbbbbbbbbbbkfcbbbbbbbbbjjcbbbbbbbbkjcbbbbbbddddc
+oebbaaaaaaackcaaaaaaaaalbcaaaaaaaaaaaalbcaaaaaaaaaaaalbcaaaaaaaaakbcaaaaaaaacbcaaaaaaabbcc
+cbbiiaaaaaaahaaaaaaaaaachaaaaaaaaaaaaachaaaaaaaaaaaaachaaaaaaaaaaccaaaaaaaaaahaaaaaaaibbbc
+.bbegaaaaaaacaaaaaaaaaaccaaaaaaaaaaaaaccaaaaaaaaaaaaaccaaaaaaaaaaccaaaaaaaaaacaaaaaaagbbb.
+.bbegaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaagebb.
+cbbgienneaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaefaaigbb.
+cbbgieffeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeaaaigbb.
+bbigaeffeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeaaeagbbb
+bbbeceeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeccecebbb
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbc
+ffffddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddffff
+cfffdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadfffc
+cfffdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadfffc
+cfffdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadfffc
+ffffdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadfffc
+ffffdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadffff
+ffffcddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddcfffc
+ddddccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddd
+ccccc................................................................................ccccc

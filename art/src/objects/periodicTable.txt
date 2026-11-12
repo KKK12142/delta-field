@@ -1,0 +1,45 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/periodicTable.png
+size 52x30
+cols 1
+palette
+a #fdfdfd
+b #191b3f
+c #6ddb68
+d #fce854
+e #f889cd
+f #61b3fa
+g #9dd0fb
+h #909192
+i #facc0a
+
+frame periodicTable
+....................................................
+..hh...........................................bhh..
+..hib..........................................bih..
+baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+babbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbab
+baffbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeab
+baffbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabeeab
+aaffbggaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeebeeeebeebeeab
+baffbggbaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeebeebeeab
+baffbggaaaaaaaaaaaaaaaaaaaaaaaaaaaeebeebeeeebeebeeab
+bafffggaaaaaaaaaaaaaaaaaaaaaaaaaaaeebeebeeeebeebeeab
+babbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbab
+bafffggbccccbccbccccbccbccccbccbdddddddbddddbddbeeab
+baffbggbccccbccbccccbccbccccbccbddddbddbddddbddbeeab
+bafffggbcccccccbcccccccbccccbccbddddddddddddbddbeeab
+bafffggbccccbccbccccbcccccccbccbdddddddbddddbddbeeab
+baffbggbccccbccbccccbccbccccbccbddddbddbddddbddbeeab
+baffbggbccccbcccccccbcccccccbccbdddddddbdddddddbeeab
+babbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbab
+bafffggbcccccccbccccbccbccccbccbdddddddbddddbddbeeab
+baffbggbcbccbccbccccbccbccccbccbddddbddbddddbddbeeab
+baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab
+baaaaaabcccccccbccccbccbccccbccbcccccccbcccccccaaaab
+baaaaaacccccbccbcccccccbccccbccccccccccccccccccaaaab
+baaaaaabdbddbddbbdddbddbddbdbddbbbbdbddbdbddbddaaaab
+baaaaaaddddddddbdddddddbddddbddbdddddddbdddddddaaaab
+baaaaaabbbbbbbbbbbbbbdbbdbbbbbbbbbbdbdbbbbbbbbbaaaab
+bbbabbbbaabbabbbbbabbabbbabbaabbbbbbbbbbbabbabbabbbb
+....................................................
+....................................................

@@ -1,0 +1,27 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/handrail.png
+size 120x13
+cols 1
+palette
+a #1b2259
+b #878d98
+c #c5cbcf
+d #697081
+e #969da8
+f #f1f2f2
+g #e3e6e7
+h #a4abb5
+
+frame handrail
+...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...
+.affccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccffa.
+.fccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccg.
+.ccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbch.
+.hbba..........aea...........caea...........caea...........caea...........caea...........cba...........cea.........abba.
+.aaa...........aea...........caea...........caea...........caea...........caea...........cea...........cea..........aaa.
+.aea...........aea...........caea...........caea...........caea...........caea...........cea...........cea..........cea.
+.aca...........aea...........caea...........caea...........caea...........caea...........cea...........cea..........cea.
+.aea...........aea...........caea...........caea...........caea...........caea...........cea...........cea..........cea.
+aacaaa........aaeaa.........aaaeaa.........aaaeaa.........aaaeaa.........aaaeaa.........aabaa........aaceaa.......aaceaa
+afffca........cfffc.........cgfffc.........cgfffc.........cgfffc.........cgfffc.........cgffc........acfffa.......agfffa
+adddda........ddddd.........dddddd.........dddddd.........dddddd.........dddddd.........ddddd........addddd.......adddda
+aaaaaa........aaaaa.........aaaaaa.........aaaaaa.........aaaaaa.........aaaaaa.........aaaaa........aaaaaa.......aaaaaa

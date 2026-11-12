@@ -1,0 +1,42 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/flowerBed.png
+size 120x20
+cols 1
+palette
+a #d6d8dd
+b #9ea2af
+c #5c3b22
+d #75798c
+e #335d2d
+f #393556
+g #3f3b38
+h #221c4b
+i #8e91a1
+j #76ce3e
+k #5db335
+l #e73732
+m #fcd837
+n #fdfdfc
+o #3c8b32
+p #b68704
+
+frame flowerBed
+.hfhf..............................................................................................................fafh.
+haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.
+haaaaaaaaiiaiaaaaaaaaaaaaiaaaaaaaaaiaaiaiaaaaaaaaaaaaaaiaaaaaaaaaiaaiaiaaaaaaaaaaaaaaiaaaaaaaaaiaaiaiaaaaaaaaaaaaaaaaaa.
+habaaiiflgiiiiiejiiiiiiigiiiiiiijjeiiiiiiiieeejiiiiiiigiiiiiiijjeiiiiiiiieeejiiiiiiigiiiiiiijjeiiiiiiiieeeiiigmgiiiaaab.
+.aacccglllgcjjejjecgccceneccejjcjjeccgcccccejjjecgccceneccejjcjjeccgcccccejjjecgccceneccejjcjjeccgcccccejjjjgmpmgccccaa.
+.aacejglllgcjjkkjcemgcenmnecejkekeccmmmgceeckkjcemgcenmnecejkekeccmmmgceeckkjcemgcenmnecejkekeccmmmgceeckkjjgmmmgcjecaa.
+.aacejkglcceceokcempmccgnecgggooocecmpmgkkegekcempmccgnecgggooocecmpmgkkegekcempmccgnecgggooocecmpmgkkegekkgeegcjjkjcaa.
+.aacgekeccjjkccgccgmgejecccllcccecjecmgeooglggccgmgejecccllcccecjecmgeooglggccgmgejecccllcccecjecmgeooglgccejjccekgecaa.
+.aaejkennecjkeellccgeejjeelmllcejkkeecjjcglmlllccgeejjeelmllcejkkeecjjcglmlllccgeejjeelmllcejkkeecjjcglmlcejkkeeeekjeaa.
+.aaccgnnnncegclmlgeejkeoejellgeckkeeneejeeglgmlgeejkeoejellgeckkeeneejeeglgmlgeejkeoejellgeckkeeneejeeglgcegkennnegccaa.
+.iifcccnnekkccglgooekkekkecggooeggenmncokkggelgooekkekkecggooeggenmncokkggelgooekkekkecggooeggenmncokkggeooecennneccfii.
+haaafccggcgggccgcgggcccggccccgjgcccgngccggcccgcgggcccggccccgjgcccgngccggcccgcgggcccggccccgjgcccgngccggcccggjcceneccfaaah
+haaafaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaafaaah
+hiiihbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbhiiih
+hfiihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhfiih
+.bifbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbfii.
+.bbfbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbbbbbbbbbbbbbbbbfbbbbbbbbbbbbbbfii.
+.ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+.ddddddfdddddddddddddddddddfddddddddfddddddddddddddddddddfddddddddfddddddddddddddddddddfddddddddfdddddddddddddddddddddd.
+.ddddddfdddddddddddddddddddfddddddddfddddddddddddddddddddfddddddddfddddddddddddddddddddfddddddddfdddddddddddddddddddddd.
