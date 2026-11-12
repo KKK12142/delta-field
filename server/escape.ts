@@ -56,6 +56,8 @@ export interface EscapeSet {
   title: string;
   /** 아이템 id → 이름 */
   items: Record<string, string>;
+  /** 사물 id → 이름표(맵의 name 대신 보인다) */
+  labels: Record<string, string>;
   /** 힌트 카드(파일에 적은 순서) */
   hints: HintCard[];
   missions: Map<string, Mission>;
@@ -69,6 +71,8 @@ const isEscapeFile = (name: string) => /\.ya?ml$/i.test(name);
 const MAP_MISSIONS = new Map<string, { id: string; kind: string }[]>();
 /** 맵의 사물 id → 미션 id */
 export const OBJECT_MISSIONS = new Map<string, string>();
+/** 이름표 글의 가장 긴 글자 수 */
+const MAX_LABEL = 20;
 for (const o of school.objects as { id: string; kind: string; mission?: string }[]) {
   if (!o.mission) continue;
   MAP_MISSIONS.set(o.mission, [...(MAP_MISSIONS.get(o.mission) ?? []), o]);
@@ -156,6 +160,14 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
   for (const [id, name] of Object.entries(objectOf(root.items) ?? {})) {
     if (!textOf(name)) errors.push(`items의 ${id}: 이름이 비어 있습니다.`);
     items[id] = textOf(name);
+  }
+
+  const labels: Record<string, string> = {};
+  for (const [id, name] of Object.entries(objectOf(root.labels) ?? {})) {
+    const label = textOf(name);
+    if (!OBJECT_MISSIONS.has(id)) errors.push(`labels의 ${id}: 맵(school.json)에 미션을 단 사물 "${id}"가 없습니다.`);
+    if (!label || label.length > MAX_LABEL) errors.push(`labels의 ${id}: 이름표는 1~${MAX_LABEL}자로 씁니다.`);
+    labels[id] = label;
   }
 
   const hints: HintCard[] = [];
@@ -263,7 +275,7 @@ export function parseEscapeSet(text: string, file: string): EscapeSet {
     });
   }
   if (errors.length) throw new Error(errors.join('\n'));
-  return { file, title, items, hints, missions };
+  return { file, title, items, labels, hints, missions };
 }
 
 /** 이 학생(반)에게 낼 문제. 반 자물쇠에서 학생의 반 문제가 없으면(선생님, 반 없음) 반 목록 순서로 처음 있는 문제 */

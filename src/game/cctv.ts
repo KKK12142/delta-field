@@ -27,16 +27,15 @@ export interface StudentView {
 
 /** escape: 선생님이 고른 방탈출 자료의 공개 정보(아이템 이름, 힌트 카드 수) */
 export function describeStudent(room: Room, escape: Escape, id: string, p: Player): StudentView {
-  const object = room.objects.find((o) => o.id === p.activityObject);
+  const found = room.objects.find((o) => o.id === p.activityObject);
+  // 자료 파일의 이름표(labels)가 있으면 그 이름으로 적는다.
+  const object = found ? { name: escape.labels.get(found.id) ?? found.name } : undefined;
   let doing = '돌아다니는 중';
   let tag: string | null = null;
   let state: StudentState = 'walk';
   if (!p.online) {
     doing = tag = '연결 끊김';
     state = 'offline';
-  } else if (p.escaped) {
-    doing = tag = '탈출 완료';
-    state = 'escaped';
   } else if (object && p.activity === 'quiz') {
     doing = `${object.name} 퀴즈 푸는 중`;
     tag = `${object.name} 퀴즈`;
@@ -45,6 +44,9 @@ export function describeStudent(room: Room, escape: Escape, id: string, p: Playe
     doing = `${object.name} 살펴보는 중`;
     tag = object.name;
     state = 'look';
+  } else if (p.finished) {
+    doing = tag = '1부 완료';
+    state = 'escaped';
   }
   // 연결이 끊긴 학생 말고는 지금 장소를 앞에 붙인다.
   const place = p.online ? areaAt(room, p.col, p.row)?.name : undefined;

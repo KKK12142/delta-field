@@ -76,6 +76,32 @@ export class Dialog {
   }
 
   /**
+   * 글을 보이고 두 단추 가운데 하나를 고른다. 첫 단추(ok)를 누르면 true, 둘째 단추·Esc면 false.
+   * 선생님이 되돌리기 어려운 일을 하기 전에 묻거나(취소에 포커스), 순서 맞추기 사물을 누를지 고를 때(focusOk) 쓴다.
+   */
+  confirm(title: string, text: string, okText: string, cancelText = '취소', focusOk = false): Promise<boolean> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      panel.append(el('p', 'df-text', text));
+      const row = el('div', 'df-row');
+      const cancel = el('button', 'df-button df-button-secondary', cancelText);
+      const ok = el('button', 'df-button', okText);
+      row.append(cancel, ok);
+      panel.append(row);
+      const finish = (yes: boolean) => {
+        this.close();
+        resolve(yes);
+      };
+      ok.addEventListener('click', () => finish(true));
+      cancel.addEventListener('click', () => finish(false));
+      this.open(panel, (e) => {
+        if (e.key === 'Escape') finish(false);
+      });
+      (focusOk ? ok : cancel).focus();
+    });
+  }
+
+  /**
    * 미션 문제를 보여 준다. 답은 check(서버 채점)로 맞춰 보고, 맞히면 true, 닫으면 false.
    * 객관식은 틀린 보기를 지우고 다시 고르고, 단답형은 고쳐 써서 다시 낸다.
    */
