@@ -37,7 +37,7 @@ title: 예시 방탈출(학교)
 
 items:
   door-key: 교실 문 열쇠
-  lab-key: 실험실 열쇠
+  lab-key: 과학실 열쇠
   entrance-key: 현관 열쇠
   part-a: 센서 부품
   part-b: 전선 부품
@@ -89,7 +89,7 @@ missions:
 
   bulletin-board:
     type: clue
-    text: 게시판에 안내문이 붙어 있습니다. "실험실 열쇠는 현관 옆 신발장에 넣어 두었습니다. 신발장 자물쇠는 문제를 풀어야 열립니다."
+    text: 게시판에 안내문이 붙어 있습니다. "과학실 열쇠는 현관 옆 신발장에 넣어 두었습니다. 신발장 자물쇠는 문제를 풀어야 열립니다."
 
   shoe-rack:
     type: quiz
@@ -103,7 +103,7 @@ missions:
   lab-door:
     type: open
     requires: lab-key
-    locked: 실험실 문이 잠겨 있습니다. 실험실 열쇠가 있어야 합니다.
+    locked: 과학실 문이 잠겨 있습니다. 과학실 열쇠가 있어야 합니다.
 
   part-a:
     type: pickup

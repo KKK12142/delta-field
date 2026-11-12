@@ -12,7 +12,11 @@ export type Layout = string[];
 export const TILES = {
   '.': { id: 'classroomFloor', name: '교실 바닥', floor: true },
   ',': { id: 'hallFloor', name: '복도 바닥', floor: true },
-  ':': { id: 'labFloor', name: '실험실 바닥', floor: true },
+  ':': { id: 'labFloor', name: '과학실 바닥', floor: true },
+  ';': { id: 'computerFloor', name: '컴퓨터실 바닥', floor: true },
+  '_': { id: 'libraryFloor', name: '도서관 바닥', floor: true },
+  '=': { id: 'roofFloor', name: '옥상 바닥', floor: true },
+  '^': { id: 'stairs', name: '계단', floor: true },
   '"': { id: 'field', name: '운동장 흙', floor: true },
   '#': { id: 'wall', name: '건물 벽', floor: false },
   '%': { id: 'fence', name: '울타리', floor: false },
@@ -30,24 +34,45 @@ export function isFloor(ch: string | undefined) {
 }
 
 export const OBJECT_KINDS = [
-  // 교실
+  // 교실(수학실에도 칠판)
   'blackboard',
   'teacherDesk',
   'desk',
   'locker',
+  'timetable',
+  'calendar',
   // 복도
   'bulletinBoard',
   'shoeRack',
-  // 실험실
+  // 과학실
   'labBench',
   'cabinet',
+  'apparatus',
+  // 컴퓨터실
+  'computerDesk',
+  'microbit',
+  'codingBlock',
+  'lightBulb',
+  // 수학실
+  'polyhedron',
+  'tileBoard',
+  // 도서관
+  'bookshelf',
+  'readingTable',
+  // 옥상 천문대
+  'telescope',
+  'starChart',
   // 운동장
   'tree',
   'goalpost',
-  // 문(장소 사이)과 출구
+  'compassSign',
+  'sundial',
+  // 문(장소 사이)과 출구, 강당 입구
   'door',
   'entrance',
+  'partDoor',
   'gate',
+  'auditoriumDoor',
   // 바닥에 놓인 작은 물건(주워 가는 미션)
   'item',
 ] as const;
@@ -67,6 +92,11 @@ export interface RoomObject {
    * 없으면 살펴볼 수 없는 사물(가구 등)이다. 여러 사물이 같은 미션 id를 쓸 수 있다.
    */
   mission?: string;
+  /**
+   * 2면 2부 사물: 선생님이 "2부 열기"를 누르기 전에는 문(DOOR_KINDS)이면 닫혀 있고, 다른 사물이면 보이지 않는다.
+   * 없으면 1부(처음부터)
+   */
+  part?: number;
 }
 
 /** 칸 단위 네모 */
@@ -81,6 +111,14 @@ export interface Rect {
 export interface Area extends Rect {
   id: string;
   name: string;
+  /** 2면 2부 장소(그 안의 사물은 2부를 연 뒤에 살펴볼 수 있다). 없으면 1부 */
+  part?: number;
+}
+
+/** 사물이 열리는 부: 사물의 part와 사물이 놓인 장소의 part 가운데 큰 것(없으면 1) */
+export function partOf(room: Room, o: RoomObject): number {
+  const area = areaAt(room, o.col + o.w / 2, o.row + o.h / 2);
+  return Math.max(o.part ?? 1, area?.part ?? 1);
 }
 
 export interface Room {
@@ -138,6 +176,7 @@ export function loadRoom(data: unknown): Room {
     seen.add(o.id);
     if (!OBJECT_KINDS.includes(o.kind)) errors.push(`사물 '${o.id}'의 kind '${o.kind}'를 모릅니다.`);
     if (!inside(o)) errors.push(`사물 '${o.id}'가 맵 밖으로 나갑니다.`);
+    if (o.part !== undefined && o.part !== 1 && o.part !== 2) errors.push(`사물 '${o.id}'의 part는 1이나 2로 씁니다.`);
     // 문은 열면 지나갈 수 있어야 하므로 그 밑이 바닥 칸이어야 한다.
     if ((DOOR_KINDS as readonly string[]).includes(o.kind) && inside(o)) {
       for (let r = o.row; r < o.row + o.h; r++) {

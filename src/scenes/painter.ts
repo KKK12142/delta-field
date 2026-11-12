@@ -9,7 +9,7 @@ type FloorId = Extract<(typeof TILES)[TileChar], { floor: true }>['id'];
 type WallId = Extract<(typeof TILES)[TileChar], { floor: false }>['id'];
 
 /** 이름표를 어두운 글자로 쓰는 밝은 사물 */
-const LIGHT_KINDS: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['desk', 'goalpost', 'item']);
+const LIGHT_KINDS: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['desk', 'goalpost', 'item', 'timetable', 'calendar', 'lightBulb', 'sundial']);
 
 /** 화면에 그린 사물 하나. 문은 열림과 닫힘 모양을 바꾼다. */
 export interface ObjectView {
@@ -26,23 +26,33 @@ export class MapPainter {
 
   /** 바닥과 벽(바뀌지 않는 것)을 한 장의 그림으로 구워 맨 아래에 깐다. 같은 맵은 한 번만 굽는다. */
   ground() {
-    const key = `df-ground-${this.room.id}`;
-    if (!this.scene.textures.exists(key)) {
-      const { cols, rows } = mapSize(this.room);
-      const g = this.scene.make.graphics({}, false);
-      this.room.layout.forEach((line, row) => {
-        [...line].forEach((ch, col) => {
-          const tile = tileOf(ch);
-          if (!tile) return;
-          if (tile.floor) this.floor(g, tile.id, col, row);
-          // 아래 칸이 바닥이면 벽 앞면을 그려 위에서 비스듬히 본 느낌을 준다.
-          else this.wall(g, tile.id, col, row, isFloor(this.room.layout[row + 1]?.[col]));
-        });
-      });
-      g.generateTexture(key, cols * size.tile, rows * size.tile);
-      g.destroy();
+    // 맵이 커도 그래픽 카드의 텍스처 크기 한도(낮은 기기 4096px)를 넘지 않게 groundChunk칸씩 나눠 굽는다.
+    const { cols, rows } = mapSize(this.room);
+    const n = size.groundChunk;
+    const t = size.tile;
+    for (let r0 = 0; r0 < rows; r0 += n) {
+      for (let c0 = 0; c0 < cols; c0 += n) {
+        const key = `df-ground-${this.room.id}-${c0}-${r0}`;
+        const w = Math.min(n, cols - c0);
+        const h = Math.min(n, rows - r0);
+        if (!this.scene.textures.exists(key)) {
+          const g = this.scene.make.graphics({}, false);
+          for (let row = r0; row < r0 + h; row++) {
+            for (let col = c0; col < c0 + w; col++) {
+              const tile = tileOf(this.room.layout[row][col]);
+              if (!tile) continue;
+              // 조각 안의 좌표로 그린다(조각 크기가 짝수라 바닥 무늬의 칸 번갈이는 그대로다).
+              if (tile.floor) this.floor(g, tile.id, col - c0, row - r0);
+              // 아래 칸이 바닥이면 벽 앞면을 그려 위에서 비스듬히 본 느낌을 준다.
+              else this.wall(g, tile.id, col - c0, row - r0, isFloor(this.room.layout[row + 1]?.[col]));
+            }
+          }
+          g.generateTexture(key, w * t, h * t);
+          g.destroy();
+        }
+        this.scene.add.image(c0 * t, r0 * t, key).setOrigin(0, 0).setDepth(0);
+      }
     }
-    return this.scene.add.image(0, 0, key).setOrigin(0, 0).setDepth(0);
   }
 
   /** 바닥 한 칸 */

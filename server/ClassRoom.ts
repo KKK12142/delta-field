@@ -37,6 +37,7 @@ import {
 import { ClassState, Player } from '../shared/schema.ts';
 import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './questions.ts';
 import { EscapeGame } from './EscapeGame.ts';
+import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionView } from '../shared/escape.ts';
 
@@ -45,6 +46,9 @@ const MAP_SIZES: Record<string, { rows: number; cols: number }> = {
   school: { rows: school.layout.length, cols: school.layout[0].length },
   goldenbell: { rows: goldenbellMap.layout.length, cols: goldenbellMap.layout[0].length },
 };
+/** 사물 id → 열리는 부(2부 사물·장소는 2) */
+const SCHOOL = loadRoom(school);
+const OBJECT_PARTS = new Map(SCHOOL.objects.map((o) => [o.id, partOf(SCHOOL, o)]));
 /** 미션을 단(살펴볼 수 있는) 사물 id */
 const MISSION_OBJECT_IDS = new Set(school.objects.filter((o) => 'mission' in o).map((o) => o.id));
 const GB_ZONES: Zones = goldenbellMap.zones;
@@ -131,6 +135,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('missionOpen', (client: Client, message: { object?: unknown }): MissionView => {
       const p = this.state.players.get(client.sessionId);
       if (!p || p.map !== 'school') return { kind: 'none', text: '지금은 살펴볼 수 없습니다.' };
+      if ((OBJECT_PARTS.get(String(message?.object)) ?? 1) > this.state.part) {
+        return { kind: 'none', text: '아직 열리지 않은 곳입니다. 선생님이 2부를 열면 살펴볼 수 있습니다.' };
+      }
       return this.escape.open(p, message?.object);
     });
     this.onMessage('missionAnswer', (client: Client, message: MissionAnswerMessage): MissionAnswerReply => {
