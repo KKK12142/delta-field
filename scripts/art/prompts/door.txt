@@ -1,0 +1,3 @@
+One door seen straight on, as it appears in the front face of a school building wall (front view, no top surface), on the magenta background.
+Draw only the door and its own frame, large and centered: exactly {{size}}, each game pixel a solid square about 16 image pixels wide.
+Door: {{desc}}

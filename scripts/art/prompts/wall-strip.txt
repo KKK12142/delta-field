@@ -1,0 +1,4 @@
+One horizontal strip of a wall's front face seen straight on, on the magenta background, spanning the full image width.
+The strip is exactly 60 game pixels wide and 30 game pixels tall (each game pixel a solid square about 17 image pixels wide).
+It will be cut into two 30 by 30 tiles placed in any order, so the pattern repeats every 30 pixels left to right and every horizontal line stays at the same height across the whole strip.
+Wall: {{desc}}

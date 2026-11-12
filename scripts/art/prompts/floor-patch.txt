@@ -1,0 +1,6 @@
+One square patch of floor seen straight from above, filling the whole image edge to edge, with no border and no background.
+The patch is exactly 60 by 60 game pixels (each game pixel is a solid square about 17 image pixels wide).
+It will be cut into four 30 by 30 tiles that are placed in any order, so keep the pattern on a strict 30-pixel rhythm:
+every seam or board line that touches an edge of a quarter must continue straight across into the neighbouring quarter.
+Make the four quarters slightly different from each other (small knots, scuffs or color shifts inside each quarter) but keep the same colors and line positions at their edges.
+Floor: {{desc}}

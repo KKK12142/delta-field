@@ -59,13 +59,20 @@
 - 바닥 30×30. 같은 바닥의 변형 2~4개를 가로로 이어 한 장으로 둔다(예: 120×30). 이어 붙였을 때 경계가 보이지 않게 한다.
 - 벽(`#`)과 울타리(`%`)는 윗면 타일과 앞면 타일로 나눈다. 아래 칸이 바닥인 벽 칸이 앞면 칸이고, 그 칸 전체(30×30)를 앞면 그림으로 그린다(맵 담당 painter.ts의 wall(face)).
   파일은 윗면과 앞면을 따로 둔다(wallTop, wallFace, fenceTop, fenceFace).
-- 바닥 타일에는 외곽선을 넣지 않는다.
+- 울타리 윗면은 가로대 방향이 둘이다: fenceTop(가로, 운동장 아래쪽 줄), fenceTopV(세로, 왼쪽·오른쪽 줄). 위아래가 울타리인 칸이 세로다.
+- 울타리 앞면(fenceFace)은 위 8줄과 철망 구멍이 투명하다. 그 칸에는 바닥(운동장 흙)을 먼저 깐다.
+- 바닥 타일에는 외곽선을 넣지 않는다. 이음선은 바닥보다 한 단계 어두운 색이다.
 
 ### 사물
 - 가로 = 바닥에서 차지하는 칸 수 × 30. 세로 = 차지하는 칸 수 × 30 + 위로 솟은 높이.
   예: 교탁 2×1칸 → 60×(30 + 솟은 높이). 사물함 1×3칸 → 30×(90 + 솟은 높이).
 - 기준점은 차지하는 칸의 왼쪽 아래다. 그리는 순서는 아래 끝이 아래에 있을수록 앞(아바타와 같은 규칙).
 - 위에서 조금 비스듬히 본다: 윗면이 보이고 그 아래 앞면이 보인다. 소실점 원근은 쓰지 않는다.
+- 그림이 차지 칸보다 좁으면(신발장 115, 교문 116, 실험대 88) 그림 파일 너비는 차지 칸 너비로 두고 양옆을 투명하게 둔다.
+- 벽에 거는 사물(칠판·게시판)은 벽 앞면 칸에 놓이는 30줄 높이 그림이다.
+- 문(door)·현관문(entrance)은 2칸 두께 벽의 윗면 칸과 앞면 칸을 함께 덮는 60×60이다. 위쪽은 벽 윗면(wallTop) 무늬, 아래 36줄(현관문 38줄)이 문이다.
+  문 밑 칸은 바닥 글자이므로, 그림이 두 칸을 다 덮어야 벽이 끊겨 보이지 않는다. 열린 모양은 <kind>-open.png(같은 크기).
+- 골대(goalpost)는 위에서 본 그림이고 입이 오른쪽이다(왼쪽 골대). 오른쪽 골대는 좌우로 뒤집어 그린다.
 
 ### 아이콘
 - 아이템 등은 30×30. 대화상자(HTML)에서 크게 보일 때는 CSS `image-rendering: pixelated`로 키운다.
@@ -82,7 +89,7 @@
 |---|---|---|
 | art/raw/<이름>/ | 그림 생성으로 받은 원본과 프롬프트(.json) | 넣지 않음(크고 버리는 것이 많다) |
 | art/work/ | 다듬는 중간 그림과 미리보기 | 넣지 않음 |
-| art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본. 캐릭터는 char-0N.txt(네 방향 서기), char-0N.sheet.txt(걷기 12프레임), rig.json(걷기 뼈대 고침), palette.txt(공용 색표) | 넣음 |
+| art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본. tiles/<id>.txt, objects/<kind>.txt. 캐릭터는 char-0N.txt(네 방향 서기), char-0N.sheet.txt(걷기 12프레임), rig.json(걷기 뼈대 고침), palette.txt(공용 색표) | 넣음 |
 | public/sprites/characters/char-01.png | 캐릭터 시트 | 넣음 |
 | src/data/characters.json | 캐릭터 목록 `[{ id, name }]`. name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
@@ -171,13 +178,49 @@
   - pnpm art:gen은 ~/.config/delta-field/baze.env(저장소 밖)에서 키를 읽는다. `--dry-run`은 보낼 내용만 보인다(키 없이 된다).
   - 받은 그림은 art/raw/<이름>/<시각>-<번호>.png, 같은 이름의 .json에 프롬프트와 설정(키 없음)을 남긴다.
 - 프롬프트(scripts/art/prompts/): style.txt(공통: 도트 규칙, 외곽선, 빛, 마젠타 배경, 글자·워터마크 없음, 기존 작품 따라 하지 않음)를 앞에 붙이고
-  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-side-back.txt(참고 앞모습으로 왼쪽 옆·뒷모습 두 개), character-walk.txt(걷기 시트 4×3), floor.txt(바닥·벽 윗면 타일), wall.txt(벽·울타리 앞면 타일), object.txt(사물, {{size}})를 쓴다.
+  character-front.txt(앞모습 한 장), character-turn.txt(참고 그림으로 네 방향 서기), character-side-back.txt(참고 앞모습으로 왼쪽 옆·뒷모습 두 개), character-walk.txt(걷기 시트 4×3)를 쓴다. 타일·사물 프롬프트는 아래 "타일·사물 만들기". floor.txt·wall.txt·object.txt는 처음 것으로 지금은 쓰지 않는다.
 - 캐릭터를 만드는 순서(제안)
   1. 앞모습을 캐릭터마다 여러 장 받아 교사가 고른다.
   2. 고른 그림을 참고 그림(--ref)으로 네 방향 서기를 받는다.
   3. 다듬어 글자판으로 바꾼다. 걸음 A·B는 서기에서 다리·팔 몇 도트만 다르므로 글자판에서 만든다.
   - 까닭: 그림 생성은 정확한 도트 수와 여러 프레임 사이의 일관성을 잘 지키지 못한다. 걷기 시트(character-walk)를 한 번에 받아 보고, 프레임끼리 어긋나면 이 순서로 한다.
 - BAZE의 GPT는 투명 배경을 고를 수 없어, 프롬프트로 마젠타 단색 배경을 받아 다듬을 때 `--bg '#ff00ff'`로 지운다.
+
+## 타일·사물 만들기(2026-11-12)
+교사 결정: 생성 그림을 바탕으로 하되, 이어 붙이는 구조는 규칙대로 다시 짠다. 사물은 한 장에 하나씩 받는다(둘을 한 장에 받으면 GPT가 작게 그려 키울 때 외곽선이 2도트가 된다).
+쓰는 프롬프트(scripts/art/prompts/)와 설명·크기는 scripts/art/things.json에 사물마다 적었다(`pnpm art:gen scripts/art/prompts/<prompt> --out <id> --thing <id>`).
+- floor-patch.txt: 바닥·벽 윗면. 60×60도트 한 판(도트 약 17픽셀)을 받아 30×30 네 칸으로 자른다.
+- wall-strip.txt: 벽·울타리 앞면 60×30 띠. object-single.txt: 사물 하나를 화면 가득. object-sample.txt·wall-object.txt: 긴 사물의 짧은 견본(가운데가 고른 것). door.txt: 벽 앞면의 문(정면).
+- 열린 문은 닫힌 그림을 --ref로 붙여 "같은 문을 연 모양"으로 받는다(약 53.4크레딧).
+
+바닥
+1. `pnpm art:fit <받은 그림> --full --grid 2x2 --frame 30x30 --cols 4 --badge 0 --out <id>-fit.png` (변형 4칸, 120×30)
+2. `node scripts/art/tile.mjs clean <id>-fit.png --out ... --remove '<이음선·점 색>' --erase 113,24,7,6`
+   생성 그림의 이음선은 도트보다 가늘어 잘라 옮기면 빠지거나 어긋난다. 그 색을 지워 둘레 색으로 메우고, 오른쪽 아래 "AI" 표시 자리를 지운다.
+3. 이음 다시 긋기: 교실 바닥 `tile.mjs planks --plank 6 --line '#a26d4c' --light '#f9c78d' --joint 0.3`(판자 폭 6, 끝 이음을 줄여 마루처럼),
+   복도 `tile.mjs grid --step 15 --line '#83a18d'`, 실험실 `tile.mjs grid --step 10 --line '#aebdd1'`(실험실은 두 가지 파랑을 --map으로 하나로).
+   운동장 흙·벽 윗면은 2만 한다. 울타리 윗면은 가로대가 받은 판 가운데에 있어 `tile.mjs roll --grid 2x2 --dy 15`로 칸 가운데로 옮기고 가로대가 든 두 칸만 쓴다(`pick --keep 2,3`), 세로는 `turn`.
+4. `tile.mjs mix`로 무작위로 깔아 이음새를 본다. 끝나면 `pnpm art:grid to-txt`로 art/src/tiles/<id>.txt에 남기고 to-png로 public/sprites/tiles/<id>.png.
+- 벽 앞면·울타리 앞면은 받은 띠의 박자가 30에 맞지 않아(울타리 기둥 29칸 간격 등) 받은 그림의 색과 짜임으로 글자판을 직접 짰다(art/src/tiles/wallFace.txt, fenceFace.txt).
+
+사물
+1. `pnpm art:fit <받은 그림> --bg '#ff00ff' --width <견본 너비> --frame <너비>x100 --colors 16 --out <id>-fit.png`
+   --width: 가장 넓은 그림의 너비를 그 도트 수로 나눠 가짜 픽셀 크기를 정한다(사물은 너비가 정해져 있다). 받은 그림의 도트는 약 15~17픽셀이었다.
+2. 긴 사물: `node scripts/art/stretch.mjs <id>-fit.png --trim --width <너비> --cols <되풀이할 칸 a-b> [--whole] [--height <높이> --rows <줄 a-b>] [--top n --bottom n]`
+   | 사물 | 견본 → 그림 | 되풀이한 띠 |
+   |---|---|---|
+   | bulletinBoard | 60×26 → 120×30 | 칸 25-34, 위아래 2줄 투명 |
+   | shoeRack | 60×25 → 120×25 | 칸 24-34(신발장 한 칸, --whole) |
+   | labBench | 60×33 → 90×66 | 칸 17-30(문 한 짝, --whole), 줄 15(윗면, 2칸 깊이로) |
+   | cabinet | 60×50 → 90×50 | 칸 15-44(유리문 셋이 됨) |
+   | gate | 60×29 → 120×29 | 칸 20-26(창살 한 칸, --whole) |
+   | locker | 30×65 → 30×125 | 줄 0-29(사물함 뚜껑, 세 개를 쌓고 맨 아래 앞면) |
+   칠판은 견본(art/raw/test-blackboard)의 색과 짜임(나무 틀 2칸, 모서리 못, 오른쪽 분필)으로 180×30 글자판을 짰다. 골대는 그물 칸을 4칸 박자로 다시 짰다(art/src/objects/goalpost.txt).
+3. 문: `node scripts/art/compose.mjs --out door.png --size 60x60 --tile public/sprites/tiles/wallTop.png:0,0,60,24 --image door-fit.png:0,24`
+4. 글자판 art/src/objects/<kind>.txt → `pnpm art:grid to-png` → public/sprites/objects/<kind>.png.
+
+모형 판: `node scripts/art/mock.mjs --map src/data/school.json --out art/work/mock/school.png --area 0,0,48,37 [--scale 2] [--chars 'char-01@10,6,down;...']`
+맵 데이터에 public/sprites의 타일·사물을 깔아 본다. 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.
