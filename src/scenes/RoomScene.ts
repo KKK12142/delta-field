@@ -1,5 +1,5 @@
 import { Input } from 'phaser';
-import type { ActivityKind } from '../../shared/protocol.ts';
+import { GATHER_SECONDS, type ActivityKind } from '../../shared/protocol.ts';
 import { areaAt, type RoomObject } from '../data/room';
 import { byClassAndNickname, classCounts, describeStudent } from '../game/cctv';
 import { formatDuration, RunState } from '../game/state';
@@ -33,6 +33,8 @@ export class RoomScene extends MapScene {
   private cctv: Cctv | null = null;
   /** 지금 서 있는 장소 이름(안내에 보인 것) */
   private place = '';
+  /** 강당으로 모으기 안내에 보인 남은 시간(초). 바뀔 때만 고친다. */
+  private gatherShown = -1;
 
   constructor() {
     super('school');
@@ -49,6 +51,7 @@ export class RoomScene extends MapScene {
     this.studentCount = -1;
     this.cctv = null;
     this.place = '';
+    this.gatherShown = -1;
     // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
     ctx.state.activity = { kind: '', object: '' };
   }
@@ -68,6 +71,8 @@ export class RoomScene extends MapScene {
     this.hud.onAction(this.onActionButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
     this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
+    this.hud.part.addEventListener('click', this.onPartButton);
+    this.updateGather();
     if (teacher) {
       this.input.on('pointerdown', this.onPointerDown, this);
       this.input.on('pointermove', this.onPointerMove, this);
@@ -137,6 +142,7 @@ export class RoomScene extends MapScene {
   protected tick(delta: number) {
     // 진행 상태가 바뀌었으면 서버로 보낸다(바뀌지 않았으면 보내지 않는다).
     if (this.net.role === 'student') this.net.sendStatus(this.state.toStatus());
+    this.updateGather();
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {
@@ -195,26 +201,43 @@ export class RoomScene extends MapScene {
     return { sprite: Math.max(1, size.cctvAvatarZoom / zoom), text: Math.max(1, size.cctvTextZoom / zoom) };
   }
 
-  // ---- 골든벨 시작(선생님) ----
+  // ---- 강당으로 모으기·2부 열기(선생님) ----
+
+  /** 강당으로 모으는 중이면 남은 시간과 안내를 모두에게 보인다. 선생님 단추는 "모으기 그만두기"가 된다. */
+  private updateGather() {
+    const { left, title } = this.net.gather;
+    if (this.net.role === 'teacher') this.hud.setPart(this.net.part);
+    if (left === this.gatherShown) return;
+    this.gatherShown = left;
+    this.hud.setGathering(left > 0);
+    this.hud.setNotice(
+      left > 0
+        ? `강당으로 모입니다 · 남은 시간 ${formatDuration(left * 1000)}\n시간이 되면 모두 강당으로 옮겨 가 골든벨(${title})을 합니다.`
+        : null,
+    );
+  }
 
   private onGoldenBellButton = () => {
     this.hud.goldenbell.blur();
-    void this.startGoldenBell();
+    void (this.net.gather.left > 0 ? this.cancelGather() : this.gather());
   };
 
-  /** 문제 파일을 고르면 서버가 모두를 골든벨 맵으로 옮긴다(장면은 update()에서 바뀐다). */
-  private async startGoldenBell() {
+  /**
+   * 문제 파일과 남은 시간(바로, 1·3·5분)을 고르면 서버가 남은 시간을 모두에게 띄우고,
+   * 0이 되면 모두를 골든벨 맵으로 옮긴다(장면은 update()에서 바뀐다).
+   */
+  private async gather() {
     if (this.dialog.isOpen() || this.busy || this.cctv) return;
     this.busy = true;
     try {
       const files = await this.net.gbFiles();
       if (!files.length) {
-        await this.dialog.message('골든벨', '문제 파일이 없습니다. 서버의 goldenbell 폴더에 .yaml 파일을 넣습니다.');
+        await this.dialog.message('강당으로 모으기', '문제 파일이 없습니다. 서버의 goldenbell 폴더에 .yaml 파일을 넣습니다.');
         return;
       }
       const picked = await this.dialog.choose(
-        '골든벨 시작',
-        '문제 파일을 고릅니다. 고르면 모든 학생이 골든벨 맵으로 옮겨 갑니다.',
+        '강당으로 모으기',
+        '골든벨 문제 파일을 고릅니다.',
         files.map((f) => ({
           label: f.error ? f.file : `${f.title} (${f.count}문제)`,
           detail: f.error ?? f.file,
@@ -222,10 +245,49 @@ export class RoomScene extends MapScene {
         })),
       );
       if (picked === null) return;
-      const reply = await this.net.gbStart(files[picked].file);
-      if (reply.error) await this.dialog.message('골든벨', reply.error);
+      const file = files[picked];
+      const when = await this.dialog.choose(
+        '강당으로 모으기',
+        `${file.title}: 언제 모을지 고릅니다. 남은 시간이 모든 학생 화면에 보이고, 0이 되면 모두 강당(골든벨 맵)으로 옮겨 갑니다.`,
+        GATHER_SECONDS.map((sec) => ({ label: sec === 0 ? '지금 바로 옮기기' : `${sec / 60}분 뒤` })),
+      );
+      if (when === null) return;
+      const reply = await this.net.gbGather(file.file, GATHER_SECONDS[when]);
+      if (reply.error) await this.dialog.message('강당으로 모으기', reply.error);
     } catch {
-      await this.dialog.message('골든벨', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+      await this.dialog.message('강당으로 모으기', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private async cancelGather() {
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    try {
+      const reply = await this.net.gbGatherCancel();
+      if (reply.error) await this.dialog.message('강당으로 모으기', reply.error);
+    } catch {
+      await this.dialog.message('강당으로 모으기', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private onPartButton = () => {
+    this.hud.part.blur();
+    void this.openPart2();
+  };
+
+  /** 2부 열기. 지금은 서버 상태만 바뀐다(2부 장소의 문은 맵을 넓힐 때 잇는다). */
+  private async openPart2() {
+    if (this.dialog.isOpen() || this.busy || this.cctv || this.net.part >= 2) return;
+    this.busy = true;
+    try {
+      const reply = await this.net.openPart(2);
+      if (reply.error) await this.dialog.message('2부 열기', reply.error);
+    } catch {
+      await this.dialog.message('2부 열기', '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
     } finally {
       this.busy = false;
     }

@@ -3,3 +3,4 @@ title: 틀린 파일
 questions:
   - { type: ox, question: 답이 틀림, answer: 0, seconds: 10 }
   - { type: choice, question: 보기가 하나, choices: [가], answer: 1, seconds: 1 }
+  - { type: ox, nonsense: 네, question: 넌센스 값이 틀림, answer: O, seconds: 10 }

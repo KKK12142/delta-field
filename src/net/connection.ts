@@ -8,6 +8,7 @@ import {
   type GbAcceptMessage,
   type GbReply,
   type GbSubmitMessage,
+  type GatherMessage,
   type JoinOptions,
   type MapId,
   type MoveMessage,
@@ -63,6 +64,16 @@ export class Net {
     return this.room.state.goldenbell;
   }
 
+  /** 강당으로 모으기: 남은 시간(초, 0이면 모으는 중이 아님)과 골든벨 이름 */
+  get gather(): { left: number; title: string } {
+    return { left: this.room.state.gatherLeft ?? 0, title: this.room.state.gatherTitle ?? '' };
+  }
+
+  /** 지금 열린 방탈출 부(1·2) */
+  get part(): number {
+    return this.room.state.part ?? 1;
+  }
+
   /** 나를 뺀 접속자. map을 주면 그 맵에 있는 사람만 */
   others(map?: MapId): [string, Player][] {
     const list: [string, Player][] = [];
@@ -112,6 +123,21 @@ export class Net {
 
   gbStart(file: string): Promise<GbReply> {
     return this.room.request('gbStart', { file });
+  }
+
+  /** 선생님: 강당으로 모으기(seconds초 뒤, 0이면 바로 골든벨 맵으로 옮김) */
+  gbGather(file: string, seconds: number): Promise<GbReply> {
+    const message: GatherMessage = { file, seconds };
+    return this.room.request('gbGather', message);
+  }
+
+  gbGatherCancel(): Promise<GbReply> {
+    return this.room.request('gbGatherCancel');
+  }
+
+  /** 선생님: 2부 열기 */
+  openPart(part: number): Promise<GbReply> {
+    return this.room.request('openPart', { part });
   }
 
   gbNext(): Promise<GbReply> {

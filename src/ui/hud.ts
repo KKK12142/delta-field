@@ -16,16 +16,25 @@ export class Hud {
   readonly action = el('button', 'df-button df-action', '살펴보기');
   /** 선생님 화면에만 보인다. */
   readonly cctv = el('button', 'df-button df-button-small', 'CCTV 보기');
-  readonly goldenbell = el('button', 'df-button df-button-small', '골든벨 시작');
+  /** 강당으로 모으기(모으는 중에는 모으기 그만두기) */
+  readonly goldenbell = el('button', 'df-button df-button-small', '강당으로 모으기');
+  /** 2부 열기(연 뒤에는 잠긴다) */
+  readonly part = el('button', 'df-button df-button-small', '2부 열기');
+  /** 강당으로 모으기 남은 시간과 안내(모두에게) */
+  private readonly notice = el('div', 'df-hud-box df-hud-notice');
+  private readonly left = el('div', 'df-hud-column');
   private readonly touch: boolean;
 
   constructor(goal: string, touch: boolean, teacher: boolean) {
     this.touch = touch;
     const left = el('div', 'df-hud-box');
     left.append(this.place, el('span', 'df-text', goal), this.help);
+    this.notice.hidden = true;
+    this.notice.setAttribute('role', 'status');
+    this.left.append(left, this.notice);
     this.people.hidden = true;
     this.status.hidden = true;
-    this.cctv.hidden = this.goldenbell.hidden = !teacher;
+    this.cctv.hidden = this.goldenbell.hidden = this.part.hidden = !teacher;
     this.right.append(
       this.room,
       this.people,
@@ -34,12 +43,32 @@ export class Hud {
       this.items,
       this.cctv,
       this.goldenbell,
+      this.part,
     );
-    this.top.append(left, this.right);
+    this.top.append(this.left, this.right);
     this.action.disabled = true;
     uiRoot().append(this.top, this.action);
     this.setItems([]);
     this.setCctv(false);
+  }
+
+  /** 강당으로 모으기 안내(null이면 감춘다). 글이 달라졌을 때만 바꾼다. */
+  setNotice(text: string | null) {
+    this.notice.hidden = text === null;
+    if (text !== null && this.notice.textContent !== text) this.notice.textContent = text;
+  }
+
+  /** 선생님: 모으는 중이면 단추가 "모으기 그만두기"가 된다. */
+  setGathering(on: boolean) {
+    const label = on ? '모으기 그만두기' : '강당으로 모으기';
+    if (this.goldenbell.textContent !== label) this.goldenbell.textContent = label;
+  }
+
+  /** 선생님: 2부를 열었으면 단추를 잠근다. */
+  setPart(part: number) {
+    const label = part >= 2 ? '2부 열림' : '2부 열기';
+    if (this.part.textContent !== label) this.part.textContent = label;
+    this.part.disabled = part >= 2;
   }
 
   /** 지금 서 있는 장소 이름(교실, 복도 등) */

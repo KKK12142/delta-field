@@ -382,6 +382,9 @@ export abstract class MapScene extends Scene {
         pos: () => ({ ...this.pos }),
         code: () => this.net.code,
         role: () => this.net.role,
+        /** 강당으로 모으기 남은 시간(초)·골든벨 이름, 열린 부 */
+        gather: () => ({ ...this.net.gather }),
+        part: () => this.net.part,
         others: () =>
           this.net.others().map(([, p]) => ({
             nickname: p.nickname,

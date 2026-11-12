@@ -246,6 +246,13 @@
 .df-hud.has-panel {
   right: calc(min(var(--df-cctv-width), 100vw - 2 * var(--df-margin)) + 2 * var(--df-margin));
 }
+/* 왼쪽 안내와 그 아래 강당으로 모으기 안내 */
+.df-hud-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap-wide);
+  min-width: 0;
+}
 .df-hud-box {
   padding: var(--df-hud-pad);
   border: var(--df-border) solid var(--df-panel-border);
@@ -254,6 +261,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--df-hud-gap);
+}
+/* 강당으로 모으기 남은 시간(모두에게) */
+.df-hud-notice {
+  border-color: var(--df-badge);
+  background: var(--df-badge);
+  color: var(--df-badge-text);
+  font-weight: bold;
+  white-space: pre-line;
 }
 
 /* 살펴보기 단추(오른쪽 아래) */

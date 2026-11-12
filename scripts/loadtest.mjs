@@ -151,9 +151,11 @@ await teacher.js(`[...document.querySelectorAll('.df-cctv button')].find((b) => 
 await wait(500);
 
 // ---- 골든벨 ----
-await teacher.js(`[...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '골든벨 시작').click()`);
+await teacher.js(`[...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '강당으로 모으기').click()`);
 await wait(1000);
 await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.includes('확인용 골든벨'))?.click()`);
+await wait(300);
+await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent === '지금 바로 옮기기')?.click()`);
 await wait(1500);
 const inBell = async () => teacher.js(`__df.others().filter((o) => o.role === 'student' && o.map === 'goldenbell').length`);
 check(`골든벨: 학생 ${students}명 모두 골든벨 맵`, (await inBell()) === students, `${await inBell()}명`);

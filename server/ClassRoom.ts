@@ -10,7 +10,7 @@ import {
   activeZones,
   answerDisplay,
   answerKey,
-  judge,
+  judgeQuestion,
   matchAnswer,
   zoneAt,
   type GbScore,
@@ -19,6 +19,7 @@ import {
 import {
   CODE_LENGTH,
   DEFAULT_CHARACTER,
+  GATHER_SECONDS,
   MAX_CLIENTS,
   RECONNECT_SECONDS,
   RejectCode,
@@ -28,6 +29,7 @@ import {
   type GbFileInfo,
   type GbReply,
   type GbSubmitMessage,
+  type GatherMessage,
   type JoinOptions,
   type MoveMessage,
   type StatusMessage,
@@ -92,6 +94,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   /** 골든벨 문제(정답 포함). 서버에만 둔다. */
   private questions: QuestionSet | null = null;
   private timer: { clear(): void } | null = null;
+  /** 강당으로 모으기: 시간이 다 되면 시작할 문제와 남은 시간을 세는 시계 */
+  private gatherSet: QuestionSet | null = null;
+  private gatherTimer: { clear(): void } | null = null;
   /** 단답형: 접속 id → 낸 답. 정답 공개 전에는 상태(모두에게 가는 값)에 넣지 않는다. */
   private shortAnswers = new Map<string, string>();
   /** 이번 문제를 채점하기 전의 목숨·점수(선생님이 단답형 답을 정답으로 인정하거나 거둘 때 다시 채점한다) */
@@ -129,6 +134,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     // 골든벨(선생님만). 화면은 room.request()로 보내고 돌려준 값을 답으로 받는다.
     this.onMessage('gbFiles', (client: Client): GbFileInfo[] => (this.isTeacher(client) ? listQuestionFiles() : []));
     this.onMessage('gbStart', (client: Client, message: { file?: unknown }) => this.gbStart(client, message));
+    this.onMessage('gbGather', (client: Client, message: GatherMessage) => this.gbGather(client, message));
+    this.onMessage('gbGatherCancel', (client: Client) => this.gbGatherCancel(client));
+    this.onMessage('openPart', (client: Client, message: { part?: unknown }) => this.openPart(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
     this.onMessage('gbEnd', (client: Client) => this.gbEnd(client));
     this.onMessage('gbSubmit', (client: Client, message: GbSubmitMessage) => this.gbSubmit(client, message));
@@ -203,15 +211,27 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     p.gbAnswer = '';
   }
 
+  /** 문제 파일을 읽는다. 읽지 못하면 까닭을 글로 돌려준다. */
+  private readSet(file: unknown): QuestionSet | string {
+    try {
+      return loadQuestionSet(typeof file === 'string' ? file : '');
+    } catch (e) {
+      return (e as Error).message;
+    }
+  }
+
   private gbStart(client: Client, message: { file?: unknown }): GbReply {
     if (!this.isTeacher(client)) return refuse('선생님만 골든벨을 시작할 수 있습니다.');
     if (this.state.goldenbell.phase !== '') return refuse('이미 골든벨을 하고 있습니다.');
-    let set: QuestionSet;
-    try {
-      set = loadQuestionSet(typeof message?.file === 'string' ? message.file : '');
-    } catch (e) {
-      return refuse((e as Error).message);
-    }
+    const set = this.readSet(message?.file);
+    if (typeof set === 'string') return refuse(set);
+    this.beginGoldenBell(set);
+    return ok;
+  }
+
+  /** 모두 골든벨 맵으로 옮기고 첫 문제 전(ready)으로 둔다. 강당으로 모으던 중이면 그만둔다. */
+  private beginGoldenBell(set: QuestionSet) {
+    this.stopGather();
     this.questions = set;
     const gb = this.state.goldenbell;
     gb.title = set.title;
@@ -221,6 +241,57 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.phase = 'ready';
     for (const p of this.state.players.values()) this.enterGoldenBell(p);
     console.log(`방 ${this.roomId}: 골든벨 "${set.title}"(${set.questions.length}문제)을 시작했습니다.`);
+  }
+
+  /**
+   * 강당으로 모으기: 남은 시간(1·3·5분)을 모두의 화면에 띄우고, 0이 되면 고른 문제 파일로 골든벨을 시작한다.
+   * 0초를 고르면 바로 옮긴다. 문제 파일은 지금 읽어 두어 형식이 틀리면 바로 알린다.
+   */
+  private gbGather(client: Client, message: GatherMessage): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 강당으로 모을 수 있습니다.');
+    if (this.state.goldenbell.phase !== '') return refuse('이미 골든벨을 하고 있습니다.');
+    if (this.state.gatherLeft > 0) return refuse('이미 강당으로 모으는 중입니다.');
+    const seconds = Number(message?.seconds);
+    if (!(GATHER_SECONDS as readonly number[]).includes(seconds)) return refuse('남은 시간을 1분, 3분, 5분 가운데에서 고릅니다.');
+    const set = this.readSet(message?.file);
+    if (typeof set === 'string') return refuse(set);
+    if (seconds === 0) {
+      this.beginGoldenBell(set);
+      return ok;
+    }
+    this.gatherSet = set;
+    this.state.gatherTitle = set.title;
+    this.state.gatherLeft = seconds;
+    this.gatherTimer = this.clock.setInterval(() => {
+      this.state.gatherLeft = Math.max(0, this.state.gatherLeft - 1);
+      if (this.state.gatherLeft === 0 && this.gatherSet) this.beginGoldenBell(this.gatherSet);
+    }, 1000);
+    console.log(`방 ${this.roomId}: ${seconds}초 뒤 강당으로 모읍니다("${set.title}").`);
+    return ok;
+  }
+
+  private gbGatherCancel(client: Client): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 모으기를 그만둘 수 있습니다.');
+    if (this.state.gatherLeft === 0) return refuse('강당으로 모으는 중이 아닙니다.');
+    this.stopGather();
+    return ok;
+  }
+
+  private stopGather() {
+    this.gatherTimer?.clear();
+    this.gatherTimer = null;
+    this.gatherSet = null;
+    this.state.gatherLeft = 0;
+    this.state.gatherTitle = '';
+  }
+
+  /** 2부 열기. 지금은 서버 상태만 바꾼다(2부 장소의 문 잇기는 맵을 넓힐 때 한다). */
+  private openPart(client: Client, message: { part?: unknown }): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 2부를 열 수 있습니다.');
+    if (message?.part !== 2) return refuse('열 수 있는 부는 2부입니다.');
+    if (this.state.part === 2) return refuse('2부는 이미 열려 있습니다.');
+    this.state.part = 2;
+    console.log(`방 ${this.roomId}: 2부를 열었습니다.`);
     return ok;
   }
 
@@ -240,6 +311,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.index = next;
     gb.type = q.type;
     gb.question = q.question;
+    gb.nonsense = q.nonsense;
     replaceAll(gb.choices, q.choices);
     gb.answer = '';
     gb.explain = '';
@@ -282,10 +354,10 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       this.beforeJudge.set(id, scoreOf(p));
       if (q.type === 'short') {
         p.gbAnswer = this.shortAnswers.get(id) ?? '';
-        judge(p, matchAnswer(p.gbAnswer, q.answers));
+        judgeQuestion(p, matchAnswer(p.gbAnswer, q.answers), q.nonsense);
       } else {
         p.gbAnswer = zoneAt(zones, p.col, p.row);
-        judge(p, p.gbAnswer === q.answer);
+        judgeQuestion(p, p.gbAnswer === q.answer, q.nonsense);
       }
     }
     gb.answer = q.type === 'short' ? answerDisplay(q.answers) : q.answer;
@@ -324,7 +396,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     if (accept === gb.accepted.includes(key)) return ok;
     for (const [id, p] of members) {
       Object.assign(p, this.beforeJudge.get(id));
-      judge(p, accept);
+      judgeQuestion(p, accept, q.nonsense);
     }
     replaceAll(gb.accepted, accept ? [...gb.accepted, key] : gb.accepted.filter((k) => k !== key));
     return ok;
@@ -352,6 +424,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     const gb = this.state.goldenbell;
     gb.type = '';
     gb.question = '';
+    gb.nonsense = false;
     replaceAll(gb.choices, []);
     gb.timeLeft = 0;
     gb.answer = '';
