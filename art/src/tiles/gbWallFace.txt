@@ -1,0 +1,46 @@
+# 강당 안쪽 벽 앞면(골든벨 맵의 벽 앞면 대신). 창 하나·판벽 (scripts/art/decals.mjs가 만듦)
+size 30x30
+cols 1
+palette
+a #fdf3cb
+h #fefae6
+b #bc7034
+c #fab066
+d #242245
+e #7a3d1b
+f #9dd8fb
+w #d7f0fd
+g #974d20
+s #e9dcb0
+
+frame v0
+hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+aaaaaaaaaaddddddddddaaaaaaaaaa
+aaaaaaaaaadccccccccdaaaaaaaaaa
+aaaaaaaaaadcwweeffcdaaaaaaaaaa
+aaaaaaaaaadcwweeffcdaaaaaaaaaa
+aaaaaaaaaadcwfeeffcdaaaaaaaaaa
+aaaaaaaaaadceeeeeecdaaaaaaaaaa
+aaaaaaaaaadcffeeffcdaaaaaaaaaa
+aaaaaaaaaadcffeeffcdaaaaaaaaaa
+aaaaaaaaaadcffeeffcdaaaaaaaaaa
+aaaaaaaaaadcffeeffcdaaaaaaaaaa
+aaaaaaaaaadccccccccdaaaaaaaaaa
+aaaaaaaaaaddddddddddaaaaaaaaaa
+ssssssssssssssssssssssssssssss
+dddddddddddddddddddddddddddddd
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cbbbbecbbbbecbbbbecbbbbecbbbbe
+cggggecggggecggggecggggecgggge
+dddddddddddddddddddddddddddddd

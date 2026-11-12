@@ -9,6 +9,7 @@
 //   --decor <배치.json>: 장식 배치 초안(docs/map.md "장식 소품 배치")을 얹어 본다. 형식:
 //     { "cells": [{ "ch": "+", "col", "row", "w", "h" }]   맵 글자 바꾸기(새 칸 + 정원 잔디, $ 강당 앞면 벽)
 //       "move": { "<사물 id>": { "col", "row" } }          사물 옮기기
+//       "tileNames": { "classroomFloor": "gbFloor", "wallFace": "gbWallFace" }   이 맵에서만 타일 그림 바꾸기
 //       "remove": ["<사물 id>"], "objects": [ 맵 사물과 같은 꼴 + "walk"(지나갈 수 있음), "flat"(그림자 없음) ]
 //       "effects": { "wallEdges": true, "shadows": true, "marks": true, "pitch": { "col", "row", "w", "h" } } }
 //     effects는 맵 담당이 painter.ts에 넣을 그리기 규칙의 견본이다: 벽 윗면 테(wallEdge*·wallCorner*), 사물 그림자, 경기장 선, 미션 사물 위 "!"(ui/mark.png).
@@ -77,6 +78,7 @@ const box = (dx, dy, w, h) => {
     }
 };
 const tile = (name, c, r) => {
+  name = decor?.tileNames?.[name] ?? name; // 맵마다 다른 타일(골든벨 맵의 강당 마루 gbFloor 등)
   const src = load(`tiles/${name}.png`);
   if (!src) return box(c * T, r * T, T, T), false;
   blit(src, Math.floor(rand() * Math.round(src.width / T)) * T, 0, T, T, c * T, r * T);

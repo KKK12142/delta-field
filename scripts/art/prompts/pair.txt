@@ -1,0 +1,3 @@
+Two separate sprites side by side on the magenta background: the left one centered in the left half, the right one centered in the right half, with wide empty magenta space between them; they must not touch.
+Both share the same scale and palette, each about {{size}}, and each game pixel is a solid square about 16 image pixels wide. Front view, flat, seen straight on.
+{{desc}}

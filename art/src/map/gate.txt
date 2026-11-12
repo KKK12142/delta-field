@@ -1,0 +1,38 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/gate.png
+size 24x24
+cols 1
+palette
+a #1c1c49
+b #4db840
+c #fbecca
+d #f2d6a5
+e #256c2c
+f #fbf7ec
+g #9a9a9b
+h #985531
+
+frame gate
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+..fccc............accc..
+.acccc....aaaa...acccca.
+.acccd..bbbbbbbb.acccca.
+..fcdaabaaabbaaabaafcd..
+..fcdaaabaabbaabaaaccd..
+..fcdaabbaabbaabbaaccd..
+..fcdaabbaabbaabbaaccd..
+..fcdaabbaabbaabbaaccd..
+..fcdaaeeaabbaaaeaaccd..
+..fcdabbbbbbbbbbbbaccd..
+..fcdaabbaabbaabbaaccd..
+..fcdaabbaabbaaebaaccd..
+..ghgabbbbbbbebbbbaggg..
+..gggabeeeebbeeeeeaggg..
+..aaaaaaaaaaaaaaaaaa....

@@ -1,0 +1,37 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/computer.png
+size 24x24
+cols 1
+palette
+a #0a86fd
+b #171643
+c #a0abc6
+d #b4d9f7
+e #7588ab
+f #545e7a
+g #fbf6e0
+
+frame computer
+........................
+........................
+........................
+........................
+..bgbddddbbbdddbbdbddb..
+..ggcccccccccccccccccc..
+..gcbbbbbbbbbbbbbbbbcc..
+..ccaddddaaaaaaaaaaacc..
+..ccadddaaaaaaaaaaaacc..
+..ccaddaaaaaaaaaaaaacc..
+..ccadaaaaaaaaaaaaaacc..
+..ccaaaaaaaaaaaaaaaacc..
+..ccaaaaaaaaaaaaaaaacc..
+..ccaaaaaaaaaaaaaaaacc..
+..ccaaaaaaaaaaaaaaaacc..
+..ccaaaaaaaaaaaaaaaacc..
+..ccbbbbbbbbbbbbbbbbcc..
+..bccccccccccccccccccb..
+..bbbbbbbbbbbbbbbbbbbb..
+.........bffffb.........
+......bbbbffffbbbb......
+......ggdddddddddb......
+......eeeeeeeeeeee......
+......bbbbbbbbbbb.......

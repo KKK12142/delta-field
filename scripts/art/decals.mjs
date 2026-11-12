@@ -114,4 +114,25 @@ for (const [label, base] of Object.entries(ZONE)) {
   writeFileSync(join(out, 'tiles', 'auditoriumFace.txt'),
     formatTxt({ comments: ['# 강당 앞면 벽(운동장 쪽, 지붕 아래 줄). 변형 2 (scripts/art/decals.mjs가 만듦)'], fw: T, fh: T, cols: 2, palette, frames }));
 }
+// ---------- 5. 강당 안쪽 벽 앞면(골든벨 맵, 30×30). 색은 생성 견본(art/raw/hallWall)에서 ----------
+// 0~12줄 크림 벽과 가운데 창(10×12), 13줄 그늘, 14줄 짙은 선(난간), 15~28줄 나무 판벽(6도트마다 이음), 29줄 짙은 선.
+{
+  const pal = { a: '#fdf3cb', h: '#fefae6', b: '#bc7034', c: '#fab066', d: '#242245', e: '#7a3d1b', f: '#9dd8fb', w: '#d7f0fd', g: '#974d20', s: '#e9dcb0' };
+  const g = grid(T, T);
+  for (let y = 0; y < T; y++)
+    for (let x = 0; x < T; x++) {
+      if (y <= 12) {
+        const wx = x - 10, wy = y - 1;
+        if (wx >= 0 && wx < 10 && wy >= 0 && wy < 12) {
+          const edge = wx === 0 || wx === 9 || wy === 0 || wy === 11, inner = wx === 1 || wx === 8 || wy === 1 || wy === 10;
+          g[y][x] = edge ? 'd' : inner ? 'c' : wx === 4 || wx === 5 || wy === 5 ? 'e' : wx + wy < 7 && wx < 4 ? 'w' : 'f';
+        } else g[y][x] = y === 0 ? 'h' : 'a';
+      } else if (y === 13) g[y][x] = 's';
+      else if (y === 14 || y === 29) g[y][x] = 'd';
+      else g[y][x] = x % 6 === 5 ? 'e' : x % 6 === 0 ? 'c' : y === 28 ? 'g' : 'b';
+    }
+  const palette = new Map(Object.entries(pal).map(([k, v]) => [k, { rgb: rgb(v), alpha: 255 }]));
+  writeFileSync(join(out, 'tiles', 'gbWallFace.txt'),
+    formatTxt({ comments: ['# 강당 안쪽 벽 앞면(골든벨 맵의 벽 앞면 대신). 창 하나·판벽 (scripts/art/decals.mjs가 만듦)'], fw: T, fh: T, cols: 1, palette, frames: [{ name: 'v0', rows: g.map((r) => r.join('')) }] }));
+}
 console.log('ok');

@@ -99,6 +99,8 @@
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
 | art/src/icons/<아이템 id>.txt | 아이템 아이콘 글자판(열쇠) | 넣음 |
+| art/src/faces/char-0N.txt → public/sprites/faces/char-0N.png | 캐릭터 얼굴(CCTV·순위) | 넣음 |
+| art/src/map/<장소>.txt → public/sprites/map/<장소>.png | 미니맵 장소 아이콘 24×24 | 넣음 |
 | art/src/ui/<이름>.txt → public/sprites/ui/<이름>.png | UI 테두리(9-slice)·표시·하트(아래 "UI 그림") | 넣음 |
 | public/fonts/ | 웹 글꼴 Galmuri11·Galmuri9(woff2)와 라이선스 Galmuri-OFL.txt(아래 "글꼴") | 넣음 |
 
@@ -353,6 +355,30 @@
 - 쓰지 않은 것: chair(교실 책상 아래에 놓으면 책상이 두 줄로 보이고, 등받이가 칠판 쪽이라 방향이 맞지 않음). 그림은 남겨 둔다.
 - 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --decor <배치.json> --out <png> [--area ...]`. --decor는 배치 초안(새 칸 글자 +·$, 옮기기, 장식 사물)과
   그리기 효과(벽 윗면 테, 사물 그림자, 경기장 선, 미션 사물 위 "!")를 얹는다. 형식은 mock.mjs 맨 위.
+
+## 남은 그림(2026-11-12 둘째 묶음, 대장 목록 1~11)
+생성 16장, **729.23크레딧**(장당 34.95~53.52, 다시 받은 것 없음). 프롬프트는 things.json(hintCards … gateOpen), prompts/pair.txt(두 개 나란히), scene.txt(넓은 장면).
+그림마다 연결 담당은 대장 보고 표에 있다. 크기는 도트(화면에서 맵 2배, HTML 3배 또는 정수 배).
+
+| 항목 | 그림 | 크기 | 만든 법 |
+|---|---|---|---|
+| 1 순서 진행 | objects/codingBlock-1~4-on, tileBoard-square·hexagon·triangle-on | 원래보다 사방 1도트 큼 | `derive.mjs on`: 1도트 노란 빛 테 + 오른쪽 위 초록 체크(7×7) |
+| | ui/step, step-on | 7×7 | ui-icons.mjs |
+| 2 보상 카드 | ui/sparkle(9×9 4프레임 시트 36×9), stamp-correct(24×24), burst(48×48 반투명) | | ui-icons.mjs |
+| | ui/hintCard(앞, 가운데 빈 곳에 글), hintCard-back(뒤) | 40×56 | 생성 1장(pair) |
+| 3 2부 문 | objects/partDoor, partDoor-open(바꿈) | 60×120 | 생성 2장(열림은 닫힘을 --ref). 높이 96을 문짝 가운데 줄 70-85를 늘여 120. 열림은 가운데가 투명 |
+| 4 보너스 | objects/timeCapsule, timeCapsule-open | 40×35, 40×39 | 생성 2장(열림 --ref) |
+| 5 얼굴 | faces/char-01~08 | 30×26 | `derive.mjs face`: 앞모습 서기 프레임의 머리 꼭대기부터 26줄 |
+| 6 강당 안 | tiles/gbFloor(마루 변형 4), gbWallFace(안쪽 벽 앞면) | 30×30 | 마루는 생성 뒤 `tile.mjs planks --plank 6`, 벽은 견본 색으로 decals.mjs가 짬(창 10×12, 판벽) |
+| | objects/podium, goldenBell, speaker(30×34), trophy, goldenBell-big(46×50) | 30×30 안팎 | small-set 1장. 큰 종은 같은 그림의 칸을 잘라 너비 48로 다시 맞춤 |
+| 7 미니맵 | map/classroom, lab, computer, hallway, math, library, stairs, rooftop, field, garden, auditorium, gate | 24×24 | small-set 3장(--width 22 --frame 24x26). 16으로 줄이면 뭉개져 24로 둠 |
+| 8 시상·알림 | ui/medal-gold·silver·bronze, trophy-icon, emblem-science, emblem-aisw, megaphone, heart-plus | 30×30 | small-set 2장 |
+| 9 장면 | ui/story(골든벨 대회 날 강당), ui/finish(열린 교문) | 256×171 | 1536×1024 생성을 6픽셀 = 1도트, 32색, AI 표시 자리를 옆 칸으로 덮음 |
+| 10 교문 열림 | objects/gate-open | 120×30 | gate.png를 8배로 키운 판을 --ref로 생성, 두 짝을 따로 맞춰 양끝에 붙임 |
+| 11 CCTV 상태 | ui/status-quiz, status-stuck, status-done, status-move | 11×11 | ui-icons.mjs |
+
+- 순서 맞추기 사물의 글(블록 글, 전구 번호)은 자료마다 달라 그림에 넣지 않는다. 화면이 ui/panel-dark 판에 Galmuri9로 적는다(대장 결정).
+- 골든벨 맵의 마루·벽은 맵마다 타일 이름을 바꾸는 방식(mock.mjs --decor의 tileNames)을 제안했다. 맵 담당이 정한다.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.

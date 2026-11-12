@@ -1,0 +1,42 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/face-08.png
+size 30x26
+cols 1
+palette
+a #1d1531
+b #ad5d32
+c #5d2223
+d #432c2a
+e #13b19b
+f #8f221e
+g #60f8be
+h #d78347
+i #09747a
+j #f8f8f6
+
+frame char-08
+............aaaa..aaaa........
+...........afffcaaafcda.......
+......aa..affcccaffcccda......
+.....ahaaacfcddcccccdddaaaa...
+....ahhhhcccccdcccddddddacda..
+....hhhcccddcaaaaaaddcccdcdda.
+....achcccaaaggggeeaaccdcccca.
+..aabcchcaagggeeeeeeeaadcddca.
+.abbccccaeggeeeeeeeeeeiacdda..
+.abbcccaeggeeeaaaaeeeeeaaddcaa
+.accdcaeegeaaafccdaaieeiaadcda
+..adccaeeaacdccdcdddaaaiiadccc
+..aadaeeadfcadafccaffcaaiidddd
+.affdaeaddcabbacddfbbcdcaiaddd
+affccaeafafbbbbacabbbbacaiacca
+accddaafdaaaabbbcabaaafccadccd
+adcddaacabbbbbbaabbbbbbaaaaddc
+.aadcaaabbaaabbbbbbaaabbaadddd
+..accaaabaaabbbbbbbaaabaaaddaa
+.acccbbabjaabbbbbbbjaababbada.
+.adcdbfabaaabbbbbbbaaabafbadda
+.adddabbabbbbbbfbbbbbbbabbadda
+...adaabafffbbbbbbbbffbabaaa..
+....adaaabbbbbaaabbbbbbaada...
+....addaaabbbbafabbbbbaadda...
+.....aaaddaabbbbbbbbaaddaa....

@@ -80,6 +80,16 @@
       "id": "auditoriumFace",
       "prompt": "wall-strip.txt",
       "desc": "outside front wall of a school auditorium: light warm-gray brick wall with thin mortar lines, a dark slate-blue roof eave shadow band along the top, a darker stone base strip along the bottom"
+    },
+    {
+      "id": "hallFloor2",
+      "prompt": "floor-patch.txt",
+      "desc": "polished wooden floor of a school auditorium: long warm honey-colored maple boards running horizontally, each board exactly 6 game pixels tall with a thin darker seam, a soft lighter sheen stripe on some boards"
+    },
+    {
+      "id": "hallWall",
+      "prompt": "wall-strip.txt",
+      "desc": "inside wall of a school auditorium: warm brown vertical wooden panels on the lower half with a darker rail on top, cream plaster on the upper half with a tall narrow window every 30 pixels showing light blue sky"
     }
   ],
   "objects": [
@@ -392,6 +402,82 @@
       "prompt": "door.txt",
       "size": "60 game pixels wide and 30 game pixels tall",
       "desc": "wide entrance of a school auditorium: two big glass double doors with dark blue-gray metal frames and silver push bars, a gray stone frame around them"
+    },
+    {
+      "id": "hintCards",
+      "prompt": "pair.txt",
+      "size": "40 game pixels wide and 56 game pixels tall",
+      "desc": "Left: the front of a game hint card: a cream paper card with a thin dark navy border, rounded pixel corners, a small yellow light bulb emblem at the top center and a large plain empty cream area below it for text added later. Right: the back of the same card: a deep blue card with a thin gold border and a large gold light bulb emblem in the center on a subtle diagonal stripe pattern."
+    },
+    {
+      "id": "partDoor2",
+      "prompt": "object-single.txt",
+      "size": "60 game pixels wide and 120 game pixels tall: a partition across a school corridor that runs from the top to the bottom of the image",
+      "desc": "closed pair of tall sliding fire doors that close off a school corridor, seen from above at a slight angle: a thick light gray metal frame along the left edge, two long cream-painted door leaves meeting in the middle with vertical silver handles, a small round porthole window in each leaf, and a square blue plate with no writing on the upper leaf"
+    },
+    {
+      "id": "timeCapsule",
+      "prompt": "object-single.txt",
+      "size": "40 game pixels wide and about 36 game pixels tall in total",
+      "desc": "closed time capsule box half buried in green garden grass: a sturdy dark green metal chest with brass corner caps, a brass lock plate and a small round brass badge with a star on the lid"
+    },
+    {
+      "id": "set-auditorium",
+      "prompt": "small-set.txt",
+      "desc": "Top-left: a wooden speaker podium (lectern) with a small silver microphone on top. Top-right: a large shiny golden school bell hanging from a short wooden beam, seen straight on. Bottom-left: a black floor-standing loudspeaker on a stand. Bottom-right: a gold trophy cup with two handles on a dark wooden base."
+    },
+    {
+      "id": "set-map1",
+      "prompt": "small-set.txt",
+      "desc": "Each is a flat game icon seen straight on (front view), a simple bold shape filling its quarter, on the magenta background. Top-left: a green classroom chalkboard with a wooden frame and a piece of chalk. Top-right: a science flask with green liquid and two bubbles. Bottom-left: a computer monitor with a blue screen. Bottom-right: a long corridor floor with a door, simplified as a light green path with a small brown door."
+    },
+    {
+      "id": "set-map2",
+      "prompt": "small-set.txt",
+      "desc": "Each is a flat game icon seen straight on (front view), a simple bold shape filling its quarter, on the magenta background. Top-left: a set square triangle and a compass (drawing tool) crossed. Top-right: an open book with blue covers. Bottom-left: a gray staircase going up to the right. Bottom-right: a white telescope on a tripod under a small yellow star."
+    },
+    {
+      "id": "set-map3",
+      "prompt": "small-set.txt",
+      "desc": "Each is a flat game icon seen straight on (front view), a simple bold shape filling its quarter, on the magenta background. Top-left: a black and white soccer ball on a patch of brown dirt. Top-right: a green sprout with two leaves in a small pot. Bottom-left: a blue-roofed auditorium building front with a big door. Bottom-right: a closed green school gate with two cream pillars."
+    },
+    {
+      "id": "set-award",
+      "prompt": "small-set.txt",
+      "desc": "Each is a flat game icon seen straight on (front view), a simple bold shape filling its quarter, on the magenta background. Top-left: a gold medal on a red ribbon. Top-right: a silver medal on a blue ribbon. Bottom-left: a bronze medal on a green ribbon. Bottom-right: a big gold trophy cup with a star on it."
+    },
+    {
+      "id": "set-badge",
+      "prompt": "small-set.txt",
+      "desc": "Each is a flat game icon seen straight on (front view), a simple bold shape filling its quarter, on the magenta background. Top-left: a round blue badge with a white atom symbol (science class emblem). Top-right: a round orange badge with a white microchip symbol (AI and software class emblem). Bottom-left: a red and white megaphone. Bottom-right: a red heart with a small gold plus sign at its upper right."
+    },
+    {
+      "id": "storyScene",
+      "prompt": "scene.txt",
+      "desc": "a school auditorium decorated for a quiz competition day, seen from the audience: a wooden stage with red curtains, a big shiny golden bell hanging above the stage, a long blank blue banner with a gold border, rows of colorful balloons and paper garlands, warm spotlights drawn as flat pale yellow shapes, a polished wooden floor with six colored square floor pads in the front"
+    },
+    {
+      "id": "finishScene",
+      "prompt": "scene.txt",
+      "desc": "an open school gate at the edge of a sunny sports ground: two cream pillars with the green metal gate leaves swung open, a dirt path leading out to a bright street with trees, colorful confetti pieces floating in the air, a big round sun and a few white clouds in a blue sky"
+    },
+    {
+      "id": "gateOpen",
+      "prompt": "object-single.txt",
+      "size": "120 game pixels wide and about 30 game pixels tall in total",
+      "desc": "the same school gate as in the reference image but open: the two dark metal gate leaves swung outward so the middle is clear, the cream pillars at the ends unchanged, same colors and pixel size as the reference"
+    },
+    {
+      "id": "partDoor2Open",
+      "prompt": "object-single.txt",
+      "size": "60 game pixels wide and 120 game pixels tall: a partition across a school corridor that runs from the top to the bottom of the image",
+      "desc": "the same sliding fire doors as in the reference image but fully open: both door leaves slid apart into the frame so the corridor in the middle is clear and the magenta background shows through the opening, same colors, frame and pixel size as the reference"
+    },
+    {
+      "id": "timeCapsuleOpen",
+      "prompt": "object-single.txt",
+      "size": "40 game pixels wide and about 44 game pixels tall in total",
+      "desc": "the same time capsule box as in the reference image but open: the lid lifted up and tilted back, inside a rolled paper letter tied with a red ribbon, a small toy rocket and a glowing yellow crystal, same colors, grass and pixel size as the reference"
     }
   ]
 }

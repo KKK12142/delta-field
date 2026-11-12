@@ -1,0 +1,22 @@
+# CCTV 상태 아이콘 quiz(11×11) (scripts/art/ui-icons.mjs가 만듦)
+size 11x11
+cols 1
+palette
+o #1d1531
+f #3b6ea8
+h #7fa9e8
+s #22437a
+w #f8f8f6
+
+frame status-quiz
+...ooooo...
+..ohhfffo..
+.ohhwwwfso.
+offwfffwsso
+offffffwsso
+offfffwfsso
+offffwffsso
+offfffffsso
+.ossswssso.
+..ossssso..
+...ooooo...

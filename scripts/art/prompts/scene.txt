@@ -1,0 +1,4 @@
+Original wide pixel art illustration for a cheerful 2D school game used in a high school science class.
+Strict pixel art: every game pixel is a crisp solid square about 6 image pixels wide on one uniform grid. No anti-aliasing, no gradients, no blur, no glow, no dithering. Flat colors, 2-3 shades per material, light from the top-left, 1-pixel dark warm navy outlines.
+No people, no characters, no faces, no text, no letters, no numbers, no signs with writing, no watermark. Do not imitate any existing game, franchise, studio style or real place.
+Scene: {{desc}}
