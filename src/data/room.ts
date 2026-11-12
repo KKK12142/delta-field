@@ -92,6 +92,10 @@ export interface RoomObject {
    * 없으면 살펴볼 수 없는 사물(가구 등)이다. 여러 사물이 같은 미션 id를 쓸 수 있다.
    */
   mission?: string;
+  /** 그림 이름. objects/<sprite>.png를 쓴다(없으면 objects/<kind>.png). 같은 kind의 다른 그림을 고를 때 쓴다(예: labBench-ice) */
+  sprite?: string;
+  /** 그림을 좌우로 뒤집는다(예: 오른쪽 축구 골대) */
+  flip?: boolean;
   /**
    * 2면 2부 사물: 선생님이 "2부 열기"를 누르기 전에는 문(DOOR_KINDS)이면 닫혀 있고, 다른 사물이면 보이지 않는다.
    * 없으면 1부(처음부터)

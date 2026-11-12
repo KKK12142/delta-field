@@ -418,7 +418,7 @@ check('연 과학실 문을 지나 과학실로 들어감', (await a.js(`__df.po
 // 과학실: 약품장, 실험대
 await a.js(`__df.teleport(44, 3.4)`);
 await pressA('Space');
-check('약품장 단서', await dialogHas(/실험대 ㄴ → ㄱ → ㄷ/), fmt(await a.dialogText()));
+check('약품장 단서', await dialogHas(/얼음 비커 → 물 비커 → 수증기 플라스크/), fmt(await a.dialogText()));
 await pressA('Space');
 // 반 자물쇠: 같은 실험대라도 AI.SW반 A는 2진수 문제, 수과학반 B는 파동 문제가 나온다.
 await b.js(`__df.teleport(35, 3.5)`);
@@ -437,26 +437,26 @@ await pressA('Enter');
 check('반 자물쇠 힌트 카드(파동과 수)', await dialogHas(/힌트 카드: 파동과 수/), fmt(await a.dialogText()));
 await pressA('Enter');
 
-// 순서 맞추기: 실험대 ㄴ → ㄱ → ㄷ. 틀리면 처음부터.
-const BENCH = { 'ㄱ': [28.5, 9.4], 'ㄴ': [35.5, 9.4], 'ㄷ': [42.5, 9.4] };
+// 순서 맞추기: 얼음 비커 → 물 비커 → 수증기 플라스크. 틀리면 처음부터.
+const BENCH = { steam: [28.5, 9.4], ice: [35.5, 9.4], water: [42.5, 9.4] };
 const lookBench = async (name) => {
   await a.js(`__df.teleport(${BENCH[name]})`);
   await pressA('Space');
 };
-await lookBench('ㄱ');
-check('순서 맞추기: 처음부터 틀리면 다시', (await dialogHas(/저울/)) && (await dialogHas(/순서가 맞지 않습니다/)), fmt(await a.dialogText()));
+await lookBench('steam');
+check('순서 맞추기: 처음부터 틀리면 다시', (await dialogHas(/수증기/)) && (await dialogHas(/순서가 맞지 않습니다/)), fmt(await a.dialogText()));
 await pressA('Enter');
-await lookBench('ㄴ');
+await lookBench('ice');
 check('순서 맞추기: 첫째(1/3)', await dialogHas(/순서 1\/3/), fmt(await a.dialogText()));
 await pressA('Enter');
-await lookBench('ㄷ');
+await lookBench('steam');
 check('순서 맞추기: 중간에 틀리면 처음부터', await dialogHas(/순서가 맞지 않습니다/), fmt(await a.dialogText()));
 await pressA('Enter');
-for (const n of ['ㄴ', 'ㄱ']) {
+for (const n of ['ice', 'water']) {
   await lookBench(n);
   await pressA('Enter');
 }
-await lookBench('ㄷ');
+await lookBench('steam');
 check('순서 맞추기: 모두 맞히면 마침', await dialogHas(/순서를 모두 맞혔습니다/), fmt(await a.dialogText()));
 await pressA('Enter');
 check('순서 맞추기: 현관 열쇠를 얻음', await dialogHas(/현관 열쇠를 얻었습니다/), fmt(await a.dialogText()));

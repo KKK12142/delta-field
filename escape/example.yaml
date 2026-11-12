@@ -115,7 +115,7 @@ missions:
 
   cabinet:
     type: clue
-    text: 약품장 유리문에 쪽지가 붙어 있습니다. "현관 열쇠는 실험대 ㄴ → ㄱ → ㄷ 순서로 살펴보면 나옵니다. 복도에 떨어진 부품 두 개는 실험대 ㅁ에 가져다 둡니다."
+    text: 약품장 유리문에 쪽지가 붙어 있습니다. "현관 열쇠는 얼음 비커 → 물 비커 → 수증기 플라스크 순서로 살펴보면 나옵니다. 복도에 떨어진 부품 두 개는 스마트 화분 실험대에 가져다 둡니다."
 
   lab-bench:
     type: quiz
@@ -134,18 +134,18 @@ missions:
 
   lab-order:
     type: order
-    order: [bench-4, bench-3, bench-5]
+    order: [bench-4, bench-5, bench-3]
     texts:
-      bench-3: 실험대 ㄱ에 저울이 놓여 있습니다.
-      bench-4: 실험대 ㄴ에 자가 놓여 있습니다.
-      bench-5: 실험대 ㄷ에 기록장이 놓여 있습니다.
+      bench-3: 수증기가 담긴 플라스크입니다.
+      bench-4: 얼음이 담긴 비커입니다.
+      bench-5: 물이 담긴 비커입니다.
     gives: entrance-key
     done: 실험대 서랍은 비어 있습니다.
 
   parts-bench:
     type: deliver
     needs: [part-a, part-b]
-    locked: 실험대 ㅁ에 화분 장치가 있습니다. 센서 부품과 전선 부품이 빠져 있습니다.
+    locked: 스마트 화분 실험대에 화분 장치가 있습니다. 센서 부품과 전선 부품이 빠져 있습니다.
     text: 센서 부품과 전선 부품을 끼우니 화분 장치에 불이 켜졌습니다.
     hint: h-energy
     done: 화분 장치에 불이 켜져 있습니다.

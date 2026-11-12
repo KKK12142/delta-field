@@ -11,7 +11,7 @@ import { Joystick } from '../ui/joystick';
 import { snapZoom } from '../render';
 import { color, motion, size } from '../theme';
 import { Avatar, loadCharacters, prepareCharacters, type TagStyle } from './avatar';
-import { MapPainter, type ObjectView } from './painter';
+import { MapPainter, loadMapSprites, prepareMapSprites, type ObjectView } from './painter';
 
 /** 장면이 바뀌어도 이어지는 것 */
 export interface MapContext {
@@ -72,11 +72,13 @@ export abstract class MapScene extends Scene {
 
   preload() {
     loadCharacters(this);
+    loadMapSprites(this);
   }
 
   /** 이어받는 장면은 super.create() 뒤에 제 안내를 만들고 fitCamera()를 부른다. */
   create() {
     prepareCharacters(this);
+    prepareMapSprites(this);
     this.drawMap();
     this.avatar = new Avatar(this, this.net.me()?.character ?? this.net.character, this.net.nickname, color.nickname, this.ownTagStyle());
 

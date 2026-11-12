@@ -22,6 +22,7 @@ export const color = {
   highlight: 0xf2b134,
   label: '#3a3a3a',
   labelOnDark: '#ffffff',
+  labelBackground: 'rgba(30, 26, 22, 0.6)', // 그림 위에 적는 사물 이름표 바탕
   nickname: '#24476e',
   remoteNickname: '#5b6b7c',
   teacherNickname: '#8a3d1f',
@@ -117,6 +118,7 @@ export const size = {
   charFrameWidth: 30,
   charFrameHeight: 60,
   charScale: 2,
+  dotScale: 2, // 타일·사물 그림의 도트 하나 = 이 픽셀(30도트 = 1칸 60px)
   avatarHeight: 120, // 발에서 머리 꼭대기까지(픽셀) = charFrameHeight × charScale. 몸통 가운데는 그 절반
   avatarHitWidth: 44, // 아바타를 누를 때 몸으로 치는 너비(픽셀)
   avatarShadowWidth: 40,
@@ -125,6 +127,7 @@ export const size = {
   reach: 0.8, // 사물과 이 거리(칸) 안이면 살펴볼 수 있다
   spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
   labelFont: '15px',
+  labelPad: 4, // 그림 위 이름표 바탕의 좌우 여백(픽셀)
   nicknameFont: '14px',
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다

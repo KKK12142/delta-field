@@ -40,6 +40,10 @@ export class RoomScene extends MapScene {
   private gatherShown = -1;
   /** 화면에 맞춰 둔 방탈출 진행(자료 버전, 잠긴 문, 마친 미션, 물건, 힌트). 서버 값이 바뀌면 문 모양과 안내를 고친다. */
   private escapeShown = '';
+  /** 순서 맞추기에서 지금 차례까지 바르게 살펴본 사물 id(켜짐 그림이 있으면 켜 보인다. 틀리면 그 미션 것을 끈다) */
+  private lit = new Set<string>();
+  /** 화면에 맞춰 둔 방탈출 자료 버전(바뀌면 켜 둔 것을 끈다) */
+  private escapeVersion = -1;
 
   constructor() {
     super('school');
@@ -58,6 +62,8 @@ export class RoomScene extends MapScene {
     this.place = '';
     this.gatherShown = -1;
     this.escapeShown = '';
+    this.lit = new Set();
+    this.escapeVersion = -1;
     // 단서·퀴즈 창을 띄운 채 맵을 옮겼으면 그때의 '하는 일'이 남아 있으므로 지운다.
     ctx.state.activity = { kind: '', object: '' };
   }
@@ -105,6 +111,8 @@ export class RoomScene extends MapScene {
       picked: () => this.room.objects.filter((o) => this.isPicked(o)).map((o) => o.id),
       /** 내 화면에서 감춘 사물 id(주운 물건, 아직 열리지 않은 2부 사물) */
       hidden: () => this.room.objects.filter((o) => this.isHidden(o)).map((o) => o.id),
+      /** 켜 보이는 사물 id(순서 맞추기, 마친 미션) */
+      lit: () => [...this.lit],
       escapeFile: () => this.net.escape.file,
       place: () => this.place,
       target: () => this.target?.id ?? null,
@@ -151,6 +159,21 @@ export class RoomScene extends MapScene {
     return !!o.mission && this.net.escape.pickups.includes(o.mission) && this.hasDone(o.mission);
   }
 
+  /** 켜 보일 사물: 순서 맞추기에서 바르게 살펴봤거나, 미션을 마친 것 */
+  private isLit(o: RoomObject) {
+    return this.lit.has(o.id) || (!!o.mission && this.hasDone(o.mission));
+  }
+
+  /** 순서 맞추기 한 걸음: 맞으면 그 사물을 켜고, 틀리면 같은 미션의 사물을 모두 끈다. */
+  private markStep(o: RoomObject, wrong: boolean) {
+    if (wrong) {
+      for (const x of this.room.objects) if (x.mission === o.mission) this.lit.delete(x.id);
+    } else {
+      this.lit.add(o.id);
+    }
+    for (const x of this.room.objects) if (x.mission === o.mission) this.objectViews.get(x.id)?.setLit(this.isLit(x));
+  }
+
   /** 화면에서 감춘 사물: 주운 물건, 아직 열리지 않은 2부의 문 아닌 사물 */
   private isHidden(o: RoomObject) {
     return this.isPicked(o) || (!this.isDoor(o) && (o.part ?? 1) > this.net.part);
@@ -190,10 +213,15 @@ export class RoomScene extends MapScene {
     const key = [this.net.part, e.version, [...e.doors], [...e.pickups], [...(me?.done ?? [])], items, me?.hints.length ?? 0, e.hintTotal].join('|');
     if (key === this.escapeShown) return;
     this.escapeShown = key;
+    if (e.version !== this.escapeVersion) {
+      this.escapeVersion = e.version;
+      this.lit.clear();
+    }
     for (const o of this.room.objects) {
       const view = this.objectViews.get(o.id);
       view?.setOpen(this.isOpenDoor(o));
       view?.setHidden(this.isHidden(o));
+      view?.setLit(this.isLit(o));
     }
     this.hud.setItems(items.map((id) => e.items.get(id) ?? id));
     this.hud.setHints(me?.hints.length ?? 0, e.hintTotal);
@@ -585,6 +613,7 @@ export class RoomScene extends MapScene {
           }
           break;
         case 'step': {
+          this.markStep(o, view.wrong);
           const lead = view.text ? `${view.text}\n` : '';
           if (view.wrong) await this.dialog.message(o.name, `${lead}순서가 맞지 않습니다. 처음부터 다시 합니다.`);
           else if (!view.reward) await this.dialog.message(o.name, `${lead}순서 ${view.step}/${view.total}`);
