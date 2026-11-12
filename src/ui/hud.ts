@@ -23,6 +23,8 @@ export class Hud {
   readonly cctv = el('button', 'df-button df-button-small', 'CCTV 보기');
   /** 강당으로 모으기(모으는 중에는 모으기 그만두기) */
   readonly goldenbell = el('button', 'df-button df-button-small df-button-gold', '강당으로 모으기');
+  /** 미니게임 시작(하는 중에는 미니게임 그만두기) */
+  readonly mini = el('button', 'df-button df-button-small df-button-gold', '미니게임 시작');
   /** 2부 열기(연 뒤에는 잠긴다) */
   readonly part = el('button', 'df-button df-button-small df-button-light', '2부 열기');
   /** 강당으로 모으기 남은 시간과 안내(모두에게) */
@@ -42,9 +44,9 @@ export class Hud {
     this.left.append(left, this.notice);
     this.people.hidden = true;
     this.status.hidden = true;
-    this.cctv.hidden = this.goldenbell.hidden = this.part.hidden = this.escapeFile.hidden = !teacher;
+    this.cctv.hidden = this.goldenbell.hidden = this.mini.hidden = this.part.hidden = this.escapeFile.hidden = !teacher;
     const teacherMain = el('div', 'df-hud-buttons');
-    teacherMain.append(this.cctv, this.goldenbell);
+    teacherMain.append(this.cctv, this.goldenbell, this.mini);
     const teacherDanger = el('div', 'df-hud-buttons df-hud-danger');
     teacherDanger.append(this.escapeFile, this.part);
     teacherMain.hidden = teacherDanger.hidden = !teacher;
@@ -93,6 +95,12 @@ export class Hud {
   setGathering(on: boolean) {
     const label = on ? '모으기 그만두기' : '강당으로 모으기';
     if (this.goldenbell.textContent !== label) this.goldenbell.textContent = label;
+  }
+
+  /** 선생님: 미니게임을 하는 중(결과 포함)이면 단추가 "미니게임 그만두기"가 된다. */
+  setMini(on: boolean) {
+    const label = on ? '미니게임 그만두기' : '미니게임 시작';
+    if (this.mini.textContent !== label) this.mini.textContent = label;
   }
 
   /** 선생님: 2부를 열었으면 단추를 잠근다. */

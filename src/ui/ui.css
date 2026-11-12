@@ -1300,3 +1300,120 @@ span.df-rank-medal {
 .df-board-mark.is-wrong {
   color: var(--df-wrong);
 }
+
+
+/* ---- 미니게임(맵 담당이 넣은 뼈대. 겉모양은 화면 담당이 맞춘다) ---- */
+#ui > .df-mini {
+  position: absolute;
+  top: var(--df-mini-top);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--df-gap-small);
+  padding: var(--df-panel-pad);
+  border-style: solid;
+  border-color: transparent;
+  border-width: var(--df-skin-border);
+  border-image: var(--df-skin-panel);
+  image-rendering: pixelated;
+  pointer-events: none;
+  text-align: center;
+}
+.df-mini-help {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  color: var(--df-text-muted);
+}
+#ui > .df-mini-count {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--df-mini-count-font);
+  line-height: 1;
+  color: var(--df-panel);
+  -webkit-text-stroke: 4px var(--df-text);
+  pointer-events: none;
+}
+#ui > .df-tug {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--df-gap);
+  background: var(--df-tug-backdrop);
+  color: var(--df-panel);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+.df-tug-head {
+  display: flex;
+  gap: var(--df-gap);
+  align-items: baseline;
+  font-size: var(--df-font-title);
+}
+.df-tug-field {
+  display: flex;
+  align-items: center;
+  gap: var(--df-gap);
+  width: min(900px, calc(100vw - 2 * var(--df-margin)));
+}
+.df-tug-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--df-gap-small);
+}
+.df-tug-emblem {
+  width: var(--df-tug-emblem);
+  height: var(--df-tug-emblem);
+  image-rendering: pixelated;
+}
+.df-tug-side.is-science .df-tug-name { color: var(--df-tug-science); }
+.df-tug-side.is-aisw .df-tug-name { color: var(--df-tug-aisw); }
+.df-tug-rope {
+  position: relative;
+  flex: 1;
+  height: var(--df-tug-mark-size);
+}
+.df-tug-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--df-tug-rope-height);
+  transform: translateY(-50%);
+  background: url("/sprites/mini/rope.png") repeat-x left center / auto 100%;
+  image-rendering: pixelated;
+}
+.df-tug-mark {
+  position: absolute;
+  top: 50%;
+  left: calc(50% - var(--df-tug, 0) * 45%);
+  width: var(--df-tug-mark-size);
+  height: var(--df-tug-mark-size);
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+  transition: left 0.15s linear;
+}
+.df-tug-pull {
+  width: var(--df-tug-pull-size);
+  height: var(--df-tug-pull-size);
+  border-radius: 50%;
+  font-size: var(--df-font-title);
+  font-family: var(--df-font-family);
+  touch-action: none;
+}
+.df-tug-pull.is-science { background: var(--df-tug-science); color: var(--df-panel); }
+.df-tug-pull.is-aisw { background: var(--df-tug-aisw); color: var(--df-panel); }
+.df-tug-help { margin: 0; font-size: var(--df-font-small); font-family: var(--df-font-family-small); }
+.df-choice-icon {
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  image-rendering: pixelated;
+}

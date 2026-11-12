@@ -41,6 +41,13 @@ export const Player = schema(
     lastProgressAt: t.uint32().default(0),
     /** 보너스 미션을 마쳐 다음 골든벨 시작 때 받을 하트 +1이 남아 있으면 true(받으면 false) */
     bonusHeart: t.boolean().default(false),
+    // 미니게임(shared/minigame.ts)
+    /** 이번 미니게임 점수: 보물찾기는 모은 점수, 공 피하기는 버틴 시간(초), 줄다리기는 센 누른 수 */
+    miniScore: t.float32().default(0),
+    /** 공 피하기에서 맞아 탈락함(구경) */
+    miniOut: t.boolean().default(false),
+    /** 줄다리기에서 이긴 반이라 다음 골든벨 시작 때 받을 하트 +1이 남아 있으면 true(받으면 false) */
+    miniHeart: t.boolean().default(false),
     // 골든벨(규칙은 shared/goldenbell.ts)
     gbLives: t.uint8().default(GB_LIVES),
     gbScore: t.uint16().default(0),
@@ -91,6 +98,61 @@ export const GoldenBell = schema(
 );
 export type GoldenBell = SchemaType<typeof GoldenBell>;
 
+/** 보물찾기의 보물 하나(주우면 지운다) */
+export const Treasure = schema(
+  {
+    col: t.float32(),
+    row: t.float32(),
+    gold: t.boolean().default(false),
+  },
+  'Treasure',
+);
+export type Treasure = SchemaType<typeof Treasure>;
+
+/** 미니게임 결과 한 줄(점수 높은 순, 같은 점수는 같은 등수) */
+export const MiniResult = schema(
+  {
+    nickname: t.string(),
+    character: t.string(),
+    classGroup: t.string(),
+    score: t.float32(),
+    rank: t.uint8(),
+  },
+  'MiniResult',
+);
+export type MiniResult = SchemaType<typeof MiniResult>;
+
+/** 미니게임 진행(shared/minigame.ts) */
+export const MiniGame = schema(
+  {
+    /** MiniKind 또는 ''(하지 않음) */
+    kind: t.string().default(''),
+    /** MiniPhase */
+    phase: t.string().default(''),
+    /** 남은 시간(초): 세는 중이면 3·2·1, 하는 중이면 판의 남은 시간, 결과면 창을 닫을 때까지 */
+    timeLeft: t.uint16().default(0),
+    /** 한 판 시간(초) */
+    duration: t.uint16().default(0),
+    /** 공 피하기: 공 일정 seed */
+    seed: t.uint32().default(0),
+    /** 판을 시작한 서버 시각(Date.now(), ms). 공 피하기 화면은 서버 시계에 맞춰 공을 그린다. */
+    startedAt: t.float64().default(0),
+    /** 보물찾기: 보물 id → 보물(주우면 지운다) */
+    treasures: t.map(Treasure),
+    /** 줄다리기: 반마다 학생 한 명이 누른 수의 평균, 줄 위치(수과학반 − AI.SW반), 끝 선 */
+    tugScience: t.float32().default(0),
+    tugAisw: t.float32().default(0),
+    tugPos: t.float32().default(0),
+    tugGoal: t.float32().default(0),
+    /** 줄다리기: 이긴 반 id(비기면 '') */
+    winner: t.string().default(''),
+    /** 결과(결과 단계에서 채운다) */
+    results: t.array(MiniResult),
+  },
+  'MiniGame',
+);
+export type MiniGame = SchemaType<typeof MiniGame>;
+
 /** 방탈출 자료(선생님이 고른 escape/*.yaml)에서 모두에게 보여도 되는 것. 문제·정답·힌트 글은 넣지 않는다. */
 export const Escape = schema(
   {
@@ -130,6 +192,7 @@ export const ClassState = schema(
     players: t.map(Player),
     goldenbell: t.ref(GoldenBell).default(() => new GoldenBell()),
     escape: t.ref(Escape).default(() => new Escape()),
+    mini: t.ref(MiniGame).default(() => new MiniGame()),
     /** 지금 열린 방탈출 부(shared/protocol.ts의 PARTS). 2부 장소의 문 잇기는 맵을 넓힐 때 한다. */
     part: t.uint8().default(1),
     /** 강당으로 모으기: 골든벨로 옮길 때까지 남은 시간(초). 0이면 모으는 중이 아니다. */

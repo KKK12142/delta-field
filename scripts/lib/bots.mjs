@@ -6,6 +6,7 @@ import characters from '../../src/data/characters.json' with { type: 'json' };
 import { isFloor } from '../../src/data/room.ts';
 import { activeZones } from '../../shared/goldenbell.ts';
 import { CLASS_GROUPS, MOVE_INTERVAL_MS } from '../../shared/protocol.ts';
+import { DODGE_ARENA, ballSchedule, hitAt } from '../../shared/minigame.ts';
 import { motion } from '../../src/theme.ts';
 
 // 봇이 받는 데이터 양을 세려고, SDK를 불러오기 전에 WebSocket을 감싼다.
@@ -51,6 +52,13 @@ export class Bot {
     this.answered = -1;
     this.sent = 0;
     this.pings = [];
+    // 미니게임: 맞춰 둔 판(kind|seed), 시작 전 자리, 공 일정, 줄다리기 빠르기(초당 5~8번)와 쌓인 누름
+    this.miniKey = '';
+    this.miniHome = null;
+    this.balls = null;
+    this.hitSent = false;
+    this.tugRate = 5 + Math.random() * 3;
+    this.tugDebt = 0;
   }
 
   async join(code) {
@@ -75,7 +83,9 @@ export class Bot {
       this.target = { ...this.pos };
       this.answered = -1;
     }
-    if (this.map === 'goldenbell') {
+    if (this.map === 'school' && this.playMini(dt, me)) {
+      // 미니게임이 걸음을 정했다.
+    } else if (this.map === 'goldenbell') {
       const gb = this.room.state.goldenbell;
       if (gb.phase === 'question' && this.answered !== gb.index) {
         this.answered = gb.index;
@@ -99,6 +109,70 @@ export class Bot {
     this.pos = { col: this.pos.col + (dx / d) * s, row: this.pos.row + (dy / d) * s };
     this.room.send('move', { ...this.pos, map: this.map });
     this.sent++;
+  }
+
+  /**
+   * 미니게임(shared/minigame.ts): 보물찾기는 가장 가까운 보물로 걸어가 줍고, 공 피하기는 운동장 안을 아무렇게나 걷다가 공에 맞으면 알리고,
+   * 줄다리기는 초당 5~8번 당긴다. 하는 중이면 true(걸음 목표를 여기서 정했다).
+   */
+  playMini(dt, me) {
+    const m = this.room.state.mini;
+    const key = m && (m.phase === 'count' || m.phase === 'play') ? `${m.kind}|${m.seed}` : '';
+    if (key !== this.miniKey) {
+      if (key) {
+        this.miniHome = { ...this.pos };
+        this.hitSent = false;
+        this.balls = m.kind === 'dodge' ? ballSchedule(m.seed, m.duration) : null;
+        // 공 피하기는 서버가 운동장 안에 세운 자리에서 시작한다.
+        if (m.kind === 'dodge') this.pos = this.target = { col: me.col, row: me.row };
+      } else if (this.miniHome) {
+        // 끝나면 시작 전 자리로 돌아간다.
+        this.pos = { ...this.miniHome };
+        this.target = { ...this.pos };
+        this.room.send('move', { ...this.pos, map: this.map });
+        this.miniHome = null;
+      }
+      this.miniKey = key;
+    }
+    if (!key) return false;
+    if (m.phase !== 'play') {
+      this.target = { ...this.pos };
+      return true;
+    }
+    if (m.kind === 'treasure') {
+      let best = null;
+      let bestD = Infinity;
+      m.treasures.forEach((t, id) => {
+        const d = Math.hypot(t.col - this.pos.col, t.row - this.pos.row);
+        if (d < bestD) [best, bestD] = [{ id, t }, d];
+      });
+      if (best) {
+        this.target = { col: best.t.col, row: best.t.row };
+        if (bestD < 0.6) this.room.send('miniPick', { id: best.id });
+      }
+    } else if (m.kind === 'dodge') {
+      if (me.miniOut) {
+        this.pos = this.target = { col: me.col, row: me.row };
+        return true;
+      }
+      const a = DODGE_ARENA;
+      if (Math.hypot(this.target.col - this.pos.col, this.target.row - this.pos.row) < 0.05 || Math.random() < 0.02) {
+        this.target = randomIn(a.col + 0.5, a.row + 0.5, a.w - 1, a.h - 1);
+      }
+      const time = (Date.now() - m.startedAt) / 1000;
+      if (this.balls && !this.hitSent && hitAt(this.balls, time, this.pos.col, this.pos.row, 0.3)) {
+        this.hitSent = true;
+        this.room.send('miniHit');
+      }
+    } else if (m.kind === 'tug') {
+      this.target = { ...this.pos };
+      this.tugDebt += this.tugRate * dt;
+      while (this.tugDebt >= 1) {
+        this.tugDebt -= 1;
+        this.room.send('miniTug');
+      }
+    }
+    return true;
   }
 
   /** 학교 맵에서 가끔 사물을 살펴보는 것처럼 지금 하는 일을 보낸다(CCTV에 보인다). 미션은 풀지 않는다. */

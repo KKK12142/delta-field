@@ -1,7 +1,7 @@
 // 헤드리스 크롬으로 선생님 1명, 학생 2명이 들어와 학교 맵(교실-복도-과학실-운동장) 방탈출을 해 보고, 선생님은 CCTV 모드로 지켜본 뒤 골든벨을 한다.
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버의 선생님 비밀번호를 DF_TEACHER_PASSWORD로 넘긴다.
 // 게임 서버는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(제한 시간이 짧은 확인용 문제 파일),
-// DF_ESCAPE_DIR=scripts/playtest-escape(예시 방탈출 자료와 형식이 틀린 자료)로 켠다.
+// DF_ESCAPE_DIR=scripts/playtest-escape(예시 방탈출 자료와 형식이 틀린 자료), DF_MINI_FAST=1(미니게임 한 판을 짧게)로 켠다.
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 사물 위치는 src/data/school.json에, 미션 답 번호는 escape/example.yaml에 맞춰 두었다. 맵이나 예시 자료를 바꾸면 함께 고친다.
 import { mkdirSync, rmSync } from 'node:fs';
@@ -114,6 +114,9 @@ const joy = () => b.js(`(() => {
     shown: !j.hidden, x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2, left: r.left, bottom: r.bottom,
   };
 })()`);
+// 시작 자리 둘레에 화분 같은 꾸밈 사물이 있어 오른쪽이 트인 자리에 선다.
+await b.js(`__df.teleport(11.5, 8.5)`);
+await wait(200);
 const [vw, vh] = await b.js(`[innerWidth, innerHeight]`);
 let j = await joy();
 check('조이스틱: 영역은 화면 왼쪽 절반(높이 전체), 손대지 않으면 보이지 않음', j.zone && !j.shown);
@@ -644,6 +647,8 @@ await b.js(`[...document.querySelectorAll('.df-dialog .df-button')].find((x) => 
 await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
 check('CCTV 끄기: 창이 닫히고 살펴보기 단추가 돌아옴',
   (await teacher.js(`!document.querySelector('.df-cctv') && !document.querySelector('.df-action').hidden && __df.cctv() === null`)) === true);
+await teacher.js(`__df.teleport(11.5, 8.5)`);
+await wait(200);
 const tPos3 = await teacher.js(`__df.pos()`);
 await teacher.press('ArrowRight', 400);
 check('CCTV를 끄면 선생님이 다시 움직임', (await teacher.js(`__df.pos().col`)) - tPos3.col > 0.5);
@@ -685,6 +690,119 @@ check('2부 열기 뒤: 2부 문을 지나 2부 복도로', (await a.js(`__df.po
   `col ${(await a.js(`__df.pos().col`)).toFixed(2)}, ${await placeOf(a)}`);
 check('2부 열기 뒤: 2부 사물(실험 장치, 전구)이 보임', !(await hiddenA()).includes('apparatus') && !(await hiddenA()).includes('bulb-1'), (await hiddenA()).join(','));
 await a.shot('part2');
+await a.js(`__df.teleport(${aBefore.col}, ${aBefore.row})`);
+await wait(300);
+
+// ---- 미니게임(서버 DF_MINI_FAST=1: 보물찾기 20초, 공 피하기 20초, 줄다리기 10초) ----
+const miniOf = (pg) => pg.js(`__df.mini()`);
+/** 선생님이 미니게임 시작 → 고르기 → 확인 */
+async function startMini(name) {
+  await clickText(teacher, '.df-hud button', '미니게임 시작');
+  await wait(600);
+  const pick = (await teacher.dialogText()) ?? '';
+  const icons = await teacher.js(`document.querySelectorAll('.df-dialog .df-choice-icon').length`);
+  await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.startsWith(${JSON.stringify(name)})).click()`);
+  await wait(500);
+  const confirmText = (await teacher.dialogText()) ?? '';
+  await clickText(teacher, '.df-dialog .df-button', '시작하기');
+  await wait(500);
+  return { pick, confirmText, icons };
+}
+/** 결과 단계가 될 때까지 기다린다(최대 sec초) */
+async function untilPhase(pg, phase, sec) {
+  for (let i = 0; i < sec * 4 && (await miniOf(pg)).phase !== phase; i++) await wait(250);
+  return (await miniOf(pg)).phase === phase;
+}
+/** 선생님이 결과 창을 닫는다(미니게임 그만두기 → 확인) */
+async function closeMini() {
+  await clickText(teacher, '.df-dialog .df-button', '닫기');
+  await wait(300);
+  await clickText(teacher, '.df-hud button', '미니게임 그만두기');
+  await wait(400);
+  await clickText(teacher, '.df-dialog .df-button', '그만두기');
+  await wait(800);
+}
+const aHome = await a.js(`__df.pos()`);
+await b.js(`__df.teleport(11.5, 8.5)`);
+await wait(300);
+
+// 보물찾기
+const tr = await startMini('보물찾기');
+check('미니게임: 선생님 고르기 창(보물찾기·공 피하기·줄다리기, 그림)과 확인 창',
+  /보물찾기[\s\S]*공 피하기[\s\S]*줄다리기/.test(tr.pick) && tr.icons === 3 && /3초 뒤/.test(tr.confirmText),
+  `${fmt(tr.pick)} | ${fmt(tr.confirmText)}`);
+check('미니게임: 시작 전 3초 세기(큰 숫자)', (await miniOf(a)).phase === 'count' && /^[123]$/.test((await a.js(`document.querySelector('.df-mini-count')?.textContent`)) ?? ''),
+  JSON.stringify(await miniOf(a)));
+check('미니게임: 선생님 단추는 "미니게임 그만두기"', (await teacher.js(`[...document.querySelectorAll('.df-hud button')].some((b) => b.textContent === '미니게임 그만두기')`)) === true);
+await untilPhase(a, 'play', 6);
+const spots = await a.js(`__df.treasures()`);
+check('보물찾기: 보물 30개(금 5개)가 모두에게 같은 자리', spots.length === 30 && spots.filter((t) => t[3]).length === 5 && JSON.stringify(await b.js(`__df.treasures()`)) === JSON.stringify(spots),
+  `${spots.length}개`);
+check('보물찾기: 안내 칸에 "미니게임 중", 사물은 살펴볼 수 없음', /미니게임 중/.test(await placeLine(a)), await placeLine(a));
+await a.shot('mini-treasure');
+const gold = spots.find((t) => t[3]);
+await a.js(`__df.teleport(${gold[1]}, ${gold[2]})`);
+await wait(800);
+check('보물찾기: 금 보물에 닿으면 3점, 모두의 화면에서 사라짐', (await miniOf(a)).score === 3 && !(await b.js(`__df.treasures()`)).some((t) => t[0] === gold[0]),
+  JSON.stringify(await miniOf(a)));
+const plain = spots.find((t) => !t[3]);
+await b.js(`__df.teleport(${plain[1]}, ${plain[2]})`);
+await wait(800);
+check('보물찾기: 보통 보물은 1점', (await miniOf(b)).score === 1, JSON.stringify(await miniOf(b)));
+check('보물찾기: 끝나면 결과 창(1위 가람)', (await untilPhase(a, 'result', 25)) && /보물찾기 결과/.test((await a.dialogText()) ?? '') && /1위\s*가람/.test((await a.dialogText()) ?? '') &&
+  /내 등수 1위/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));
+await a.shot('mini-treasure-result');
+await teacher.shot('mini-treasure-result');
+await wait(300);
+check('보물찾기: 끝나면 시작 전 자리로 돌아감', Math.abs((await a.js(`__df.pos().col`)) - aHome.col) < 0.05 && Math.abs((await a.js(`__df.pos().row`)) - aHome.row) < 0.05,
+  JSON.stringify(await a.js(`__df.pos()`)));
+await closeMini();
+check('미니게임: 그만두기로 결과 창을 닫으면 처음으로', (await miniOf(a)).phase === '' && (await a.dialogText()) === null && /교실/.test(await placeLine(a)), JSON.stringify(await miniOf(a)));
+
+// 공 피하기
+await startMini('공 피하기');
+await untilPhase(a, 'play', 6);
+const inArena = async (pg) => { const p = await pg.js(`__df.pos()`); return p.col >= 2 && p.col <= 46 && p.row >= 20 && p.row <= 35; };
+check('공 피하기: 모두 운동장 안으로 옮김', (await inArena(a)) && (await inArena(b)), `${JSON.stringify(await a.js(`__df.pos()`))} ${JSON.stringify(await b.js(`__df.pos()`))}`);
+const ap = await a.js(`__df.pos()`);
+await a.js(`__df.teleport(${ap.col}, 20.4)`);
+await a.press('ArrowUp', 500);
+check('공 피하기: 운동장 밖으로 나가지 못함(보이지 않는 울타리)', (await a.js(`__df.pos().row`)) >= 19.95, String(await a.js(`__df.pos().row`)));
+await wait(2500);
+await a.shot('mini-dodge');
+check('공 피하기: 공에 맞으면 탈락해 구경하거나 끝까지 남음', (await untilPhase(a, 'result', 30)) && /공 피하기 결과/.test((await a.dialogText()) ?? '') && /초/.test((await a.dialogText()) ?? ''),
+  fmt(await a.dialogText()));
+check('공 피하기: 결과의 점수는 버틴 시간', (await teacher.js(`__df.others().filter((o) => o.role === 'student').every((o) => o.miniScore > 0)`)) === true);
+await teacher.shot('mini-dodge-result');
+await closeMini();
+check('공 피하기: 끝나면 시작 전 자리로', Math.abs((await a.js(`__df.pos().col`)) - aHome.col) < 0.05, JSON.stringify(await a.js(`__df.pos()`)));
+
+// 줄다리기: A(AI.SW반)가 많이 누르고 B(수과학반)는 조금 누른다. 이긴 반은 다음 골든벨에서 하트 +1
+const tg = await startMini('줄다리기');
+await untilPhase(a, 'play', 6);
+check('줄다리기: 화면 전체 창(두 반 상징, 당기기 단추)', (await a.js(`!!document.querySelector('.df-tug .df-tug-pull') && document.querySelectorAll('.df-tug-emblem').length === 2`)) === true);
+const pullA = async (n, gap) => { for (let i = 0; i < n; i++) { await a.js(`document.querySelector('.df-tug-pull').click()`); await wait(gap); } };
+const pullsB = (async () => { for (let i = 0; i < 4; i++) { await b.js(`document.querySelector('.df-tug-pull').click()`); await wait(150); } })();
+await pullA(20, 100);
+await pullsB;
+await a.shot('mini-tug');
+const tugNow = await a.js(`(() => { const r = document.querySelector('.df-tug-rope'); return Number(r.style.getPropertyValue('--df-tug')); })()`);
+check('줄다리기: 줄 리본이 AI.SW반 쪽(음수)으로', tugNow < 0, String(tugNow));
+await a.press('Space');
+const spam = async () => { for (let i = 0; i < 30; i++) await a.js(`document.querySelector('.df-tug-pull').click()`); };
+const scoreBefore = (await miniOf(a)).score;
+await spam();
+await wait(500);
+check('줄다리기: 1초에 12번 넘게 누른 것은 세지 않음', (await miniOf(a)).score - scoreBefore <= 13, `${scoreBefore} → ${(await miniOf(a)).score}`);
+check('줄다리기: 끝나면 이긴 반과 반별 평균, 이긴 반 학생에게 하트', (await untilPhase(a, 'result', 20)) && /AI\.SW반이 이겼습니다/.test((await a.dialogText()) ?? '') &&
+  /수과학반 평균/.test((await a.dialogText()) ?? '') && (await miniOf(a)).heart === true && (await miniOf(b)).heart === false, fmt(await a.dialogText()));
+await a.shot('mini-tug-result');
+await closeMini();
+await clickText(teacher, '.df-hud button', 'CCTV 보기');
+await wait(500);
+check('CCTV 목록에 "미니게임 하트"', /미니게임 하트/.test((await rowText('가람')) ?? '') && !/미니게임 하트/.test((await rowText('나래')) ?? ''), fmt(await rowText('가람')));
+await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
+await wait(300);
 await a.js(`__df.teleport(${aBefore.col}, ${aBefore.row})`);
 await wait(300);
 
@@ -740,7 +858,7 @@ await a.press('Escape');
 await wait(300);
 const looks = (pg) => pg.js(`__df.looks()`);
 let la = await looks(a);
-check('골든벨: 머리 위에 목숨(보너스를 마친 A는 하트 4개, B는 3개)', la.me.tag === '♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
+check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 하트 5개, B는 3개)', la.me.tag === '♥♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
   JSON.stringify(la));
 await teacher.shot('gb-ready');
 const gm = (await a.js(`__df.camera()`)).map;
@@ -883,7 +1001,7 @@ check('골든벨 9번: 목숨을 다 잃은 B는 탈락', (await gbOf('나래'))
 
 // ---- 넌센스(11·12번) ----
 await gbRound('X', 'O');
-check('골든벨 10번: A는 틀려 목숨 3개(보너스 하트), 탈락한 B는 맞혀 해골 2개', (await gbOf('가람')).gbLives === 3 && (await looks(b)).me.tag === '💀💀',
+check('골든벨 10번: A는 틀려 목숨 4개(보너스·미니게임 하트), 탈락한 B는 맞혀 해골 2개', (await gbOf('가람')).gbLives === 4 && (await looks(b)).me.tag === '💀💀',
   `${JSON.stringify(await gbOf('가람'))} | ${(await looks(b)).me.tag}`);
 await nextButton();
 await wait(500);
@@ -894,14 +1012,14 @@ await submitShort(b, '관성이에요');
 await a.shot('gb-nonsense');
 await waitReveal();
 check('골든벨 11번: 말끝을 붙인 답도 맞음, 살아 있는 A는 하트 +1(점수 그대로)',
-  /내 답: 관성이요 · 맞았습니다\. 하트 \+1 · 목숨 3개/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 3 && (await gbOf('가람')).gbScore === 9,
+  /내 답: 관성이요 · 맞았습니다\. 하트 \+1 · 목숨 4개/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 4 && (await gbOf('가람')).gbScore === 9,
   `${fmt(await gbCard(a))} | ${JSON.stringify(await gbOf('가람'))}`);
 check('골든벨 11번: 탈락한 B는 부활 1개로 셈(해골 1개, 점수 그대로)',
   (await looks(b)).me.tag === '💀' && (await gbOf('나래')).gbScore === 2 && /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''),
   `${fmt(await gbCard(b))} | ${JSON.stringify(await gbOf('나래'))}`);
 await gbRound('O', '밖');
 check('골든벨 12번: 넌센스는 틀려도 목숨을 잃지 않음',
-  /넌센스 문제라 목숨을 잃지 않습니다/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 3 && (await looks(b)).me.tag === '💀',
+  /넌센스 문제라 목숨을 잃지 않습니다/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 4 && (await looks(b)).me.tag === '💀',
   fmt(await gbCard(a)));
 check('골든벨 12번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
 await nextButton();
@@ -939,7 +1057,7 @@ const aScore1 = (await gbOf('가람')).gbScore;
 await gather('지금 바로 옮기기', '확인용 2판');
 await wait(1200);
 check('두 번째 판: 모두 골든벨 맵으로', (await maps()) === 'goldenbell,goldenbell,goldenbell', await maps());
-check('두 번째 판: 보너스 하트는 한 번만(A도 하트 3개)', (await gbOf('가람')).gbLives === 3, String((await gbOf('가람')).gbLives));
+check('두 번째 판: 보너스·미니게임 하트는 한 번만(A도 하트 3개)', (await gbOf('가람')).gbLives === 3, String((await gbOf('가람')).gbLives));
 const closeButton = () => teacher.js(`(() => { const b = document.querySelector('.df-gb-close'); return b && !b.hidden ? { text: b.textContent, ready: b.classList.contains('is-ready') } : null; })()`);
 await nextButton();
 await wait(400);
