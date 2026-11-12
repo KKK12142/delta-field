@@ -233,8 +233,17 @@
 - bookshelf-empty: 책꽂이 가운데 칸의 책 세 권 자리(52~61칸, 21~29줄)를 비웠다(몸 백과 책을 꽂는 곳).
 - 달력은 칸선이 끊겨 칸선(7×5)과 동그라미 셋을 규칙대로 다시 그었다. 계단은 `tile.mjs stripes --period 10`(10줄마다 미끄럼 막이·그늘).
 - 2부 문(partDoor, 2×4)은 위에서 본 칸막이다. 받은 그림이 좁아 19칸 폭(양옆 외곽선을 더해 21)이고, 위·아래 칸막이 판을 늘여 120줄, 60×120 가운데에 놓았다.
-- 강당 문(auditoriumDoor)은 강당 왼쪽 옆 벽(1×3)의 문이다. 옆 벽의 문은 정면이 보이지 않아, 생성 그림(정면 두 짝 문)의 색으로 위에서 본 옆문을 짰다(30×90, 바탕은 wallTop).
+- 강당 문(auditoriumDoor)은 강당 왼쪽 옆 벽(1×3)의 문이다. 옆 벽의 문은 정면이 보이지 않아, 생성 그림(정면 두 짝 문)의 색으로 위에서 본 옆문을 짰다(30×90). 지붕을 덮은 뒤로 문 둘레는 투명이다(지붕 왼쪽 테 위에 문 15칸 폭).
 - 방위 표지(compassSign)의 화살표 판이 4~5도트라 N·E·S·W 글자는 넣지 못했다.
+
+### 강당 지붕(2026-11-12)
+- 강당(바깥 벽만 있던 칸)을 위에서 본 박공 금속 지붕으로 덮는다. 맵 칸 글자 `&`(id roof, 벽 종류).
+- 견본 1장(`pnpm art:gen scripts/art/prompts/roof-sample.txt --out roofTop --thing roofTop`, art/raw/roofTop)에서 색과 짜임(세로 금속판, 가운데 용마루, 처마·박공 테)을 골라
+  `node scripts/art/roof.mjs --out <폴더>`가 규칙대로 30×30 칸을 짠다. 판 폭은 견본의 6도트가 맵에서 잔 줄무늬로 보여 10도트로 넓혔다. 글자판은 art/src/tiles/roof*.txt.
+- 그림(public/sprites/tiles/): roofN(용마루 위 비탈, 변형 4)·roofS(아래 비탈, 변형 4)·roofRidge(용마루, 변형 2), 테 roofEdgeN·S·W·E, 모서리 roofEdgeNW·NE·SW·SE(테·모서리는 띠 밖이 투명).
+- 칸 고르기(mock.mjs의 roof()와 같게 painter.ts에 넣는다):
+  1. 이 칸의 세로 지붕 줄(위아래로 이어진 & 칸) r0~r1에서 mid = r0 + floor((r1 - r0 + 1) / 2). 줄 < mid면 roofN, = mid면 roofRidge, > mid면 roofS(변형은 칸 자리로).
+  2. 위·아래·왼쪽·오른쪽 칸이 &가 아니면(맵 밖 포함) 그 변의 테 roofEdgeN·S·W·E를 겹친다. 두 변이 함께면 모서리(NW·NE·SW·SE)를 그 뒤에 겹친다.
 
 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --out art/work/mock/school.png --area 0,0,48,37 [--scale 2] [--chars 'char-01@10,6,down;...']`
 맵 데이터에 public/sprites의 타일·사물을 깔아 본다(사물의 sprite 항목을 읽는다). 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.

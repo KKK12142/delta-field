@@ -1,0 +1,9 @@
+One square corner piece of a large building roof seen straight from above (top-down map view), filling the whole image edge to edge, with no background.
+The piece is exactly 60 by 60 game pixels (each game pixel is a solid square about 17 image pixels wide).
+Layout of the piece, keep every line perfectly straight and axis-aligned:
+- along the top edge: the eave, a narrow gutter strip about 4 game pixels tall running the full width;
+- along the left edge: the gable end trim, a narrow strip about 4 game pixels wide running the full height;
+- a ridge cap running horizontally across the piece at about 40 game pixels from the top, about 6 game pixels tall, slightly lighter on its upper side;
+- above the ridge the upper slope, below the ridge the lower slope in a slightly darker shade of the same color, as if lit from the top;
+- both slopes made of long metal panels running from top to bottom, with a thin raised seam every 6 game pixels.
+Roof: {{desc}}

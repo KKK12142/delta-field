@@ -60,6 +60,11 @@
       "id": "stairs",
       "prompt": "floor-patch.txt",
       "desc": "indoor school staircase seen from above, going up toward the top of the image: horizontal light gray concrete steps, each step exactly 10 game pixels deep, with a dark rubber anti-slip strip along the front edge of each step and a darker shadow under it"
+    },
+    {
+      "id": "roofTop",
+      "prompt": "roof-sample.txt",
+      "desc": "school auditorium roof of muted slate-blue standing-seam metal sheets, slightly weathered, light gray-blue ridge cap and trim"
     }
   ],
   "objects": [

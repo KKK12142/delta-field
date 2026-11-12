@@ -3,6 +3,7 @@
 //   mock.mjs --map src/data/school.json --out <png> [--area 0,0,48,37] [--scale 1] [--sprites public/sprites] [--chars 'char-01@6,5,down;...'] [--seed 1]
 //   - 바닥: tiles/<id>.png의 변형을 무작위로. 벽(#)·울타리(%): 아래 칸이 바닥이면 앞면(<id>Face), 아니면 윗면(<id>Top).
 //     울타리 윗면은 위아래가 울타리면 세로 가로대(fenceTopV). 울타리 앞면의 투명한 곳 아래에는 운동장 흙을 깐다.
+//     지붕(&)은 roof()의 규칙(용마루·테).
 //   - 사물: objects/<sprite 또는 kind>.png를 차지 칸 왼쪽 아래에 맞춰(그림이 좁으면 가운데) 놓고, 아래 끝이 아래인 것을 앞에 그린다.
 //     열린 모양은 그리지 않는다. id에 right가 든 goalpost는 좌우로 뒤집는다.
 import { existsSync, readFileSync } from 'node:fs';
@@ -32,8 +33,8 @@ const T = 30;
 const room = JSON.parse(readFileSync(opt.map, 'utf8'));
 const L = room.layout;
 const [ac, ar, aw, ah] = opt.area ? opt.area.split(',').map(Number) : [0, 0, L[0].length, L.length];
-const TILE = { '.': 'classroomFloor', ',': 'hallFloor', ':': 'labFloor', ';': 'computerFloor', _: 'libraryFloor', '=': 'roofFloor', '^': 'stairs', '"': 'field', '#': 'wall', '%': 'fence' };
-const isFloor = (ch) => ch !== undefined && ch !== '#' && ch !== '%' && ch in TILE;
+const TILE = { '.': 'classroomFloor', ',': 'hallFloor', ':': 'labFloor', ';': 'computerFloor', _: 'libraryFloor', '=': 'roofFloor', '^': 'stairs', '"': 'field', '#': 'wall', '%': 'fence', '&': 'roof' };
+const isFloor = (ch) => ch !== undefined && ch !== '#' && ch !== '%' && ch !== '&' && ch in TILE;
 const img = createImage(aw * T, ah * T);
 let s = Number(opt.seed) || 1;
 const rand = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -71,7 +72,8 @@ for (let r = ar; r < ar + ah; r++)
     const ch = L[r][c];
     const id = TILE[ch];
     if (!id) continue;
-    if (isFloor(ch)) tile(id, c, r);
+    if (id === 'roof') roof(c, r);
+    else if (isFloor(ch)) tile(id, c, r);
     else if (isFloor(L[r + 1]?.[c])) {
       if (id === 'fence') tile('field', c, r);
       tile(`${id}Face`, c, r);
@@ -79,6 +81,18 @@ for (let r = ar; r < ar + ah; r++)
     else if (id === 'fence' && (L[r - 1]?.[c] === '%' || L[r + 1]?.[c] === '%') && L[r]?.[c - 1] !== '%' && L[r]?.[c + 1] !== '%') tile('fenceTopV', c, r);
     else tile(`${id}Top`, c, r);
   }
+/** 지붕 한 칸(docs/art.md "강당 지붕"): 이 칸의 세로 지붕 줄 가운데가 용마루, 위는 roofN, 아래는 roofS.
+ *  지붕이 아닌 쪽 변에 테(roofEdgeN·S·W·E)를, 두 변이 만나면 모서리(roofEdgeNW …)를 겹친다. */
+function roof(c, r) {
+  const isRoof = (cc, rr) => L[rr]?.[cc] === '&';
+  let r0 = r, r1 = r;
+  while (isRoof(c, r0 - 1)) r0--;
+  while (isRoof(c, r1 + 1)) r1++;
+  const mid = r0 + Math.floor((r1 - r0 + 1) / 2);
+  tile(r < mid ? 'roofN' : r === mid ? 'roofRidge' : 'roofS', c, r);
+  const n = !isRoof(c, r - 1), s = !isRoof(c, r + 1), w = !isRoof(c - 1, r), e = !isRoof(c + 1, r);
+  for (const [on, d] of [[n, 'N'], [s, 'S'], [w, 'W'], [e, 'E'], [n && w, 'NW'], [n && e, 'NE'], [s && w, 'SW'], [s && e, 'SE']]) if (on) tile(`roofEdge${d}`, c, r);
+}
 const things = room.objects.map((o) => ({ ...o, bottom: (o.row + o.h) * T }));
 for (const ch of opt.chars.split(';').filter(Boolean)) {
   const [id, at] = ch.split('@');
