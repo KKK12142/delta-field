@@ -1,0 +1,44 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/printer.png
+size 30x30
+cols 1
+palette
+a #161545
+b #aeb2bd
+c #e8e9e8
+d #4d506d
+e #fdfdfc
+f #c7cfd9
+g #7c839b
+h #7cca3b
+
+frame printer
+..............................
+..............................
+..............................
+....aaaaaaaaaaaaaaaaaaaaa.....
+...aeecabbbbbbbbbbbbaccccca...
+...aeccabgbbgbbggbbbaccccca...
+...aeccaggggggggggggaccccca...
+..aaeccaaaaaaaaaaaaaacccccaa..
+..aecccaddddddddddddacafbafa..
+..aecccaddddddddddddacabbaca..
+..aecccadaaaaddaaaadacaaaafa..
+..aecccaaafbaadabfadacccdcca..
+..aecccccccccccccccccccdhdca..
+..aeccccccccccccccccccccccca..
+..aeccccccccccccccccccccccfa..
+..afeeeeeeeeeeeeeeeeeeeeecga..
+..afbbbbbbbbbbbbbbbbbbbbbbga..
+..addbddddddddddddddddddddda..
+..afbbbbbbbbbbbbbbbbbbbbbbga..
+..afbbbbbbbbbbbbbbbbbbbbbbga..
+..afbbbaaaaaaaaaaaaaaaabbbga..
+..afbbbaadffffffffffaaabbbga..
+..afbbbaaaeeeeeeeeeeaaabbbga..
+..afbbbaaeeeeeeeeeeeeaabbbga..
+...abbbbafffffffffffeaabbba...
+....aaaaacfcffffffffcaaaaa....
+.......adddddddddddddaa.......
+.......cfffffaddafffffa.......
+.......bbbbbbbbbbbbbbba.......
+.......abbbbbbbbbbbbbba.......

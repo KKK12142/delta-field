@@ -1,0 +1,37 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/classroom.png
+size 24x24
+cols 1
+palette
+a #167730
+b #b7692a
+c #171643
+d #fbb345
+e #59c926
+f #5f3417
+g #fbf6e0
+
+frame classroom
+........................
+........................
+........................
+........................
+........................
+...cccccccccccccccccc...
+..cdddddbdbddddddddbbc..
+..cfabbbbbbbbbbbbbbbbc..
+..bbaaaaaaaaaaaaaaaabc..
+..bbaeeeeaaaaaaaaaaabb..
+..bbaeeaaaaaaaaaaaaabb..
+..bbaeaaaaaaaaaaaaaabb..
+..bbaeaaaaaaaaaaaaaabb..
+..bbaaaaaaaaaaaaaaaabb..
+..bbaaaaaaaaaaaaaaaabb..
+..bbaaaaaaaaaaaaaaaabb..
+..bbaaaaaaaaaaaaaaaabb..
+..bbaaaaaaaaaaacccaabb..
+..bbaaaaaaaaaacgggccbb..
+.cddddcdadccdcacccccbdc.
+.cbbbbbbbbbbbbbbbbbbbbc.
+..ccffccccccccccccffcc..
+...cbbc..........cbbc...
+...cccc..........cbcc...

@@ -1,0 +1,22 @@
+# CCTV 상태 아이콘 done(11×11) (scripts/art/ui-icons.mjs가 만듦)
+size 11x11
+cols 1
+palette
+o #1d1531
+f #5b9137
+h #a6d36c
+s #30612b
+w #f8f8f6
+
+frame status-done
+...ooooo...
+..ohhfffo..
+.ohhhfffso.
+offfffffwso
+offffffwsso
+ofwfffwfsso
+offwfwffsso
+offfwfffsso
+.ossssssso.
+..ossssso..
+...ooooo...

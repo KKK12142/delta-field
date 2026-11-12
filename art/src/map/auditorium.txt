@@ -1,0 +1,40 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/map/auditorium.png
+size 24x24
+cols 1
+palette
+a #1c1c49
+b #4d7de6
+c #fbecca
+d #74c3fb
+e #985531
+f #9a9a9b
+g #f2d6a5
+h #5f3524
+i #fbf7ec
+j #d7ec36
+
+frame auditorium
+........................
+........................
+........................
+........................
+........................
+........................
+........................
+.......adddbbbbaa.......
+.....aaddbbbbbbbba......
+....addbbbbbbbbbbbaa....
+...dddbbbbbbbbbbbbbba...
+.abbbbbbaacccccbbbbbba..
+.abbbbaccaaaaaccabbbbb..
+.abbbacadiddidadagabbb..
+..gggcadddddddaddccgga..
+..ccccaddaaaaaaadcccca..
+..cidcccccccccccccadaa..
+..caacabbbbbbbbbbaaaaa..
+..ccccaaaaaaaaaaaaccca..
+..cidcacheeeeeeaccadaa..
+..caacacheehjeeaccaaaa..
+..ccccacheehjeeaccccca..
+..fffffcheeeeeeacffffa..
+..aaaaaaaaaaaaaaaaaaaa..

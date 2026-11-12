@@ -1,0 +1,75 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj2/hintCard-back.png
+size 40x56
+cols 1
+palette
+a #0f4fd7
+b #022f93
+c #fcd005
+d #150d4d
+e #022c8c
+f #fdf6a5
+g #b1aee1
+h #063eb6
+i #edb906
+j #483c31
+k #8e8e42
+l #9a97d2
+m #8c7432
+
+frame hintCard-back
+....dddddddddddddddddddddddddddddddd....
+...ddccccccccccccccccccccccccccccccddd..
+..ddccccccccccccccccccccccccccccccccdd..
+.ddcccbeaaaabbeaaaebbbebaabbbeeaaaaccd..
+.dcccebaaaabbbaaaabbbbaaaabbbbaaaaebcc..
+.dccbbaaabbbbeaaabbbeaaaabbeeaaaabbbcc..
+.dcceaaabbbbeaaabbbbaaaaabbbaaaabbbbcc..
+.dccbaaabbbebaaabbbbaaaabbeeaaaabbbeec..
+.dccaaabebbaaabbbbbaaaabbeaaaaabbbbeac..
+.dccaabbebaaaabbbaaaaabbbbaaaabbbbaaac..
+.dccabbbbaaaabbbaaaaabbbbaaaabbbbaaaac..
+.dccabbeeaaaabebaaaahbbeeaaaabbbeaaaac..
+.dccebeaaaabbbbaaaabbbeeaaaabbbbaaahhc..
+.dccbeaaaabbbbaaaabbbbbaaabbbbbaaaabbc..
+.dccbaaabbbbeaaahbbbeaaaabbeebaaabbbec..
+.dccaaabbbbbaaaaebbbaaaaabebeaaahbbbec..
+.dccaabbbbeaaabbbbeaaaaabbbeaaabbbbbbc..
+.dccabbbbeaaaabbbeaaaabebbaaaabbbbaaac..
+.dccebbbeaaaaebeedddddddebaaabebbaaaac..
+.dccbbbeccaaabbbedjdddddbeaaabeccaaaac..
+.dccebbaccccbbeddcccccccddaabecccaaahc..
+.dccbbaacccceedccfffcccccdbebcccaaabec..
+.dccbaaaaccccdccffffccccccdeccccabbbec..
+.dccaaaahbeccdcffffcccccccddccaaabbbec..
+.dccaaabbbbbadcfffccccccccddaaahbbbbec..
+.dccaabbbbbaadcffcccccccccddaabebbbecc..
+.dccaabbbbbaadfffcccccccccddaabbbbeaac..
+.dccabccccccadccccccccccccddaccccccacc..
+.dccbbebaaaabdccccccccccccddbebhaaabbc..
+.dccbbbbaaaabbccccccccccccebbbeaaaabec..
+.dcceebaaaabbbddcccccccccdbbbbaaaabbcc..
+.dccbbaaaabccbaddccccciiddbeccaaabebec..
+.dccaaaaahcccaaadiiiiiiidbbbccakbbbbec..
+.dccaaaaacccbaaaddiiddjddbbeacccbbbecc..
+.dccaaaaccccaaaadldddddddbaaaccccbbaac..
+.dccaabbcceaaabbdgggggggdbaaabeccbaaac..
+.dccabbbbeaaaaeeddddddgddaaabbeeeaaaac..
+.dccebbbebaaabeebdggggdddabebbbeaaabcc..
+.dccbbbeeaaaabbeedgggggdaabbbebaaaabbc..
+.dcceebaaaaabbebaadddddhaabebbaaaabbec..
+.dccebaaaabbbbaaaabbbbaaabeebaaaabbeec..
+.dcceaaaabbbebaabbbbeaaabbebaaaabbebec..
+.dccaaaabbbbbaabbbbaaabbbbaaaaebbbbaac..
+.dccaaabbbbaaabbeeaaabbbbeaaabbbbbaaac..
+.dccabbbbbaaaabbbaaabbbbeaaabbbbeaaaac..
+.dccaebebbaaaabeeaaabbbebaaebbbeeaaaac..
+.dcchbbeeaaabbbeaaabbbeeaabbbbbaaaabbc..
+.dccebbaaaabbeaaaabbeeaaaabbbbaaaabbec..
+.dccebaaaabeebaaebbbbaaaabbbeaaaabbbec..
+.dccebaaaebbebabbbbbaaaabbbbaaaabbbeec..
+.dcceaaaabbeeaabbbbeaaaabbebaaabbbbecc..
+.dccaaabbbeeaabbbeaaaabbbbaaaabbbbbaac..
+.dccaabbbeaaaabbbaaaabbbbbaaabbbbbaaac..
+.dmccabbbaaaabbbaaaaebbbeaaaebbbeaaccd..
+..ddccbbeaaaabbeaaaabbbbbaaaebbbbaaccd..
+..dddccccccccccccccccccccccccccccccdd...

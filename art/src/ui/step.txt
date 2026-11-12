@@ -1,0 +1,16 @@
+# 순서 맞추기 진행 칸(빈 것) (scripts/art/ui-icons.mjs가 만듦)
+size 7x7
+cols 1
+palette
+o #1d1531
+k #d6c5b4
+s #b39964
+
+frame step
+.ooooo.
+okkkkko
+okkkkko
+okkkkko
+okkkkko
+ossssso
+.ooooo.

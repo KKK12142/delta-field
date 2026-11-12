@@ -78,6 +78,7 @@
 
 ### 아이콘
 - 아이템 등은 30×30. 대화상자(HTML)에서 크게 보일 때는 CSS `image-rendering: pixelated`로 키운다.
+- 열쇠 아이콘 icons/door-key(교실 문, 빨간 꼬리표)·lab-key(과학실, 파랑)·entrance-key(현관, 초록). 글자판은 art/src/icons/(아래 "장식 소품").
 
 ### 그리는 법
 - 외곽선 1도트, 어두운 남색 계열(순검정 쓰지 않음). 빛은 왼쪽 위에서. 재질마다 2~3단계 명암. 그라데이션·디더링·흐림 없음.
@@ -97,6 +98,9 @@
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
+| art/src/icons/<아이템 id>.txt | 아이템 아이콘 글자판(열쇠) | 넣음 |
+| art/src/faces/char-0N.txt → public/sprites/faces/char-0N.png | 캐릭터 얼굴(CCTV·순위) | 넣음 |
+| art/src/map/<장소>.txt → public/sprites/map/<장소>.png | 미니맵 장소 아이콘 24×24 | 넣음 |
 | art/src/ui/<이름>.txt → public/sprites/ui/<이름>.png | UI 테두리(9-slice)·표시·하트(아래 "UI 그림") | 넣음 |
 | public/fonts/ | 웹 글꼴 Galmuri11·Galmuri9(woff2)와 라이선스 Galmuri-OFL.txt(아래 "글꼴") | 넣음 |
 
@@ -220,7 +224,7 @@
   인증 Authorization: Bearer, User-Agent가 비면 403이라 delta-field-art/0.1을 넣는다.
 - GPT 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst·gpt-image-2.5-flare 10크레딧(문서). 모델 목록(`pnpm art:models gpt-image`)에는 2.6-sunburst·2.6-flare도 있다.
   실제로 쓴 값(1024×1024 한 장, 2026-11-11): 2.6-sunburst high 54.17, 2.6-flare high 54.23, 2.6-sunburst medium 44.96, 2.6-flare medium 44.96크레딧.
-  걸린 시간은 sunburst 35~43초, flare 8~10초. 교사가 정한 한도는 하루 5,000크레딧.
+  걸린 시간은 sunburst 35~43초, flare 8~10초. 교사가 정한 한도는 하루 8,000크레딧(2026-11-12에 5,000에서 늘림).
 - 미리 값을 보는 /estimate는 주소를 찾지 못했다(images/generate/estimate/는 405·404).
 - **쓰는 모델(2026-11-11 교사 결정): gpt-image-2.6-sunburst, 품질 medium.** 1024×1024 한 장 44.96크레딧, 약 35초. 비교에서 high(54.17)와 그림 차이가 작았다.
 - 설정은 scripts/art/baze.json(url, model, quality, userAgent, size, body). model·quality 기본값은 위 결정이고 --model·--quality로 바꾼다. 모델이 비면(설정과 --model 모두) 부르지 않는다.
@@ -299,6 +303,82 @@
 
 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --out art/work/mock/school.png --area 0,0,48,37 [--scale 2] [--chars 'char-01@10,6,down;...']`
 맵 데이터에 public/sprites의 타일·사물을 깔아 본다(사물의 sprite 항목을 읽는다). 그림이 없는 칸·사물은 회색 네모다. 게임 연결(painter.ts) 전에 크기와 어울림을 보는 용도.
+
+## 장식 소품·새 타일(2026-11-12, 교사 결정 "모든 장소")
+진단 보고(.run/ui-audit/report.md)의 M1·M2·M4·M5·M6·M7·U4·U6. 그림 생성 28장, **1,254.07크레딧**(장당 35.12~45.49, 다시 받은 것 없음. 동시에 5개를 부를 때 2번 실패했고 값은 나가지 않았다).
+프롬프트 설명은 scripts/art/things.json(set-*, bench … auditoriumFace), 로고·첫 화면 배경은 prompts/logo.txt·title-bg.txt(--no-style).
+배치는 맵 담당이 school.json·goldenbell.json에 넣는다(배치 초안은 docs/map.md에 붙일 표).
+
+- 작은 소품(small-set 2×2, 한 장에 넷): `pnpm art:fit <받은 그림> --bg '#ff00ff' --grid 2x2 --width 26 --frame 30x40 --colors 16`
+  → `node scripts/art/split.mjs <시트> --frame 30x40 --names a,b,c,d --out-dir <폴더>`(프레임마다 한 장, 위 빈 줄을 잘라 30×30 이상) → `grid.mjs to-txt` → `to-png`.
+
+  | 받은 묶음 | 그림(objects/, 30×30 안팎) |
+  |---|---|
+  | set-classroom | chair(쓰지 않음, 아래), wallClock, plant, trashBin |
+  | set-hall | extinguisher, waterCooler(30×33), eyeShower(30×32), safetySign |
+  | set-room | officeChair(30×34), printer, globe, weatherBox |
+  | set-outdoor | soccerBall, cone, outdoorBin, planter |
+  | set-keys | icons/door-key(빨간 꼬리표)·lab-key(파랑)·entrance-key(초록), objects/beanbag |
+- 하나씩 받은 것: `art:fit --bg '#ff00ff' --width <너비> --frame <너비>x<높이> --colors 16`, 긴 것은 stretch.mjs로 늘였다.
+
+  | 그림 | 크기(도트) | 차지 칸 | 만든 법 |
+  |---|---|---|---|
+  | bench | 90×21 | 3×1 | 견본 60 → 칸 15-44 되풀이 |
+  | stands | 240×30 | 8×1 | 견본 60 → 칸 20-39 --whole |
+  | waterTap | 90×22 | 3×1 | 칸 15-29 --whole(수도꼭지 박자) |
+  | flowerBed | 120×20 | 4×1 | 칸 15-44 |
+  | handrail | 120×13 | 4×1 | 칸 15-29 --whole(기둥 박자) |
+  | sink | 60×57 | 2×1 | 수도꼭지가 1칸 위로 솟음 |
+  | serverRack | 26×60 | 1×1 | 1칸 위로 솟음 |
+  | sofa, bookCart | 60×46, 60×52 | 2×1 | |
+  | flagpole | 30×97 | 1×1 | --height 100, 2칸 넘게 솟음 |
+  | window | 46×30 | 2×1 | 벽 앞면 칸의 위 1~18줄(아래 판벽을 가리지 않게 높이 18로 맞춤) |
+  | periodicTable | 52×30 | 2×1 | 벽 앞면(높이 27) |
+  | whiteboard | 90×30 | 3×1 | 벽 앞면, 칸 15-44 |
+  | mathPoster | 60×30 | 2×1 | 벽 앞면(그림 22줄, 위 2·아래 6 투명) |
+  | curtain | 180×30 | 6×1 | 벽 앞면, 칸 15-44 |
+  | banner | 180×30 | 6×1 | 벽 앞면(그림 20줄). 가운데가 비어 있어 글자는 화면이 적는다 |
+  | stage | 210×54 | 7×2 | 견본 60×27 → 가로 칸 15-44, 세로 줄 4-12(마루)를 늘임 |
+  | auditoriumBigDoor | 54×30 | 2×1 | 강당 앞면 벽 칸의 큰 유리문(꾸밈) |
+- 받은 그림을 타일로
+  - gardenGrass(새 바닥, 30×30 변형 4): floor-patch → `art:fit --full --grid 2x2 --frame 30x30 --cols 4 --badge 0` → `tile.mjs clean --erase 113,24,7,6`. 운동장 흙 옆에서 너무 밝아 색 다섯을 손으로 낮췄다(글자판).
+  - roofFloor(옥상 바닥, 대장 결정으로 콘크리트로 바꿈): 같은 방법 뒤 `tile.mjs grid --step 30 --line '#8e929d' --light '#c3c6ce'`(판 이음을 칸 가장자리로). 이름이 같아 맵을 고치지 않아도 바뀐다.
+  - auditoriumFace(강당 앞면 벽, 변형 2): 받은 띠는 벽돌 박자가 고르지 않아, 그 색으로 decals.mjs가 짠다(처마 테·그늘, 10도트 벽돌 6단, 돌 굽).
+- 규칙으로 짠 그림(생성 없음): `node scripts/art/decals.mjs`가 글자판을 만들고 `grid.mjs to-png`로 PNG를 만든다.
+  - 벽 윗면 테 tiles/wallEdgeN·S·W·E(변에 2도트: 바깥 #4a4458, 안 #9fa1ab)와 안쪽 모서리 wallCornerNW·NE·SW·SE(2×2). 테두리 밖은 투명이라 wallTop 위에 겹친다.
+    고르기(mock.mjs의 wallEdges()와 같게 painter.ts에): 벽 윗면 칸(# 이고 아래가 바닥이 아님)에서, 위·아래·왼쪽·오른쪽 칸이 바닥이거나 벽 앞면 칸이면 그 변의 테.
+    두 변이 모두 벽 윗면이고 그 사이 대각선 칸만 트이면 그 구석의 안쪽 모서리.
+  - 골든벨 구역 판 objects/zone-O·X·1·2·3·4(60×60, 2×2칸): theme color.zone 색, 7×9 도트 글자를 3배로. 바닥에 깔아 지나갈 수 있다.
+  - objects/roomSign(30×30 칸의 3~14줄에 30×12 판): 문 옆 벽 앞면에 거는 교실 이름판. 이름 글자는 화면이 Galmuri9로 적는다.
+- 첫 화면: ui/logo.png(81×64, "DELTA FIELD"와 삼각형, 생성 그림을 12픽셀 = 1도트로), ui/title-bg.png(256×171, 1536×1024 생성 그림을 6픽셀 = 1도트로, 32색. 오른쪽 아래 AI 표시 자리를 옆 칸으로 덮음).
+  화면에서는 정수 배로 키우고 `image-rendering: pixelated`(배경은 화면을 덮도록 3~5배, 남는 곳은 잘림).
+- 쓰지 않은 것: chair(교실 책상 아래에 놓으면 책상이 두 줄로 보이고, 등받이가 칠판 쪽이라 방향이 맞지 않음). 그림은 남겨 둔다.
+- 모형 판: `node scripts/art/mock.mjs --map src/data/school.json --decor <배치.json> --out <png> [--area ...]`. --decor는 배치 초안(새 칸 글자 +·$, 옮기기, 장식 사물)과
+  그리기 효과(벽 윗면 테, 사물 그림자, 경기장 선, 미션 사물 위 "!")를 얹는다. 형식은 mock.mjs 맨 위.
+
+## 남은 그림(2026-11-12 둘째 묶음, 대장 목록 1~11)
+생성 16장, **729.23크레딧**(장당 34.95~53.52, 다시 받은 것 없음). 프롬프트는 things.json(hintCards … gateOpen), prompts/pair.txt(두 개 나란히), scene.txt(넓은 장면).
+그림마다 연결 담당은 대장 보고 표에 있다. 크기는 도트(화면에서 맵 2배, HTML 3배 또는 정수 배).
+
+| 항목 | 그림 | 크기 | 만든 법 |
+|---|---|---|---|
+| 1 순서 진행 | objects/codingBlock-1~4-on, tileBoard-square·hexagon·triangle-on | 원래보다 사방 1도트 큼 | `derive.mjs on`: 1도트 노란 빛 테 + 오른쪽 위 초록 체크(7×7) |
+| | ui/step, step-on | 7×7 | ui-icons.mjs |
+| 2 보상 카드 | ui/sparkle(9×9 4프레임 시트 36×9), stamp-correct(24×24), burst(48×48 반투명) | | ui-icons.mjs |
+| | ui/hintCard(앞, 가운데 빈 곳에 글), hintCard-back(뒤) | 40×56 | 생성 1장(pair) |
+| 3 2부 문 | objects/partDoor, partDoor-open(바꿈) | 60×120 | 생성 2장(열림은 닫힘을 --ref). 높이 96을 문짝 가운데 줄 70-85를 늘여 120. 열림은 가운데가 투명 |
+| 4 보너스 | objects/timeCapsule, timeCapsule-open | 40×35, 40×39 | 생성 2장(열림 --ref) |
+| 5 얼굴 | faces/char-01~08 | 30×26 | `derive.mjs face`: 앞모습 서기 프레임의 머리 꼭대기부터 26줄 |
+| 6 강당 안 | tiles/gbFloor(마루 변형 4), gbWallFace(안쪽 벽 앞면) | 30×30 | 마루는 생성 뒤 `tile.mjs planks --plank 6`, 벽은 견본 색으로 decals.mjs가 짬(창 10×12, 판벽) |
+| | objects/podium, goldenBell, speaker(30×34), trophy, goldenBell-big(46×50) | 30×30 안팎 | small-set 1장. 큰 종은 같은 그림의 칸을 잘라 너비 48로 다시 맞춤 |
+| 7 미니맵 | map/classroom, lab, computer, hallway, math, library, stairs, rooftop, field, garden, auditorium, gate | 24×24 | small-set 3장(--width 22 --frame 24x26). 16으로 줄이면 뭉개져 24로 둠 |
+| 8 시상·알림 | ui/medal-gold·silver·bronze, trophy-icon, emblem-science, emblem-aisw, megaphone, heart-plus | 30×30 | small-set 2장 |
+| 9 장면 | ui/story(골든벨 대회 날 강당), ui/finish(열린 교문) | 256×171 | 1536×1024 생성을 6픽셀 = 1도트, 32색, AI 표시 자리를 옆 칸으로 덮음 |
+| 10 교문 열림 | objects/gate-open | 120×30 | gate.png를 8배로 키운 판을 --ref로 생성, 두 짝을 따로 맞춰 양끝에 붙임 |
+| 11 CCTV 상태 | ui/status-quiz, status-stuck, status-done, status-move | 11×11 | ui-icons.mjs |
+
+- 순서 맞추기 사물의 글(블록 글, 전구 번호)은 자료마다 달라 그림에 넣지 않는다. 화면이 ui/panel-dark 판에 Galmuri9로 적는다(대장 결정).
+- 골든벨 맵의 마루·벽은 맵마다 타일 이름을 바꾸는 방식(mock.mjs --decor의 tileNames)을 제안했다. 맵 담당이 정한다.
 
 ## 다듬기
 이 컴퓨터에는 PIL·ImageMagick·도트 편집 프로그램이 없어, Node에 들어 있는 zlib으로 PNG를 읽고 쓴다(scripts/art/png.mjs). 설치할 것은 없다.

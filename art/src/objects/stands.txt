@@ -1,0 +1,46 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/stands.png
+size 240x30
+cols 1
+palette
+a #928ea2
+b #0765fd
+c #0e1048
+d #e6e5e8
+e #c6c5cf
+f #40b3fd
+g #072a8a
+h #b5b4c4
+i #09236e
+j #a3a2b3
+
+frame stands
+......ccc..............................................................................................................................................................................................................................ccc......
+......cdc..............................................................................................................................................................................................................................cdc......
+.....cdcc..............................................................................................................................................................................................................................cad......
+.....ddac..............................................................................................................................................................................................................................cadc.....
+....cdcac..............................................................................................................................................................................................................................chcdc....
+....cdchcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccchcdc....
+...cdc.hcfffbbgffbbfffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgffffbgfffbgffbbfffbgfffbgffbbfffbch.cd....
+...cdcchcgbbbbgbbbbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbgbbbbbbbbchccdc...
+..cdccecebbbbbgbbbbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbbgbbbbgbbbbbbbbgbbbbgbbbbbbbbececcdc..
+..ddaceeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeecadd..
+.cdchcaadadadddadaadaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadadddddaddadddaaddaadaddddddddaddaaaaaadacjcdc.
+.dd.hcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaace.dd.
+cdc.hcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaace.cdc
+cdc.hccfffbbgfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbbfffbbfffbbfffbgfffbgfffbbfffbbcch.cdc
+.acchcgbfbbbgfbbbgffbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbbfbbbbfbbbbfbbbgfbbbgffbbbffbbbhchcca.
+.aceeeibbbbbgbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbbbbbbbbbbbgbbbbbbbbbgbbbbbieecca.
+.aceeecccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccceeeca.
+.hcddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddch.
+.hcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaach.
+.hcaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaach.
+.hcaccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccach.
+.hcegffbbbgfbbbbffbbbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbffbbbgffbbbffbbbgfbbbbffbbbgffbbbghch.
+cccegbbbbbgbbbbbbbbbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbbbgbbbbbiechc
+ceeebbbbbbgbbbbbbbbbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbgbbbbbbbbbbgbbbbbbbbbbgbbbbbbeeec
+ceeeeeeeeeeceeeeeeeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeceeeeeeeeeeeeeececeeeeeeeeeceeeeeeeeeeec
+cddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddc
+caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

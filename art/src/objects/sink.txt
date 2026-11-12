@@ -1,0 +1,75 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/sink.png
+size 60x57
+cols 1
+palette
+a #bdbdca
+b #faf5f4
+c #18163a
+d #6b6d81
+e #9594a7
+f #e1e0e7
+g #4c4c5e
+h #a8a8b8
+i #73748d
+j #eb2516
+k #1b7cfb
+l #2e2d2c
+
+frame sink
+........................cccccc..............................
+.......................cbbbbfcc.............................
+......................cbbheeeeec............................
+.....................cbbaaaaaeee............................
+....................cbbaecccaaeec...........................
+....................cbaec...ccaec...........................
+....................ccccc....cfac...........................
+....................ccccc....cfac...........................
+.............................cfac...........................
+.............................cfec...........................
+....................ccc......cfhc....ccc....................
+..................cbbjjffc...cfhc..cbbkkcbc.................
+..................aaaeiahc...cfac..caaiihhc.................
+....................cac......cfac....cfec...................
+...ccccccccccccccccccaccccccccfaccccccfeccccccccccccccccc...
+..ccbbbbbbbbbbbbbbbccfccbbbbbbccbcbbbcfecbbbbbbbbbbbbbbbcc..
+..cbbbbbbbbbbbbbbbbcfaaabbbbaaaaacbbbfaacbbbbbbbbbbbbbbbbc..
+..cbbbbbbbbbbbbbbcaccaccaaacccccccaacccacacbbbbbbbbbbbbbbc..
+..bbbbbbbbbbbbbbbcaaaaaaaaaaaaaaaaaaaaaaaacbbbbbbbbbbbbbbb..
+.cbbbbbbbbbbbbbbbcaagddddddddddddddddddgaacbbbbbbbbbbbbbbb..
+.cbbbbbbbbbbbbbbbcaaggddddddddddddddddggaacbbbbbbbbbbbbbbb..
+.cbbbbbbbbbbbbbbbcaagdddddddddddddddddggaacbbbbbbbbbbbbbbb..
+.cbbbbbbbbbbbbbbbcaagdddddddddddddddddggaacbbbbbbbbbbbbbbbc.
+.cbbbbbbbbbbbbbbbcaaggddddddddddddddddggaacbbbbbbbbbbbbbbbc.
+.cbbbbbbbbbbbbbbbcaageeeeeeeeeeeeeeeeeggaacbbbbbbbbbbbbbbbc.
+.cbbbbbbbbbbbbbbbcaageeeeeeeccceeeeeeeegaacbbbbbbbbbbbbbbbc.
+.cbbbbbbbbbbbbbbbcaageeeeeecahhhceeeeeegaacbbbbbbbbbbbbbbbc.
+.cbbbbbbbbbbbbbbbcaageeeeeechllhceeeeeegaacbbbbbbbbbbbbbbbc.
+cbbbbbbbbbbbbbbbbcaageeeeeecaahaeeeeeeegaacbbbbbbbbbbbbbbbbc
+cbbbbbbbbbbbbbbbbcaageeeeeeecccceeeeeeegaacbbbbbbbbbbbbbbbbc
+cbbbbbbbbbbbbbbbbcaaaaaaaaaaaaaaaaaaaaaaaacbbbbbbbbbbbbbbbbc
+cbbbbbbbbbbbbbbbbcaccccccccccccccccccccccccbbbbbbbbbbbbbbbbc
+cbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbc
+caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+..ceeeeeeeeeeeeeeeeeeeeeeeeeehheeeeeeeeeeeeeeeeeeeeeeeeeec..
+..ceffffaaaaaaaaaaaaaaaaaaaaacaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..caffffaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..cafffaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..aafaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..aafaaaaaaaaaaaaaaaaaaaacccaaaacccaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaecacaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaecacaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaecaaaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..caaaaaaaaaaaaaaaaaaaaaaaecaaaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaecaaaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaeecaaaaceeaaaaaaaaaaaaaaaaaaaaaac..
+..caaaaaaaaaaaaaaaaaaaaaaccaaaaaaccaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac..
+..cccccccccccccccccccccccccccccccccccccccccccccccccccccccc..
+..dddddddddddddddddddddddddddddddddddddddddddidddddddd......
+..cddddddddddddddddddddddddddddddddddddddddddidddidddd......
+..cdddddddddddddddddddddddddddddddddddddddiididddddddd......

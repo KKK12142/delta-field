@@ -1,0 +1,44 @@
+# 도트 그림 글자판(docs/art.md). 원본: art/work/deco/obj/window.png
+size 46x30
+cols 1
+palette
+a #85cffc
+b #fdf0c3
+c #121444
+d #fcfcfc
+e #e4c896
+f #b4b2c0
+g #fdf7d4
+h #ebf9fd
+
+frame window
+..............................................
+cggcbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcggc
+gggcbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcggg
+eeecbbccccccccccccccccccccccccccccccccccbbceec
+eeecbbddddddddddddddddddddddddddddddddddbbceee
+eeecbbdadaaaaaaaaaaaaaccahaaaaaaaaaaaaadbbceec
+eeecbbdaahaaaaaaaaaaaaccaahaaaaaaaaaaaadbbceec
+eeecbbdaaahaaaaaaaaaaaccaaahaaaaaaaaaaadbbceee
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceee
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbdaaaaaaaaaaaaaaaccaaaaaaaaaaaaaaadbbceec
+eeecbbddddddddddddddddddddddddddddddddddbbceec
+eeecbcffffffffffffffffffffffffffffffffffcbceec
+eeecbcccccccccccccccccccccccccccccccccccbbceee
+ceecbbbbbbcbbbcbbbbbbcbbccbbbbbbcbcccccccbceec
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
+..............................................
