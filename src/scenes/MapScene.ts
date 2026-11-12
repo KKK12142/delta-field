@@ -9,7 +9,7 @@ import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
 import { Joystick } from '../ui/joystick';
 import { snapZoom } from '../render';
-import { color, motion, size } from '../theme';
+import { motion, size } from '../theme';
 import { Avatar, loadCharacters, prepareCharacters, type TagStyle } from './avatar';
 import { MapPainter, loadMapSprites, prepareMapSprites, type ObjectView } from './painter';
 
@@ -84,7 +84,7 @@ export abstract class MapScene extends Scene {
     prepareCharacters(this);
     prepareMapSprites(this);
     this.drawMap();
-    this.avatar = new Avatar(this, this.net.me()?.character ?? this.net.character, this.net.nickname, color.nickname, this.ownTagStyle());
+    this.avatar = new Avatar(this, this.net.me()?.character ?? this.net.character, this.net.nickname, 'me', this.ownTagStyle());
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error('키보드 입력을 쓸 수 없습니다.');
@@ -274,8 +274,7 @@ export abstract class MapScene extends Scene {
       const y = p.row * size.tile;
       let r = this.remotes.get(id);
       if (!r) {
-        const teacher = p.role === 'teacher';
-        const avatar = new Avatar(this, p.character, p.nickname, teacher ? color.teacherNickname : color.remoteNickname, this.wantsTag(p));
+        const avatar = new Avatar(this, p.character, p.nickname, 'dark', this.wantsTag(p));
         avatar.setPosition(x, y);
         r = { avatar, target: { x, y } };
         this.remotes.set(id, r);
@@ -366,7 +365,7 @@ export abstract class MapScene extends Scene {
   private blocked(col: number, row: number) {
     if (!isFloor(this.room.layout[Math.floor(row)]?.[Math.floor(col)])) return true;
     return this.room.objects.some(
-      (o) => col >= o.col && col < o.col + o.w && row >= o.row && row < o.row + o.h && this.objectBlocks(o),
+      (o) => !o.walk && col >= o.col && col < o.col + o.w && row >= o.row && row < o.row + o.h && this.objectBlocks(o),
     );
   }
 
@@ -397,6 +396,8 @@ export abstract class MapScene extends Scene {
         role: () => this.net.role,
         /** 강당으로 모으기 남은 시간(초)·골든벨 이름, 열린 부 */
         gather: () => ({ ...this.net.gather }),
+        /** 사물 하나의 보이는 모습(확인용) */
+        objectLook: (id: string) => this.objectViews.get(id)?.look() ?? null,
         part: () => this.net.part,
         others: () =>
           this.net.others().map(([, p]) => ({

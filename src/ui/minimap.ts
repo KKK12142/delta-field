@@ -4,6 +4,28 @@ import { partOf, tileOf, type Rect, type Room } from '../data/room';
 import { color, fontFamily, minimap as M } from '../theme';
 import { el, uiRoot } from './dom';
 
+/** 장소·건물 id → 장소 아이콘(public/sprites/map/<이름>.png, 24×24). 2부 복도는 복도 아이콘을 같이 쓴다. */
+const ICON_OF: Record<string, string> = {
+  classroom: 'classroom', hallway: 'hallway', hallway2: 'hallway', lab: 'lab', computer: 'computer', math: 'math', library: 'library',
+  stairs: 'stairs', rooftop: 'rooftop', field: 'field', garden: 'garden', auditorium: 'auditorium', gate: 'gate',
+};
+
+/** 아이콘 그림(처음 불러올 때 한 번 읽어 둔다. 다 읽기 전에는 그리지 않는다) */
+const icons = new Map<string, HTMLImageElement>();
+function icon(id: string): HTMLImageElement | null {
+  const name = ICON_OF[id];
+  if (!name) return null;
+  let img = icons.get(name);
+  if (!img) {
+    img = new Image();
+    img.src = `${import.meta.env.BASE_URL}sprites/map/${name}.png`;
+    icons.set(name, img);
+  }
+  return img.complete && img.naturalWidth > 0 ? img : null;
+}
+// 미니맵을 처음 그리기 전에 읽기 시작한다.
+for (const id of Object.keys(ICON_OF)) icon(id);
+
 /** 0xRRGGBB → CSS 색 */
 const css = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
@@ -74,6 +96,23 @@ export function drawMinimap(
       label(text, a, locked(a));
     }
   }
+  // 장소 아이콘: 큰 지도는 이름 위에, 작은 지도는 장소 가운데에(잠긴 2부는 흐리게). 교문 아이콘은 교문 자리에.
+  ctx.imageSmoothingEnabled = false;
+  const iconSize = labels ? M.iconBig : M.icon;
+  const places: { id: string; r: Rect; faded: boolean }[] = [
+    ...(room.landmarks ?? []).map((l) => ({ id: l.id, r: l as Rect, faded: false })),
+    ...(room.areas ?? []).map((a) => ({ id: a.id, r: a as Rect, faded: locked(a) })),
+    ...room.objects.filter((o) => o.kind === 'gate').map((o) => ({ id: 'gate', r: o as Rect, faded: false })),
+  ];
+  for (const p of places) {
+    const img = icon(p.id);
+    const [x, y, rw, rh] = rect(p.r);
+    if (!img || (p.id !== 'gate' && (rw < iconSize || (!labels && rh < iconSize)))) continue;
+    ctx.globalAlpha = p.faded ? M.lockedAlpha : 1;
+    const top = labels && p.id !== 'gate' ? y + rh / 2 - iconSize - M.iconGap : y + rh / 2 - iconSize / 2;
+    ctx.drawImage(img, Math.round(x + rw / 2 - iconSize / 2), Math.round(top), iconSize, iconSize);
+  }
+  ctx.globalAlpha = 1;
   if (mark) {
     // 알림 표시: 2부가 열린 문이나 모이는 강당에 테를 두른다.
     const [x, y, rw, rh] = rect(mark);

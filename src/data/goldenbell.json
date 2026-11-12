@@ -16,65 +16,28 @@
     "#.................#",
     "#.................#",
     "#.................#",
+    "#.................#",
+    "#.................#",
     "###################"
   ],
-  "start": {
-    "col": 9.5,
-    "row": 7.5
-  },
-  "spawn": {
-    "col": 9.2,
-    "row": 2.4,
-    "w": 0.6,
-    "h": 10.2
-  },
-  "zones": {
-    "ox": [
-      {
-        "label": "O",
-        "col": 1,
-        "row": 2,
-        "w": 8,
-        "h": 11
-      },
-      {
-        "label": "X",
-        "col": 10,
-        "row": 2,
-        "w": 8,
-        "h": 11
-      }
-    ],
-    "choice": [
-      {
-        "label": "1",
-        "col": 1,
-        "row": 2,
-        "w": 8,
-        "h": 5
-      },
-      {
-        "label": "2",
-        "col": 10,
-        "row": 2,
-        "w": 8,
-        "h": 5
-      },
-      {
-        "label": "3",
-        "col": 1,
-        "row": 8,
-        "w": 8,
-        "h": 5
-      },
-      {
-        "label": "4",
-        "col": 10,
-        "row": 8,
-        "w": 8,
-        "h": 5
-      }
-    ]
-  },
-  "objects": []
+  "start": {"col": 9.5, "row": 9.5},
+  "spawn": {"col": 9.2, "row": 4.4, "w": 0.6, "h": 10.2},
+  "zones": {"ox": [{"label": "O", "col": 1, "row": 4, "w": 8, "h": 11}, {"label": "X", "col": 10, "row": 4, "w": 8, "h": 11}], "choice": [{"label": "1", "col": 1, "row": 4, "w": 8, "h": 5}, {"label": "2", "col": 10, "row": 4, "w": 8, "h": 5}, {"label": "3", "col": 1, "row": 10, "w": 8, "h": 5}, {"label": "4", "col": 10, "row": 10, "w": 8, "h": 5}]},
+  "objects": [
+    {"id": "curtain-left", "name": "커튼", "kind": "decor", "sprite": "curtain", "col": 1, "row": 1, "w": 6, "h": 1, "flat": true},
+    {"id": "curtain-right", "name": "커튼", "kind": "decor", "sprite": "curtain", "col": 12, "row": 1, "w": 6, "h": 1, "flat": true},
+    {"id": "banner", "name": "현수막", "kind": "decor", "sprite": "banner", "col": 7, "row": 1, "w": 5, "h": 1, "flat": true},
+    {"id": "stage", "name": "무대", "kind": "decor", "sprite": "stage", "col": 6, "row": 2, "w": 7, "h": 2},
+    {"id": "podium", "name": "사회자 단상", "kind": "decor", "sprite": "podium", "col": 12, "row": 3, "w": 1, "h": 1},
+    {"id": "golden-bell", "name": "골든벨", "kind": "decor", "sprite": "goldenBell-big", "col": 9, "row": 1, "w": 1, "h": 1, "flat": true},
+    {"id": "speaker-left", "name": "스피커", "kind": "decor", "sprite": "speaker", "col": 4, "row": 3, "w": 1, "h": 1},
+    {"id": "speaker-right", "name": "스피커", "kind": "decor", "sprite": "speaker", "col": 14, "row": 3, "w": 1, "h": 1},
+    {"id": "pad-O", "name": "구역 판 O", "kind": "decor", "sprite": "zone-O", "col": 4, "row": 8, "w": 2, "h": 2, "walk": true, "flat": true},
+    {"id": "pad-X", "name": "구역 판 X", "kind": "decor", "sprite": "zone-X", "col": 13, "row": 8, "w": 2, "h": 2, "walk": true, "flat": true},
+    {"id": "pad-1", "name": "구역 판 1", "kind": "decor", "sprite": "zone-1", "col": 4, "row": 5, "w": 2, "h": 2, "walk": true, "flat": true},
+    {"id": "pad-2", "name": "구역 판 2", "kind": "decor", "sprite": "zone-2", "col": 13, "row": 5, "w": 2, "h": 2, "walk": true, "flat": true},
+    {"id": "pad-3", "name": "구역 판 3", "kind": "decor", "sprite": "zone-3", "col": 4, "row": 11, "w": 2, "h": 2, "walk": true, "flat": true},
+    {"id": "pad-4", "name": "구역 판 4", "kind": "decor", "sprite": "zone-4", "col": 13, "row": 11, "w": 2, "h": 2, "walk": true, "flat": true}
+  ],
+  "tileNames": {"classroomFloor": "gbFloor", "wallFace": "gbWallFace"}
 }

@@ -46,6 +46,8 @@ export interface CardView {
   answerBox: boolean;
   /** 해설(정답 공개 때, 문제 파일에 있으면) */
   explain: string;
+  /** 객관식 보기 "1. 가"(푸는 중·정답 공개 때). 바닥 구역의 보기 글이 캐릭터에 가려도 읽게 카드에도 둔다. */
+  choices: string[];
 }
 
 /** 학생 오른쪽 위: 내 목숨·점수·서 있는 곳 */
@@ -202,7 +204,9 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
   const n = gb.index + 1;
   const view: CardView = {
     head: '', question: '', timeLeft: null, line: '', result: '', tone: '', ranking: [], totalsTitle: '', totals: [], classes: [], answerBox: false, explain: '',
+    choices: [],
   };
+  if ((gb.phase === 'question' || gb.phase === 'reveal') && gb.type === 'choice') view.choices = gb.choices.map((c, i) => `${i + 1}. ${c}`);
   switch (gb.phase) {
     case 'ready':
       view.head = `골든벨 · ${gb.title}`;

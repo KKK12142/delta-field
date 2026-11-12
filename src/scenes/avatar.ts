@@ -4,7 +4,8 @@
 import { GameObjects, Textures, type Scene } from 'phaser';
 import characters from '../data/characters.json';
 import { DEFAULT_CHARACTER } from '../../shared/protocol.ts';
-import { alpha, color, fontFamily, motion, size } from '../theme';
+import { alpha, color, motion, size } from '../theme';
+import { Plate, type PlateSkin } from './plate';
 
 /** 아바타 위 짧은 글의 모양: CCTV에서 지금 하는 일, 골든벨에서 목숨 */
 export type TagStyle = 'cctv' | 'lives';
@@ -48,11 +49,48 @@ export function prepareCharacters(scene: Scene) {
 
 const walkKey = (id: string, facing: Facing) => `${id}-walk-${facing}`;
 
+/**
+ * 골든벨 목숨: 글(♥ 남은 목숨, ♡ 잃은 목숨, 💀 탈락)을 받아 하트·해골 아이콘(ui/heart, heart-empty, skull)을 한 줄로 늘어놓는다.
+ * text는 받은 글 그대로(확인용)
+ */
+class LivesRow extends GameObjects.Container {
+  private shown = '';
+
+  get text() {
+    return this.shown;
+  }
+
+  setText(text: string) {
+    if (text === this.shown) return this;
+    this.shown = text;
+    this.removeAll(true);
+    const d = size.dotScale;
+    const icons = [...text].map((ch) => (ch === '♥' ? 'ui/heart' : ch === '♡' ? 'ui/heart-empty' : 'ui/skull'));
+    const widths = icons.map((k) => (this.scene.textures.exists(k) ? this.scene.textures.get(k).getSourceImage().width : 9));
+    const total = widths.reduce((a, w) => a + w, 0) + size.livesGap * Math.max(0, icons.length - 1);
+    let x = -(total * d) / 2;
+    icons.forEach((key, i) => {
+      if (this.scene.textures.exists(key)) this.add(this.scene.add.image(x, 0, key).setOrigin(0, 1).setScale(d));
+      x += (widths[i] + size.livesGap) * d;
+    });
+    return this;
+  }
+
+  /** 아이콘 줄 높이(픽셀) */
+  get rowHeight() {
+    return 9 * size.dotScale;
+  }
+}
+
+/** 머리 위 짧은 표시: CCTV의 지금 하는 일(이름표 판) 또는 골든벨 목숨(아이콘 줄) */
+type Tag = Plate | LivesRow;
+
 export class Avatar extends GameObjects.Container {
   readonly sprite: GameObjects.Sprite;
-  readonly nameText: GameObjects.Text;
-  /** 닉네임 위의 짧은 글(감춰 둔 채로 만든다). tagStyle이 없으면 null */
-  readonly tag: GameObjects.Text | null;
+  /** 닉네임 판(어두운 도트 판에 흰 글자, 내 것은 노란 안테) */
+  readonly namePlate: Plate;
+  /** 닉네임 위의 짧은 표시(감춰 둔 채로 만든다). tagStyle이 없으면 null. text로 지금 보이는 글을 읽는다. */
+  readonly tag: Tag | null;
   private readonly shadow: GameObjects.Ellipse;
   private readonly character: string;
   private facing: Facing = 'down';
@@ -60,27 +98,17 @@ export class Avatar extends GameObjects.Container {
   /** 캐릭터와 글을 키운 배율(CCTV 전체 보기) */
   private markScale = { sprite: 1, text: 1 };
 
-  constructor(scene: Scene, character: string, nickname: string, nameColor: string, tagStyle: TagStyle | null = null) {
+  /** skin: 'me'면 내 이름표(노란 안테), 'dark'면 다른 사람 */
+  constructor(scene: Scene, character: string, nickname: string, skin: PlateSkin, tagStyle: TagStyle | null = null) {
     super(scene, 0, 0);
     this.character = scene.textures.exists(character) ? character : DEFAULT_CHARACTER;
     this.shadow = scene.add.ellipse(0, 0, size.avatarShadowWidth, size.avatarShadowHeight, color.avatarShadow, alpha.avatarShadow);
     this.sprite = scene.add.sprite(0, 0, this.character, STAND).setOrigin(0.5, 1).setScale(size.charScale);
-    this.nameText = scene.add
-      .text(0, 0, nickname, { fontFamily, fontSize: size.nicknameFont, color: nameColor, resolution: size.textResolution })
-      .setOrigin(0.5, 1);
-    this.tag = null;
-    if (tagStyle) {
-      // CCTV 글은 어두운 바탕에 흰 글, 목숨(하트)은 바탕 없이 테두리만 두른다.
-      const style: Phaser.Types.GameObjects.Text.TextStyle =
-        tagStyle === 'lives'
-          ? { fontSize: size.livesFont, color: color.livesText, stroke: color.livesStroke, strokeThickness: size.livesStroke }
-          : { fontSize: size.tagFont, color: color.tagText, backgroundColor: color.tagBackground };
-      this.tag = scene.add
-        .text(0, 0, '', { fontFamily, padding: { x: size.tagPadX, y: size.tagPadY }, resolution: size.textResolution, ...style })
-        .setOrigin(0.5, 1)
-        .setVisible(false);
-    }
-    this.add([this.shadow, this.sprite, this.nameText, ...(this.tag ? [this.tag] : [])]);
+    this.namePlate = new Plate(scene, nickname, skin);
+    // CCTV 글은 이름표와 같은 어두운 판, 목숨은 하트·해골 아이콘
+    this.tag = tagStyle === 'lives' ? new LivesRow(scene) : tagStyle === 'cctv' ? new Plate(scene, '') : null;
+    this.tag?.setVisible(false);
+    this.add([this.shadow, this.sprite, this.namePlate, ...(this.tag ? [this.tag] : [])]);
     this.layout();
     scene.add.existing(this);
   }
@@ -126,8 +154,8 @@ export class Avatar extends GameObjects.Container {
     const { sprite: s, text: t } = this.markScale;
     this.shadow.setScale(s);
     this.sprite.setScale(size.charScale * s);
-    this.nameText.setScale(t).setY(-size.avatarHeight * s - size.nicknameGap * t);
-    this.tag?.setScale(t).setY(this.nameText.y - this.nameText.height * t - size.tagGap * t);
+    this.namePlate.setScale(t).setY(-size.avatarHeight * s - size.nicknameGap * t);
+    this.tag?.setScale(t).setY(this.namePlate.y - this.namePlate.plateHeight * t - size.tagGap * t);
   }
 }
 

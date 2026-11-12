@@ -16,11 +16,13 @@ export const TILES = {
   ';': { id: 'computerFloor', name: '컴퓨터실 바닥', floor: true },
   '_': { id: 'libraryFloor', name: '도서관 바닥', floor: true },
   '=': { id: 'roofFloor', name: '옥상 바닥', floor: true },
+  '+': { id: 'gardenGrass', name: '과학 정원 잔디', floor: true },
   '^': { id: 'stairs', name: '계단', floor: true },
   '"': { id: 'field', name: '운동장 흙', floor: true },
   '#': { id: 'wall', name: '건물 벽', floor: false },
   '%': { id: 'fence', name: '울타리', floor: false },
   '&': { id: 'roof', name: '강당 지붕', floor: false },
+  '$': { id: 'auditorium', name: '강당 앞면 벽', floor: false },
 } as const;
 export type TileChar = keyof typeof TILES;
 export type TileId = (typeof TILES)[TileChar]['id'];
@@ -77,6 +79,8 @@ export const OBJECT_KINDS = [
   'auditoriumDoor',
   // 바닥에 놓인 작은 물건(주워 가는 미션)
   'item',
+  // 살펴볼 수 없는 꾸밈(화분, 창문, 의자 등). sprite가 꼭 있다.
+  'decor',
 ] as const;
 export type ObjectKind = (typeof OBJECT_KINDS)[number];
 
@@ -103,6 +107,12 @@ export interface RoomObject {
    * 없으면 1부(처음부터)
    */
   part?: number;
+  /** true면 지나갈 수 있다(의자, 바닥에 까는 판). 없으면 사물은 막는다. */
+  walk?: boolean;
+  /** true면 발밑 그림자를 그리지 않는다(벽에 거는 것, 바닥에 까는 것) */
+  flat?: boolean;
+  /** 그림 가운데에 적는 글(교실 이름판, 골든벨 현수막) */
+  text?: string;
 }
 
 /** 칸 단위 네모 */
@@ -145,6 +155,10 @@ export interface Room {
   zones?: Zones;
   /** 골든벨 맵: 서버가 학생의 발밑을 처음 세우는 곳(벽과 구역에 닿지 않게 띄워 둔다) */
   spawn?: Rect;
+  /** 이 맵에서 바꿔 쓰는 타일 그림 이름(예: 골든벨 맵 강당 마루 {classroomFloor: gbFloor, wallFace: gbWallFace}) */
+  tileNames?: Record<string, string>;
+  /** 운동장 경기장 선을 그릴 네모(칸). 선은 바닥 그림처럼 굽고 지나갈 수 있다. */
+  pitch?: Rect;
 }
 
 /** 맵 크기(칸) */
@@ -187,6 +201,8 @@ export function loadRoom(data: unknown): Room {
     if (!OBJECT_KINDS.includes(o.kind)) errors.push(`사물 '${o.id}'의 kind '${o.kind}'를 모릅니다.`);
     if (!inside(o)) errors.push(`사물 '${o.id}'가 맵 밖으로 나갑니다.`);
     if (o.part !== undefined && o.part !== 1 && o.part !== 2) errors.push(`사물 '${o.id}'의 part는 1이나 2로 씁니다.`);
+    if (o.kind === 'decor' && !o.sprite) errors.push(`꾸밈 사물 '${o.id}'에 sprite(그림 이름)가 없습니다.`);
+    if (o.kind === 'decor' && o.mission) errors.push(`꾸밈 사물 '${o.id}'에는 mission을 달지 않습니다.`);
     // 문은 열면 지나갈 수 있어야 하므로 그 밑이 바닥 칸이어야 한다.
     if ((DOOR_KINDS as readonly string[]).includes(o.kind) && inside(o)) {
       for (let r = o.row; r < o.row + o.h; r++) {
