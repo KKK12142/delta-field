@@ -222,7 +222,7 @@
   인증 Authorization: Bearer, User-Agent가 비면 403이라 delta-field-art/0.1을 넣는다.
 - GPT 모델과 한 장 값: gpt-image-2 41크레딧, gpt-image-2.5-sunburst·gpt-image-2.5-flare 10크레딧(문서). 모델 목록(`pnpm art:models gpt-image`)에는 2.6-sunburst·2.6-flare도 있다.
   실제로 쓴 값(1024×1024 한 장, 2026-11-11): 2.6-sunburst high 54.17, 2.6-flare high 54.23, 2.6-sunburst medium 44.96, 2.6-flare medium 44.96크레딧.
-  걸린 시간은 sunburst 35~43초, flare 8~10초. 교사가 정한 한도는 하루 5,000크레딧.
+  걸린 시간은 sunburst 35~43초, flare 8~10초. 교사가 정한 한도는 하루 8,000크레딧(2026-11-12에 5,000에서 늘림).
 - 미리 값을 보는 /estimate는 주소를 찾지 못했다(images/generate/estimate/는 405·404).
 - **쓰는 모델(2026-11-11 교사 결정): gpt-image-2.6-sunburst, 품질 medium.** 1024×1024 한 장 44.96크레딧, 약 35초. 비교에서 high(54.17)와 그림 차이가 작았다.
 - 설정은 scripts/art/baze.json(url, model, quality, userAgent, size, body). model·quality 기본값은 위 결정이고 --model·--quality로 바꾼다. 모델이 비면(설정과 --model 모두) 부르지 않는다.
