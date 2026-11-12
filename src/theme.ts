@@ -24,6 +24,8 @@ export const color = {
   label: '#3a3a3a',
   labelOnDark: '#ffffff',
   labelBackground: 'rgba(30, 26, 22, 0.6)', // 그림 위에 적는 사물 이름표 바탕
+  stepMark: '#ffffff', // 순서 맞추기: 맞게 누른 사물 위 번호 글자
+  stepMarkBackground: '#d9822b', // 그 번호의 바탕
   nickname: '#24476e',
   remoteNickname: '#5b6b7c',
   teacherNickname: '#8a3d1f',
@@ -129,6 +131,8 @@ export const size = {
   spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
   labelFont: '15px',
   labelPad: 4, // 그림 위 이름표 바탕의 좌우 여백(픽셀)
+  stepMarkFont: '22px', // 순서 맞추기 번호
+  stepMarkPad: 6, // 번호 바탕의 여백(픽셀)
   nicknameFont: '14px',
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다

@@ -1,6 +1,6 @@
 // 한 방의 방탈출 진행. 선생님이 고른 자료 파일(escape/*.yaml)로 미션을 채점하고 학생의 진행(Player)을 바꾼다.
 // 모두에게 보여도 되는 것(미션 id, 잠긴 문, 아이템 이름, 힌트 카드 수)만 상태(ClassState.escape)에 넣는다.
-import type { HintCard, MissionAnswerReply, MissionReward, MissionView } from '../shared/escape.ts';
+import type { HintCard, MissionAnswerReply, MissionPressReply, MissionReward, MissionView } from '../shared/escape.ts';
 import type { ClassState, Player } from '../shared/schema.ts';
 import { OBJECT_MISSIONS, checkQuiz, quizFor, type EscapeSet, type Mission } from './escape.ts';
 
@@ -20,8 +20,6 @@ const NO_FILE = '선생님이 아직 방탈출 자료를 고르지 않았습니�
 export class EscapeGame {
   private set: EscapeSet | null = null;
   private readonly state: ClassState;
-  /** 순서 맞추기: 학생 → 미션 id → 지금까지 맞힌 수(서버만 안다) */
-  private progress = new WeakMap<Player, Map<string, number>>();
 
   constructor(state: ClassState) {
     this.state = state;
@@ -42,20 +40,22 @@ export class EscapeGame {
     replaceAll(e.pickups, [...set.missions.values()].filter((m) => m.type === 'pickup').map((m) => m.id));
     e.items.clear();
     for (const [id, name] of Object.entries(set.items)) e.items.set(id, name);
+    e.labels.clear();
+    for (const [id, name] of Object.entries(set.labels)) e.labels.set(id, name);
     e.hintTotal = set.hints.length;
     for (const p of this.state.players.values()) {
-      this.restart(p);
+      p.items.clear();
+      p.done.clear();
       p.hints.clear();
+      p.pressed.clear();
+      p.finished = false;
     }
     e.version += 1;
   }
 
-  /** 다시 하기: 물건, 마친 미션, 탈출을 처음으로(얻은 힌트 카드는 수첩에 남긴다) */
-  restart(p: Player) {
-    p.items.clear();
-    p.done.clear();
-    p.escaped = false;
-    this.progress.delete(p);
+  /** 지금 고른 자료 파일 이름(고르지 않았으면 '') */
+  get file() {
+    return this.set?.file ?? '';
   }
 
   /** 사물 id로 그 사물의 미션을 찾는다. */
@@ -71,7 +71,7 @@ export class EscapeGame {
     const m = this.missionOf(object);
     if (!m) return { kind: 'none', text: '살펴볼 것이 없습니다.' };
     if (p.done.includes(m.id)) {
-      return { kind: 'done', text: m.done || (m.type === 'clue' ? m.text : m.type === 'exit' ? '이미 탈출했습니다.' : '이미 마쳤습니다.') };
+      return { kind: 'done', text: m.done || (m.type === 'clue' ? m.text : m.type === 'exit' ? '이미 1부를 마쳤습니다.' : '이미 마쳤습니다.') };
     }
     if (m.requires && !p.items.includes(m.requires)) return { kind: 'locked', text: m.locked || '잠겨 있습니다.' };
     switch (m.type) {
@@ -80,8 +80,11 @@ export class EscapeGame {
         return { kind: 'clue', text: m.text, reward: this.finish(p, m) };
       case 'deliver':
         return this.deliver(p, m);
-      case 'order':
-        return this.step(p, m, object as string);
+      case 'order': {
+        const pressed = this.pressedOf(p, m);
+        const at = pressed.indexOf(object as string);
+        return { kind: 'order', text: m.texts[object as string] ?? '', step: pressed.length, total: m.order.length, pressedAt: at + 1 };
+      }
       case 'code':
         return { kind: 'code', text: m.text || '번호를 눌러 엽니다.', digits: m.code.length, example: m.example };
     }
@@ -103,23 +106,36 @@ export class EscapeGame {
     return { kind: 'clue', text: m.text || `${names.join(', ')}을(를) 내려놓았습니다.`, reward: this.finish(p, m) };
   }
 
-  /** 순서 맞추기: 다음 차례의 사물이면 한 칸 나아가고, 아니면 처음부터 다시 한다. 마지막까지 맞히면 마친다. */
-  private step(p: Player, m: Mission, object: string): MissionView {
-    const progress = this.progress.get(p) ?? new Map<string, number>();
-    this.progress.set(p, progress);
-    const now = progress.get(m.id) ?? 0;
-    const text = m.texts[object] ?? '';
+  /** 순서 맞추기: 이 미션의 사물 가운데 지금 시도에서 맞게 누른 것(누른 순서) */
+  private pressedOf(p: Player, m: Mission): string[] {
+    return [...p.pressed].filter((id) => m.order.includes(id));
+  }
+
+  /**
+   * 순서 맞추기에서 사물을 누른다. 다음 차례의 사물이면 한 칸 나아가고, 아니면 처음부터 다시 한다. 마지막까지 맞히면 마친다.
+   * 이미 맞게 누른 사물을 다시 누르면 아무 일도 없다(예전에는 다시 살펴본 첫째 사물이 틀린 것으로 쳐져 처음으로 돌아갔다).
+   */
+  press(p: Player, object: unknown): MissionPressReply {
+    const m = this.missionOf(object);
+    const refuse = (error: string): MissionPressReply => ({ step: 0, total: 0, wrong: false, reward: null, error });
+    if (!this.set || !m || m.type !== 'order' || !m.order.includes(object as string)) return refuse('누를 수 있는 사물이 아닙니다.');
+    if (p.done.includes(m.id)) return refuse('이미 마친 미션입니다.');
+    if (m.requires && !p.items.includes(m.requires)) return refuse(m.locked || '잠겨 있습니다.');
+    const id = object as string;
+    const pressed = this.pressedOf(p, m);
     const total = m.order.length;
-    if (m.order[now] !== object) {
-      progress.set(m.id, 0);
-      return { kind: 'step', text, step: 0, total, wrong: true, reward: null };
+    if (pressed.includes(id)) return { step: pressed.length, total, wrong: false, reward: null, error: null };
+    const others = [...p.pressed].filter((x) => !m.order.includes(x));
+    if (m.order[pressed.length] !== id) {
+      replaceAll(p.pressed, others);
+      return { step: 0, total, wrong: true, reward: null, error: null };
     }
-    if (now + 1 < total) {
-      progress.set(m.id, now + 1);
-      return { kind: 'step', text, step: now + 1, total, wrong: false, reward: null };
+    if (pressed.length + 1 < total) {
+      p.pressed.push(id);
+      return { step: pressed.length + 1, total, wrong: false, reward: null, error: null };
     }
-    progress.delete(m.id);
-    return { kind: 'step', text, step: total, total, wrong: false, reward: this.finish(p, m) };
+    replaceAll(p.pressed, others);
+    return { step: total, total, wrong: false, reward: this.finish(p, m), error: null };
   }
 
   /** 문제·숫자 자물쇠의 답을 채점한다. 맞으면 미션을 마치고 얻은 것을 돌려준다. 틀리면 다시 낼 수 있다. */
@@ -135,17 +151,17 @@ export class EscapeGame {
     return { correct: true, reward: this.finish(p, m), error: null };
   }
 
-  /** 미션을 마친다: 마친 미션에 넣고, 아이템·힌트 카드를 주고, 출구면 탈출한다. */
+  /** 미션을 마친다: 마친 미션에 넣고, 아이템·힌트 카드를 주고, 끝 지점(exit)이면 1부를 마친다. */
   private finish(p: Player, m: Mission): MissionReward {
     add(p.done, m.id);
     add(p.items, m.gives);
     add(p.hints, m.hint);
-    if (m.type === 'exit') p.escaped = true;
+    if (m.type === 'exit') p.finished = true;
     return {
       item: m.gives ? (this.set?.items[m.gives] ?? '') : '',
       hint: this.set?.hints.find((h) => h.id === m.hint) ?? null,
       opened: m.type === 'open',
-      escaped: m.type === 'exit',
+      finished: m.type === 'exit',
       picked: m.type === 'pickup',
       after: m.after,
     };

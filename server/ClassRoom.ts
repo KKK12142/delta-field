@@ -39,7 +39,7 @@ import { listQuestionFiles, loadQuestionSet, type QuestionSet } from './question
 import { EscapeGame } from './EscapeGame.ts';
 import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
-import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionView } from '../shared/escape.ts';
+import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../shared/escape.ts';
 
 /** 맵 id → 크기(칸) */
 const MAP_SIZES: Record<string, { rows: number; cols: number }> = {
@@ -129,7 +129,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       player.activityObject = object;
     });
 
-    // 방탈출: 자료 파일 고르기(선생님), 미션 살펴보기·답 내기·다시 하기·힌트 수첩(모두). 채점은 서버가 한다.
+    // 방탈출: 자료 파일 고르기(선생님), 미션 살펴보기·답 내기·순서 누르기·힌트 수첩(모두). 채점은 서버가 한다.
     this.onMessage('escapeFiles', (client: Client): EscapeFileInfo[] => (this.isTeacher(client) ? listEscapeFiles() : []));
     this.onMessage('escapeLoad', (client: Client, message: { file?: unknown }) => this.escapeLoad(client, message));
     this.onMessage('missionOpen', (client: Client, message: { object?: unknown }): MissionView => {
@@ -145,11 +145,12 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (!p || p.map !== 'school') return { correct: false, reward: null, error: '지금은 답을 낼 수 없습니다.' };
       return this.escape.answer(p, message?.object, message?.answer);
     });
-    this.onMessage('escapeRestart', (client: Client): GbReply => {
+    this.onMessage('missionPress', (client: Client, message: { object?: unknown }): MissionPressReply => {
       const p = this.state.players.get(client.sessionId);
-      if (!p || !p.escaped) return refuse('탈출한 뒤에 다시 할 수 있습니다.');
-      this.escape.restart(p);
-      return ok;
+      if (!p || p.map !== 'school' || (OBJECT_PARTS.get(String(message?.object)) ?? 1) > this.state.part) {
+        return { step: 0, total: 0, wrong: false, reward: null, error: '지금은 누를 수 없습니다.' };
+      }
+      return this.escape.press(p, message?.object);
     });
     this.onMessage('myHints', (client: Client): HintCard[] => {
       const p = this.state.players.get(client.sessionId);
@@ -238,9 +239,10 @@ export class ClassRoom extends Room<{ state: ClassState }> {
 
   // ---- 방탈출 자료 ----
 
-  /** 선생님이 방탈출 자료 파일을 고른다. 모든 사람의 방탈출 진행이 처음으로 돌아간다. */
+  /** 선생님이 방탈출 자료 파일을 고른다. 모든 사람의 방탈출 진행이 처음으로 돌아간다. 지금 쓰는 파일을 다시 고르면 아무 일도 하지 않는다. */
   private escapeLoad(client: Client, message: { file?: unknown }): GbReply {
     if (!this.isTeacher(client)) return refuse('선생님만 방탈출 자료를 고를 수 있습니다.');
+    if (this.escape.loaded && message?.file === this.escape.file) return ok;
     try {
       const set = loadEscapeSet(typeof message?.file === 'string' ? message.file : '');
       this.escape.load(set);

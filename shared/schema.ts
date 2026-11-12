@@ -20,7 +20,7 @@ export const Player = schema(
     /** 연결이 끊겨 다시 붙기를 기다리는 동안 false */
     online: t.boolean().default(true),
     // 아래는 학생의 방탈출 진행 상태. 지금 하는 일(activity)은 화면이 알리고(StatusMessage),
-    // 가진 물건·마친 미션·탈출·힌트 카드는 서버가 채점하며 바꾼다(shared/escape.ts). 선생님의 CCTV 모드에 쓴다.
+    // 가진 물건·마친 미션·1부 완료·힌트 카드는 서버가 채점하며 바꾼다(shared/escape.ts). 선생님의 CCTV 모드에 쓴다.
     /** ActivityKind: '' | 'look' | 'quiz' */
     activity: t.string().default(''),
     /** activity의 사물 id */
@@ -29,7 +29,10 @@ export const Player = schema(
     items: t.array('string'),
     /** 마친 미션 id(맵 사물의 mission) */
     done: t.array('string'),
-    escaped: t.boolean().default(false),
+    /** 1부를 마침(exit 미션, 예: 교문) */
+    finished: t.boolean().default(false),
+    /** 순서 맞추기: 지금 시도에서 맞게 누른 사물 id(누른 순서, 미션마다 섞여 있다). 사물 위 번호 표시에 쓴다. */
+    pressed: t.array('string'),
     /** 얻은 힌트 카드 id(글은 서버가 그 학생에게만 보낸다) */
     hints: t.array('string'),
     // 골든벨(규칙은 shared/goldenbell.ts)
@@ -96,6 +99,8 @@ export const Escape = schema(
     pickups: t.array('string'),
     /** 아이템 id → 이름 */
     items: t.map('string'),
+    /** 사물 id → 이름표(자료 파일의 labels). 맵(school.json)의 name 대신 쓴다. 순서 맞추기 사물을 나눠 보일 때 쓴다. */
+    labels: t.map('string'),
     /** 힌트 카드 수 */
     hintTotal: t.uint8().default(0),
   },

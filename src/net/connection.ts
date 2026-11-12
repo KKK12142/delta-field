@@ -16,7 +16,7 @@ import {
   type StatusMessage,
 } from '../../shared/protocol.ts';
 import type { ClassState, Escape, GoldenBell, Player } from '../../shared/schema.ts';
-import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionView } from '../../shared/escape.ts';
+import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../../shared/escape.ts';
 
 /** 개발 중에는 Vite가 /colyseus를 서버(2567)로 넘겨 주고, 수업용 서버는 같은 주소에서 바로 받는다. */
 function endpoint() {
@@ -133,7 +133,7 @@ export class Net {
     return this.room.request('escapeLoad', { file });
   }
 
-  /** 미션을 단 사물(object: 사물 id)을 살펴본다. 단서·줍기·가져다주기·순서 맞추기는 이때 채점한다. */
+  /** 미션을 단 사물(object: 사물 id)을 살펴본다. 단서·줍기·가져다주기는 이때 채점한다(순서 맞추기는 글만 받고 missionPress로 누른다). */
   missionOpen(object: string): Promise<MissionView> {
     return this.room.request('missionOpen', { object });
   }
@@ -144,9 +144,9 @@ export class Net {
     return this.room.request('missionAnswer', message);
   }
 
-  /** 탈출한 뒤 다시 하기(물건, 마친 미션, 탈출을 처음으로. 힌트 카드는 남는다) */
-  escapeRestart(): Promise<GbReply> {
-    return this.room.request('escapeRestart');
+  /** 순서 맞추기: 사물(object: 사물 id)을 누른다. 서버가 순서를 채점한다. */
+  missionPress(object: string): Promise<MissionPressReply> {
+    return this.room.request('missionPress', { object });
   }
 
   /** 내가 얻은 힌트 카드(글 포함) */
