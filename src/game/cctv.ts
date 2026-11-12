@@ -3,9 +3,15 @@ import { CLASS_GROUPS, classGroupName } from '../../shared/protocol.ts';
 import type { Escape, Player } from '../../shared/schema.ts';
 import { areaAt, type Room } from '../data/room';
 
+/** 학생이 지금 하는 일의 종류(CCTV 목록에서 색으로 나눈다). stuck(막힘)은 막힌 학생을 알아내는 규칙이 생기면 채운다. */
+export type StudentState = 'walk' | 'look' | 'quiz' | 'stuck' | 'escaped' | 'offline';
+
 export interface StudentView {
   id: string;
   nickname: string;
+  /** 캐릭터 id(목록의 얼굴) */
+  character: string;
+  state: StudentState;
   /** 반 id와 이름(반을 모르면 '') */
   classGroup: string;
   className: string;
@@ -26,16 +32,21 @@ export function describeStudent(room: Room, escape: Escape, id: string, p: Playe
   const object = found ? { name: escape.labels.get(found.id) ?? found.name } : undefined;
   let doing = '돌아다니는 중';
   let tag: string | null = null;
+  let state: StudentState = 'walk';
   if (!p.online) {
     doing = tag = '연결 끊김';
+    state = 'offline';
   } else if (object && p.activity === 'quiz') {
     doing = `${object.name} 퀴즈 푸는 중`;
     tag = `${object.name} 퀴즈`;
+    state = 'quiz';
   } else if (object && p.activity === 'look') {
     doing = `${object.name} 살펴보는 중`;
     tag = object.name;
+    state = 'look';
   } else if (p.finished) {
     doing = tag = '1부 완료';
+    state = 'escaped';
   }
   // 연결이 끊긴 학생 말고는 지금 장소를 앞에 붙인다.
   const place = p.online ? areaAt(room, p.col, p.row)?.name : undefined;
@@ -43,6 +54,8 @@ export function describeStudent(room: Room, escape: Escape, id: string, p: Playe
   return {
     id,
     nickname: p.nickname,
+    character: p.character,
+    state,
     classGroup: p.classGroup,
     className: classGroupName(p.classGroup),
     doing,

@@ -59,7 +59,7 @@ export function drawMinimap(
   if (labels) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `bold ${M.labelFont} ${fontFamily}`;
+    ctx.font = `${M.labelFont} ${fontFamily}`; // 도트 글꼴은 굵은 꼴이 없어 굵게 하지 않는다
     const label = (text: string, r: Rect, faded: boolean, fill: string = faded ? M.lockedLabel : M.label) => {
       const [x, y, rw, rh] = rect(r);
       ctx.fillStyle = fill;

@@ -1,5 +1,6 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import { el, uiRoot } from './dom';
+import { objectPicture, pixelImage } from './pictures';
 
 /** 미션 문제(정답은 서버만 안다). choices가 비어 있으면 단답형 */
 export interface QuizView {
@@ -29,14 +30,28 @@ export interface ChoiceOption {
   disabled?: boolean;
 }
 
+/** 대화상자 제목 옆에 그림을 넣을 사물(맵 사물의 이름·종류·그림 이름) */
+export interface DialogSubject {
+  name: string;
+  kind: string;
+  sprite?: string;
+}
+
 /** 단서, 퀴즈, 끝 화면, 고르기를 띄우는 대화상자. 한 번에 하나만 띄운다. */
 export class Dialog {
   private current: { node: HTMLElement; onKey: (e: KeyboardEvent) => void } | null = null;
+  /** 지금 살펴보는 사물. 제목이 이 사물 이름인 창에는 사물 그림을 넣는다. */
+  private subject: DialogSubject | null = null;
   /** 닫힌 시각. 닫을 때 누른 키가 곧바로 다시 살펴보기로 이어지지 않게 쓴다. */
   lastClosedAt = 0;
 
   isOpen() {
     return this.current !== null;
+  }
+
+  /** 살펴보기를 시작할 때 사물을, 끝나면 null을 준다(제목이 사물 이름인 창에 그 그림이 들어간다). */
+  setSubject(subject: DialogSubject | null) {
+    this.subject = subject;
   }
 
   /** 글을 보여 준다. 확인을 누르면 끝난다. */
@@ -98,7 +113,7 @@ export class Dialog {
       const feedback = el('p', 'df-text df-feedback');
       feedback.hidden = true;
       const row = el('div', 'df-row');
-      const close = el('button', 'df-button', '닫기');
+      const close = el('button', 'df-button df-button-light', '닫기');
       row.append(close);
       let busy = false;
       const finish = (correct: boolean) => {
@@ -257,7 +272,7 @@ export class Dialog {
       open.addEventListener('click', () => void submit());
       pad.append(back, zero, open);
       const row = el('div', 'df-row');
-      const close = el('button', 'df-button', '닫기');
+      const close = el('button', 'df-button df-button-light', '닫기');
       close.addEventListener('click', () => finish(false));
       row.append(close);
       panel.append(display, pad, feedback, row);
@@ -347,7 +362,7 @@ export class Dialog {
         list.append(b);
       });
       const row = el('div', 'df-row');
-      const close = el('button', 'df-button', closeText);
+      const close = el('button', 'df-button df-button-light', closeText);
       close.addEventListener('click', () => finish(null));
       row.append(close);
       panel.append(list, row);
@@ -366,7 +381,16 @@ export class Dialog {
     const panel = el('div', 'df-panel');
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'true');
-    panel.append(el('h2', 'df-title', title));
+    const heading = el('h2', 'df-title', title);
+    const picture = this.subject?.name === title ? objectPicture(this.subject) : null;
+    if (picture) {
+      // 살펴본 사물 그림(물건 칸 틀 안)과 제목을 한 줄에 둔다.
+      const head = el('div', 'df-dialog-head');
+      const frame = el('div', 'df-picture');
+      frame.append(pixelImage(picture, 'df-picture-img'));
+      head.append(frame, heading);
+      panel.append(head);
+    } else panel.append(heading);
     return panel;
   }
 
