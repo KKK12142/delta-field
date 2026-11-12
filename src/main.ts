@@ -17,14 +17,16 @@ import { askEntry } from './ui/start';
 import './ui/ui.css';
 
 applyCssTheme();
-// 첫 화면과 게임 화면 글자가 도트 글꼴로 나오게 글꼴을 먼저 읽는다(Phaser 글자는 만들 때의 글꼴로 그려진다).
-await loadFonts();
+// 도트 글꼴을 읽기 시작한다. 첫 화면은 기다리지 않고 띄우고(글꼴이 오면 바뀐다),
+// 게임 화면은 다 읽은 뒤 시작한다(Phaser 글자는 만들 때의 글꼴로 그려진다).
+const fonts = loadFonts();
 
 const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
   school: loadRoom(school),
   goldenbell: loadRoom(goldenbell),
 };
 const net = await askEntry(connect, joinErrorText);
+await fonts;
 const dialog = new Dialog();
 
 // 다시 붙기를 끝내 못 하면 처음 화면으로 돌아가게 한다.

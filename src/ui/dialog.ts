@@ -1,6 +1,6 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import { el, uiRoot } from './dom';
-import { objectPicture, pixelImage } from './pictures';
+import { objectPicture, pixelImage, uiIcon } from './pictures';
 
 /** 미션 문제(정답은 서버만 안다). choices가 비어 있으면 단답형 */
 export interface QuizView {
@@ -298,7 +298,9 @@ export class Dialog {
       const list = el('div', 'df-cards');
       for (const c of cards) {
         const card = el('section', 'df-card');
-        card.append(el('strong', '', c.title), el('p', 'df-text', c.text));
+        const body = el('div', 'df-card-body');
+        body.append(el('strong', '', c.title), el('p', 'df-text', c.text));
+        card.append(uiIcon('ui', 'hintCard', 'df-card-img'), body);
         list.append(card);
       }
       const row = el('div', 'df-row');

@@ -1,11 +1,19 @@
 import type { StudentView } from '../game/cctv';
 import { el, uiRoot } from './dom';
-import { face, setFace } from './pictures';
+import type { StudentState } from '../game/cctv';
+import { emblem, face, setFace, uiIcon } from './pictures';
+
+/** 하는 일 표시 그림(public/sprites/ui/status-*.png). 살펴보는 중·연결 끊김은 그림 없이 띠 색만 */
+const STATUS_ICON: Partial<Record<StudentState, string>> = { quiz: 'status-quiz', stuck: 'status-stuck', escaped: 'status-done', walk: 'status-move' };
 
 interface Row {
   node: HTMLButtonElement;
   face: HTMLElement;
   character: string;
+  state: string;
+  classGroup: string;
+  emblem: HTMLElement;
+  status: HTMLElement;
   name: HTMLElement;
   className: HTMLElement;
   progress: HTMLElement;
@@ -132,8 +140,16 @@ export class CctvPanel {
         row.character = s.character;
         setFace(row.face, s.character);
       }
-      const state = `df-cctv-row is-${s.state}`;
-      if (row.node.className !== state) row.node.className = state;
+      if (row.state !== s.state) {
+        row.state = s.state;
+        row.node.className = `df-cctv-row is-${s.state}`;
+        const icon = STATUS_ICON[s.state];
+        row.status.replaceChildren(...(icon ? [uiIcon('ui', icon, 'df-status-icon')] : []));
+      }
+      if (row.classGroup !== s.classGroup) {
+        row.classGroup = s.classGroup;
+        row.emblem.replaceChildren(...(s.classGroup ? [emblem(s.classGroup)] : []));
+      }
       setText(row.name, s.nickname);
       setText(row.className, s.className);
       setText(row.progress, s.progress);
@@ -177,15 +193,21 @@ export class CctvPanel {
       node,
       face: face('', 'df-cctv-face'),
       character: '',
+      state: '',
+      classGroup: '',
+      emblem: el('span', 'df-cctv-emblem'),
+      status: el('span', 'df-cctv-status'),
       name: el('strong', 'df-cctv-row-name'),
       className: el('span', 'df-muted df-cctv-row-class'),
       progress: el('span', 'df-muted'),
-      doing: el('span', 'df-cctv-row-doing'),
+      doing: el('span', ''),
     };
     const head = el('span', 'df-cctv-row-head');
-    head.append(row.name, row.className);
+    head.append(row.name, row.emblem, row.className);
     row.progress.classList.add('df-cctv-progress');
-    node.append(row.face, head, row.progress, row.doing);
+    const doing = el('span', 'df-cctv-row-doing');
+    doing.append(row.status, row.doing);
+    node.append(row.face, head, row.progress, doing);
     this.rows.set(id, row);
     return row;
   }

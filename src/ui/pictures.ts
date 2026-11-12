@@ -1,6 +1,6 @@
 // HTML 화면에 넣는 도트 그림: 캐릭터 얼굴, 가진 물건 아이콘, 살펴본 사물 그림.
+import { DEFAULT_CHARACTER } from '../../shared/protocol.ts';
 import school from '../data/school.json';
-import { characterSheet } from '../scenes/avatar';
 import { uiSize } from '../theme';
 import { el } from './dom';
 
@@ -9,9 +9,10 @@ const names = (paths: Record<string, unknown>, dir: string) =>
   new Set(Object.keys(paths).map((p) => p.replace(`/public/sprites/${dir}/`, '').replace(/\.png$/, '')));
 const ICONS = names(import.meta.glob('/public/sprites/icons/*.png'), 'icons');
 const OBJECTS = names(import.meta.glob('/public/sprites/objects/*.png'), 'objects');
+const FACES = names(import.meta.glob('/public/sprites/faces/*.png'), 'faces');
 const sprite = (dir: string, name: string) => `${import.meta.env.BASE_URL}sprites/${dir}/${name}.png`;
 
-/** 캐릭터 얼굴: 시트의 앞모습 서기 프레임에서 머리 부분만(크기는 theme uiSize.face*). character가 비면 빈 얼굴 칸 */
+/** 캐릭터 얼굴(public/sprites/faces/<캐릭터>.png, 30×26을 2배. 크기는 theme uiSize.face*). character가 비면 빈 얼굴 칸 */
 export function face(character: string, className = '') {
   const node = el('span', `df-face ${className}`.trim());
   setFace(node, character);
@@ -21,7 +22,22 @@ export function face(character: string, className = '') {
 
 /** 얼굴 칸의 캐릭터를 바꾼다. */
 export function setFace(node: HTMLElement, character: string) {
-  node.style.backgroundImage = character ? `url("${characterSheet(character)}")` : '';
+  const id = FACES.has(character) ? character : DEFAULT_CHARACTER;
+  node.style.backgroundImage = character ? `url("${sprite('faces', id)}")` : '';
+}
+
+/** 작은 그림 하나(public/sprites/ui 등). 꾸밈이라 읽어 주지 않는다. 크기는 CSS(클래스)가 정한다. */
+export function uiIcon(dir: string, name: string, className: string) {
+  const img = el('img', className);
+  img.src = sprite(dir, name);
+  img.alt = '';
+  img.setAttribute('aria-hidden', 'true');
+  return img;
+}
+
+/** 반 상징(public/sprites/ui/emblem-<반 id>.png) */
+export function emblem(classGroup: string) {
+  return uiIcon('ui', `emblem-${classGroup}`, 'df-emblem');
 }
 
 interface Pictured {

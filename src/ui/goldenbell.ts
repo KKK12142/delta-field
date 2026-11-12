@@ -2,7 +2,12 @@ import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import type { AnswerGroup, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
 import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
-import { face } from './pictures';
+import { face, uiIcon } from './pictures';
+
+/** 1·2·3위 메달(public/sprites/ui/medal-*.png) */
+const MEDAL: Record<number, string> = { 1: 'medal-gold', 2: 'medal-silver', 3: 'medal-bronze' };
+/** 목숨 글자를 그림으로(public/sprites/ui): ♥ 남은 목숨, ♡ 잃은 목숨, 💀 탈락 */
+const LIFE_ICON: Record<string, string> = { '♥': 'heart', '♡': 'heart-empty', '💀': 'skull' };
 
 /** 글이 달라졌을 때만 바꾼다(매 프레임 불러도 화면이 흔들리지 않게). */
 function setText(node: HTMLElement, text: string) {
@@ -22,7 +27,8 @@ function setRanking(podium: HTMLElement, list: HTMLElement, rows: RankRow[]) {
     ...rows.map((r) => {
       const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
       // 글 사이의 빈칸은 글로 넣는다(화면을 읽는 쪽에서 "1위 가람 9점"으로 읽히게).
-      li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
+      const medal = MEDAL[r.rank] ? uiIcon('ui', MEDAL[r.rank], 'df-rank-medal') : el('span', 'df-rank-medal');
+      li.append(medal, face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
       return li;
     }),
   );
@@ -33,6 +39,7 @@ function setRanking(podium: HTMLElement, list: HTMLElement, rows: RankRow[]) {
       const place = el('div', `df-podium-place is-${i + 1}`);
       const r = rows[i];
       if (!r) return place;
+      if (MEDAL[r.rank]) place.append(uiIcon('ui', MEDAL[r.rank], 'df-podium-medal'));
       place.append(face(r.character, 'df-podium-face'), el('span', r.me ? 'df-podium-name is-me' : 'df-podium-name', r.nickname));
       place.append(el('span', 'df-podium-step', String(r.rank)));
       return place;
@@ -170,13 +177,28 @@ export class GbHud {
   }
 
   showMine(v: MineView) {
-    setText(this.lives, v.lives);
+    this.showLives(v.lives);
     setText(this.score, v.score);
     setText(this.where, v.where);
   }
 
   setStatus(text: string | null) {
     setText(this.status, text ?? '');
+  }
+
+  /** 목숨: 글(♥♥♡, 💀)의 하트·해골을 도트 그림으로 바꿔 보인다. 원래 글은 읽어 주기용으로 함께 둔다. */
+  private showLives(text: string) {
+    if (this.lives.dataset.key === text) return;
+    this.lives.dataset.key = text;
+    const m = /^(.*?)((?:♥|♡|💀)+)(.*)$/su.exec(text);
+    if (!m) {
+      this.lives.replaceChildren(text);
+      return;
+    }
+    const shown = el('span', 'df-lives-shown');
+    shown.setAttribute('aria-hidden', 'true');
+    shown.append(m[1], ...[...m[2]].map((c) => uiIcon('ui', LIFE_ICON[c], 'df-life')), m[3]);
+    this.lives.replaceChildren(el('span', 'df-sr', text), shown);
   }
 
   /** 힌트 수첩 단추에 얻은 수/전체를 적는다. */

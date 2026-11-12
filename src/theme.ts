@@ -237,6 +237,14 @@ export const uiSize = {
   // 골든벨 시상대
   podiumWidth: '96px',
   rankNo: '36px', // 순위 줄의 등수 칸 너비
+  // 작은 그림(도트 그림을 정수 배로): 로고 81×64 2배, 반 상징·메달·확성기 30×30 1배, 하는 일 11×11 2배, 하트 9×8 2배, 힌트 카드 40×56 1배
+  logoWidth: '162px',
+  logoHeight: '128px',
+  iconSize: '30px',
+  statusIcon: '22px',
+  lifeIcon: '18px',
+  cardImageWidth: '40px',
+  cardImageHeight: '56px',
   rankMin: '220px', // 학생 문제 카드에서 순위 한 칸의 가장 작은 너비(넓으면 여러 칸으로)
   podium1: '84px',
   podium2: '60px',
@@ -261,6 +269,9 @@ export const uiSkin = {
   barFill: `url("sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
   barFillWarn: `url("sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
   barFillLow: `url("sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  // 9-slice가 아닌 바탕 그림
+  startImage: 'url("sprites/ui/title-bg.png")', // 첫 화면 배경(256×171, 화면을 덮도록 키운다)
+  megaphone: 'url("sprites/ui/megaphone.png")', // 강당으로 모으기 안내
 } as const;
 
 /** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */

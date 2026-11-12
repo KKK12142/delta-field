@@ -3,6 +3,7 @@ import characters from '../data/characters.json';
 import type { Entry } from '../net/connection';
 import { characterSheet } from '../scenes/avatar';
 import { el, uiRoot } from './dom';
+import { emblem, uiIcon } from './pictures';
 
 /** 이 기기에서 마지막으로 고른 캐릭터를 기억해 두는 곳(다음에 들어올 때 미리 골라 둔다) */
 const CHARACTER_KEY = 'df-character';
@@ -56,7 +57,8 @@ function classPicker() {
   group.setAttribute('role', 'group');
   group.setAttribute('aria-labelledby', label.id);
   const buttons = CLASS_GROUPS.map((g) => {
-    const button = el('button', 'df-class', g.name);
+    const button = el('button', 'df-class');
+    button.append(emblem(g.id), g.name);
     button.type = 'button';
     button.dataset.id = g.id;
     button.addEventListener('click', () => {
@@ -111,10 +113,10 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     let teacher = false;
     const wrap = el('div', 'df-start');
     const form = el('form', 'df-panel');
-    // 로고 자리: 그림 담당의 로고 그림이 오면 이 안에 넣는다(지금은 글자).
+    // 로고(public/sprites/ui/logo.png). 제목 글은 읽어 주기용으로 남긴다.
     const logo = el('header', 'df-logo');
-    const title = el('h1', 'df-title', 'Delta Field');
-    logo.append(title);
+    const title = el('h1', 'df-sr', 'Delta Field');
+    logo.append(uiIcon('ui', 'logo', 'df-logo-img'), title);
     const intro = el('p', 'df-text');
 
     const nickLabel = el('label', 'df-muted', '닉네임');

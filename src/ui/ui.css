@@ -89,6 +89,7 @@
   border-image: var(--df-skin-btn-down);
 }
 .df-button-light,
+.df-button-secondary,
 .df-choice,
 .df-class,
 .df-char {
@@ -96,6 +97,7 @@
   color: var(--df-button-light-text);
 }
 .df-button-light:active:not(:disabled),
+.df-button-secondary:active:not(:disabled),
 .df-choice:active:not(:disabled),
 .df-class:active,
 .df-char:active {
@@ -212,17 +214,38 @@
   inset: 0;
   display: grid;
   place-items: center;
-  /* 배경 그림 자리: 그림 담당의 배경 그림이 오면 theme에 넣어 여기에 깐다. */
-  background: var(--df-start-background);
+  /* 배경 그림(학교 앞)을 화면을 덮게 깐다. 그림을 못 읽으면 바탕색 */
+  background: var(--df-skin-start-image) center / cover no-repeat, var(--df-start-background);
+  image-rendering: pixelated;
 }
 .df-start .df-panel {
   width: min(var(--df-start-width), calc(100vw - 2 * var(--df-margin)));
 }
-/* 로고 자리: 로고 그림이 오면 이 안에 넣는다. */
+/* 로고 */
 .df-logo {
   display: flex;
+  justify-content: center;
+}
+.df-logo-img {
+  width: var(--df-logo-width);
+  height: var(--df-logo-height);
+  image-rendering: pixelated;
+}
+/* 작은 그림들 */
+.df-emblem,
+.df-rank-medal,
+.df-podium-medal {
+  flex: none;
+  width: var(--df-icon-size);
+  height: var(--df-icon-size);
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
+.df-class {
+  display: flex;
   align-items: center;
-  gap: var(--df-gap);
+  justify-content: center;
+  gap: var(--df-gap-small);
 }
 .df-field {
   display: flex;
@@ -342,6 +365,23 @@
   flex-direction: column;
   gap: var(--df-hud-gap);
 }
+.df-card {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--df-gap-small);
+}
+.df-card-img {
+  flex: none;
+  width: var(--df-card-image-width);
+  height: var(--df-card-image-height);
+  image-rendering: pixelated;
+}
+.df-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+  min-width: 0;
+}
 .df-card p {
   margin: 0;
 }
@@ -422,11 +462,14 @@
 .df-hud-place:empty {
   display: none;
 }
-/* 강당으로 모으기 남은 시간(모두에게): 금색 패널 */
+/* 강당으로 모으기 남은 시간(모두에게): 금색 패널, 왼쪽에 확성기 */
 .df-hud-notice {
   border-image: var(--df-skin-btn-gold);
   color: var(--df-button-light-text);
   white-space: pre-line;
+  padding-left: calc(var(--df-icon-size) + 2 * var(--df-gap-small));
+  background: var(--df-skin-megaphone) var(--df-gap-small) center / var(--df-icon-size) no-repeat;
+  image-rendering: pixelated;
 }
 /* 가진 물건 칸 */
 .df-items {
@@ -613,8 +656,7 @@
   flex: none;
   width: var(--df-face-width);
   height: var(--df-face-height);
-  background-size: var(--df-char-sheet-size);
-  background-position: var(--df-char-face-position);
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   image-rendering: pixelated;
   vertical-align: middle;
@@ -624,7 +666,7 @@
 }
 .df-cctv-row-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--df-hud-gap-wide);
   min-width: 0;
 }
@@ -636,8 +678,28 @@
 }
 .df-cctv-row-doing {
   grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--df-hud-gap);
   font-family: var(--df-font-family-small);
   font-size: var(--df-font-small);
+}
+.df-cctv-status {
+  display: inline-flex;
+  flex: none;
+  width: var(--df-status-icon);
+  height: var(--df-status-icon);
+}
+.df-status-icon {
+  width: var(--df-status-icon);
+  height: var(--df-status-icon);
+  image-rendering: pixelated;
+}
+.df-cctv-emblem {
+  display: inline-flex;
+}
+.df-cctv-emblem:empty {
+  display: none;
 }
 /* 하는 일: 퀴즈 중(노랑), 살펴봄(파랑), 막힘(빨강), 탈출(초록), 연결 끊김(흐림) */
 .df-cctv-row.is-quiz {
@@ -744,6 +806,17 @@
 .df-gb-lives {
   color: var(--df-lives);
 }
+.df-lives-shown {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--df-hud-gap);
+  color: var(--df-text);
+}
+.df-life {
+  width: var(--df-life-icon);
+  image-rendering: pixelated;
+}
 .df-gb-result.is-good {
   color: var(--df-correct);
 }
@@ -819,8 +892,12 @@
 .df-rank.is-me {
   background: var(--df-row-me);
 }
-.df-rank-face {
+.df-rank-face,
+.df-rank-medal {
   margin-right: var(--df-hud-gap-wide);
+}
+span.df-rank-medal {
+  display: inline-block;
 }
 .df-rank-no {
   display: inline-block;
