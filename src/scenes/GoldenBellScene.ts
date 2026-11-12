@@ -198,8 +198,7 @@ export class GoldenBellScene extends MapScene {
       const label = this.add
         .text(cx, z.row * t + size.zoneTextPad, z.label, {
           fontFamily,
-          fontSize: size.zoneLabelFont,
-          fontStyle: 'bold',
+          fontSize: size.zoneLabelFont, // 도트 글꼴은 굵은 꼴이 없어 굵게 하지 않는다
           color: color.zoneLabel,
           resolution: size.textResolution,
         })

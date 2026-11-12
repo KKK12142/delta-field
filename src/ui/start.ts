@@ -111,7 +111,10 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     let teacher = false;
     const wrap = el('div', 'df-start');
     const form = el('form', 'df-panel');
+    // 로고 자리: 그림 담당의 로고 그림이 오면 이 안에 넣는다(지금은 글자).
+    const logo = el('header', 'df-logo');
     const title = el('h1', 'df-title', 'Delta Field');
+    logo.append(title);
     const intro = el('p', 'df-text');
 
     const nickLabel = el('label', 'df-muted', '닉네임');
@@ -144,13 +147,23 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     const error = el('p', 'df-error');
     error.hidden = true;
     const row = el('div', 'df-row df-row-split');
-    const switchRole = el('button', 'df-link');
+    const switchRole = el('button', 'df-button df-button-light df-link');
     switchRole.type = 'button';
-    const submit = el('button', 'df-button', '들어가기');
+    const submit = el('button', 'df-button df-button-enter', '들어가기');
     submit.type = 'submit';
     row.append(switchRole, submit);
 
-    form.append(title, intro, nickLabel, nickname, passLabel, password, codeLabel, code, classes.label, classes.group, picker.label, picker.grid, error, row);
+    // 입력 칸(닉네임, 방 코드, 비밀번호)은 넓은 화면에서 한 줄에 놓는다.
+    const field = (...nodes: HTMLElement[]) => {
+      const box = el('div', 'df-field');
+      box.append(...nodes);
+      return box;
+    };
+    const passField = field(passLabel, password);
+    const fields = el('div', 'df-fields');
+    fields.append(field(nickLabel, nickname), field(codeLabel, code), passField);
+    const classField = field(classes.label, classes.group);
+    form.append(logo, intro, fields, classField, field(picker.label, picker.grid), error, row);
     wrap.append(form);
     uiRoot().append(wrap);
 
@@ -158,8 +171,8 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       intro.textContent = teacher
         ? '비밀번호를 넣고 새 방을 만듭니다. 이미 만든 방으로 돌아갈 때는 방 코드도 넣습니다.'
         : '선생님이 알려 준 방 코드와 닉네임을 넣고 들어갑니다.';
-      passLabel.hidden = password.hidden = !teacher;
-      classes.label.hidden = classes.group.hidden = teacher;
+      passField.hidden = !teacher;
+      classField.hidden = teacher;
       codeLabel.textContent = teacher ? '방 코드(새 방이면 비워 둡니다)' : '방 코드';
       switchRole.textContent = teacher ? '학생으로 들어가기' : '선생님으로 들어가기';
       if (teacher && !nickname.value) nickname.value = '선생님';

@@ -1,6 +1,8 @@
 import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
-import type { AnswerGroup, CardView, MineView, PanelView } from '../game/goldenbell';
+import type { AnswerGroup, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
+import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
+import { face } from './pictures';
 
 /** 글이 달라졌을 때만 바꾼다(매 프레임 불러도 화면이 흔들리지 않게). */
 function setText(node: HTMLElement, text: string) {
@@ -8,13 +10,35 @@ function setText(node: HTMLElement, text: string) {
   node.hidden = text === '';
 }
 
-/** 목록이 달라졌을 때만 다시 만든다. */
-function setList(list: HTMLElement, rows: string[]) {
-  const key = rows.join('\n');
+/**
+ * 순위: 위에 1·2·3위 시상대(얼굴), 아래에 한 줄씩 "1위 닉네임 3점"(얼굴). 내 줄은 강조한다.
+ * 목록이 달라졌을 때만 다시 만든다. podium은 시상대 자리, list는 줄 목록(ol)
+ */
+function setRanking(podium: HTMLElement, list: HTMLElement, rows: RankRow[]) {
+  const key = JSON.stringify(rows);
   if (list.dataset.key === key) return;
   list.dataset.key = key;
-  list.replaceChildren(...rows.map((r) => el('li', '', r)));
+  list.replaceChildren(
+    ...rows.map((r) => {
+      const li = el('li', r.me ? 'df-rank is-me' : 'df-rank');
+      // 글 사이의 빈칸은 글로 넣는다(화면을 읽는 쪽에서 "1위 가람 9점"으로 읽히게).
+      li.append(face(r.character, 'df-rank-face'), el('span', 'df-rank-no', `${r.rank}위`), ' ', el('span', 'df-rank-name', r.nickname), ' ', el('span', 'df-rank-score', `${r.score}점`));
+      return li;
+    }),
+  );
   list.hidden = rows.length === 0;
+  // 시상대: 순위 목록의 앞 세 사람을 가운데(첫째), 왼쪽(둘째), 오른쪽(셋째)에 놓고 등수를 적는다(같은 점수면 같은 등수).
+  podium.replaceChildren(
+    ...[1, 0, 2].map((i) => {
+      const place = el('div', `df-podium-place is-${i + 1}`);
+      const r = rows[i];
+      if (!r) return place;
+      place.append(face(r.character, 'df-podium-face'), el('span', r.me ? 'df-podium-name is-me' : 'df-podium-name', r.nickname));
+      place.append(el('span', 'df-podium-step', String(r.rank)));
+      return place;
+    }),
+  );
+  podium.hidden = rows.length === 0;
 }
 
 const MARK: Record<AnswerGroup['mark'], string> = { correct: '정답', accepted: '선생님이 인정', wrong: '오답', none: '오답' };
@@ -22,13 +46,20 @@ const MARK: Record<AnswerGroup['mark'], string> = { correct: '정답', accepted:
 /** 골든벨 위쪽: 문제 카드(왼쪽)와 내 상태(오른쪽, 학생만) */
 export class GbHud {
   private readonly top = el('div', 'df-hud df-gb');
-  private readonly head = el('span', 'df-muted');
+  private readonly head = el('span', 'df-muted df-gb-head');
+  /** 남은 시간: 막대(처음 본 남은 시간을 전체로 친다)와 초 */
+  private readonly timer = el('div', 'df-gb-timer');
+  private readonly bar = el('div', 'df-bar');
+  private readonly barFill = el('i', 'df-bar-fill');
+  private readonly seconds = el('span', 'df-gb-seconds');
+  private timeTotal = 0;
   private readonly question = el('strong', 'df-gb-question');
   private readonly line = el('span', 'df-text');
   private readonly result = el('span', 'df-text df-gb-result');
+  private readonly podium = el('div', 'df-podium');
   private readonly ranking = el('ol', 'df-gb-ranking');
-  private readonly mine = el('div', 'df-hud-box');
-  private readonly lives = el('strong', '');
+  private readonly mine = el('div', 'df-hud-box df-gb-mine');
+  private readonly lives = el('strong', 'df-gb-lives');
   private readonly score = el('span', 'df-text');
   private readonly where = el('span', 'df-muted');
   private readonly status = el('span', 'df-status');
@@ -40,7 +71,7 @@ export class GbHud {
   private readonly answerError = el('span', 'df-error');
   private readonly explain = el('span', 'df-text df-gb-explain');
   /** 힌트 수첩(학생): 방탈출에서 얻은 힌트 카드를 골든벨 중에도 본다. */
-  readonly notebook = el('button', 'df-button df-button-small', '힌트 수첩');
+  readonly notebook = el('button', 'df-button df-button-small df-button-light', '힌트 수첩');
   private answerShown = false;
 
   /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다), onNotebook: 힌트 수첩 단추를 눌렀을 때 */
@@ -66,8 +97,13 @@ export class GbHud {
     this.answerForm.hidden = true;
     this.answerSent.hidden = true;
     this.answerError.hidden = true;
+    this.bar.append(this.barFill);
+    this.timer.append(this.bar, this.seconds);
+    this.timer.hidden = true;
+    this.podium.hidden = true;
     card.append(
       this.head,
+      this.timer,
       this.question,
       this.line,
       this.answerForm,
@@ -75,6 +111,7 @@ export class GbHud {
       this.answerError,
       this.result,
       this.explain,
+      this.podium,
       this.ranking,
       this.status,
     );
@@ -84,8 +121,9 @@ export class GbHud {
     });
     this.mine.append(this.lives, this.score, this.where, this.notebook);
     this.mine.hidden = teacher;
-    // 선생님은 오른쪽을 골든벨 창이 쓴다.
+    // 선생님은 오른쪽을 골든벨 창이 쓴다. 선생님 화면은 프로젝터에 띄우므로 문제와 남은 시간을 크게 보인다.
     this.top.classList.toggle('has-panel', teacher);
+    this.top.classList.toggle('is-teacher', teacher);
     this.top.append(card, this.mine);
     this.status.hidden = true;
     uiRoot().append(this.top);
@@ -106,13 +144,29 @@ export class GbHud {
       if (!v.answerBox) this.answerInput.blur();
     }
     setText(this.head, v.head);
+    this.showTime(v.timeLeft);
     setText(this.question, v.question);
     setText(this.line, v.line);
     setText(this.result, v.result);
     setText(this.explain, v.explain);
     this.result.classList.toggle('is-good', v.tone === 'good');
     this.result.classList.toggle('is-bad', v.tone === 'bad');
-    setList(this.ranking, v.ranking);
+    setRanking(this.podium, this.ranking, v.ranking);
+  }
+
+  /** 남은 시간 막대: 처음 본 값이 전체, 50% 이하 노랑, 20% 이하 빨강(theme timeBar) */
+  private showTime(left: number | null) {
+    this.timer.hidden = left === null;
+    if (left === null) {
+      this.timeTotal = 0;
+      return;
+    }
+    this.timeTotal = Math.max(this.timeTotal, left, 1);
+    const ratio = left / this.timeTotal;
+    this.barFill.style.setProperty('--df-ratio', String(ratio));
+    this.barFill.classList.toggle('is-warn', ratio <= timeBar.warn && ratio > timeBar.low);
+    this.barFill.classList.toggle('is-low', ratio <= timeBar.low);
+    setText(this.seconds, `${left}초`);
   }
 
   showMine(v: MineView) {
@@ -158,9 +212,11 @@ export class GbPanel {
   private readonly title = el('strong', '');
   private readonly status = el('span', 'df-text');
   private readonly counts = el('div', 'df-cctv-title');
-  private readonly next = el('button', 'df-button');
+  private readonly next = el('button', 'df-button df-button-gold df-gb-next');
+  private readonly podium = el('div', 'df-podium');
   private readonly ranking = el('ol', 'df-gb-ranking df-cctv-list');
-  private readonly end = el('button', 'df-button df-button-small', '골든벨 끝내기');
+  /** 되돌릴 수 없는 단추라 다음 단추와 떨어진 왼쪽에, 크림색으로 둔다. */
+  private readonly end = el('button', 'df-button df-button-small df-button-light', '골든벨 끝내기');
   /** 단답형 정답 공개 뒤 낸 답 묶음 */
   private readonly answers = el('ul', 'df-gb-answers df-cctv-list');
   private readonly onAccept: (key: string, accept: boolean) => void;
@@ -181,7 +237,8 @@ export class GbPanel {
     row.append(this.end, this.next);
     this.node.setAttribute('aria-label', '골든벨 진행');
     this.answers.hidden = true;
-    this.node.append(head, this.counts, row, this.answers, this.ranking);
+    this.podium.hidden = true;
+    this.node.append(head, this.counts, row, this.answers, this.podium, this.ranking);
     uiRoot().append(this.node);
   }
 
@@ -204,7 +261,7 @@ export class GbPanel {
       this.next.disabled = !v.next.enabled || waiting;
     }
     this.end.disabled = waiting;
-    setList(this.ranking, v.ranking);
+    setRanking(this.podium, this.ranking, v.ranking);
     this.showAnswers(v.answers, waiting);
   }
 
@@ -221,7 +278,7 @@ export class GbPanel {
           li.append(head, el('span', 'df-muted', g.names.join(', ')));
           if (g.mark === 'wrong' || g.mark === 'accepted') {
             const accept = g.mark === 'wrong';
-            const button = el('button', 'df-button df-button-small', accept ? '정답으로 인정' : '인정 거두기');
+            const button = el('button', accept ? 'df-button df-button-small' : 'df-button df-button-small df-button-light', accept ? '정답으로 인정' : '인정 거두기');
             button.addEventListener('click', () => {
               button.blur();
               this.onAccept(g.key, accept);

@@ -11,11 +11,14 @@ import { RoomScene } from './scenes/RoomScene';
 import { renderRatio, showRenderInfo } from './render';
 import { applyCssTheme, color } from './theme';
 import { Dialog } from './ui/dialog';
+import { loadFonts } from './ui/fonts';
 import { isTouchDevice } from './ui/dom';
 import { askEntry } from './ui/start';
 import './ui/ui.css';
 
 applyCssTheme();
+// 첫 화면과 게임 화면 글자가 도트 글꼴로 나오게 글꼴을 먼저 읽는다(Phaser 글자는 만들 때의 글꼴로 그려진다).
+await loadFonts();
 
 const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
   school: loadRoom(school),

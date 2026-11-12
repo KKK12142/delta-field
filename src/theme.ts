@@ -79,28 +79,43 @@ export const color = {
   },
 } as const;
 
-/** 화면 위 안내·대화상자(HTML)에서 쓰는 색 */
+/**
+ * 화면 위 안내·대화상자(HTML)에서 쓰는 색. 바탕·테두리·단추는 9-slice 그림(uiSkin)이 칠하고, 여기의 색은 글자와 그림이 없는 곳에 쓴다.
+ * 종이 도트(시안 B, 2026-11-12 교사 결정): 크림 바탕, 남색 1도트 외곽선. 그림의 색(art/src/ui/*.txt)에 맞췄다.
+ */
 export const uiColor = {
-  text: '#2e2a26',
-  textMuted: '#6b645c',
-  panel: '#fffdf8',
-  panelBorder: '#d8cfc0',
-  backdrop: 'rgba(30, 26, 22, 0.45)',
-  button: '#3b6ea8',
-  buttonText: '#ffffff',
-  buttonDisabled: '#b9c4d1',
-  choice: '#f1ebe0',
-  choiceHover: '#e6dccb',
-  charSelected: '#3b6ea8', // 첫 화면에서 고른 캐릭터·반의 테두리
+  text: '#1d1531', // 그림의 외곽선 색과 같다
+  textMuted: '#6a5f78',
+  panel: '#fff3d6', // panel 그림의 안쪽
+  line: '#e3cf9f', // 패널 안 구분선(panel 그림의 아래 그늘)
+  backdrop: 'rgba(29, 21, 49, 0.5)',
+  startBackground: '#8aa37a', // 첫 화면 바탕(배경 그림이 오기 전까지)
+  buttonText: '#ffffff', // 파란 단추(btn)
+  buttonLightText: '#1d1531', // 크림·금색 단추(btn-light, btn-gold)
+  buttonOffText: '#6a5f78', // 누를 수 없는 단추(btn-off)
+  rowHover: '#f7e5b8', // CCTV 목록 줄을 가리킬 때
+  rowMe: '#ffe9a3', // 순위에서 내 줄
   correct: '#2e7d4f',
   wrong: '#b23b3b',
-  badge: '#f2b134',
-  badgeText: '#3a2a00',
+  badge: '#f2c94c', // btn-gold 안쪽
+  badgeText: '#1d1531',
   link: '#3b6ea8',
   status: '#b23b3b',
-  joystickBase: 'rgba(59, 110, 168, 0.18)',
-  joystickKnobColor: 'rgba(59, 110, 168, 0.75)',
-  renderInfo: 'rgba(46, 42, 38, 0.78)', // ?fps=1 확인 표시 바탕
+  lives: '#e12a24', // 골든벨 목숨(heart 그림의 빨강)
+  // CCTV 목록의 지금 하는 일 표시(왼쪽 띠와 글)
+  stateQuiz: '#d9ab2a',
+  stateLook: '#3b6ea8',
+  stateWalk: '#b9a274',
+  stateStuck: '#e12a24',
+  stateDone: '#5b9137',
+  stateOffline: '#a5b1c0',
+  // 시상대(1·2·3위)
+  podium1: '#f2c94c',
+  podium2: '#dfe5ec',
+  podium3: '#d9a066',
+  joystickBase: 'rgba(29, 21, 49, 0.18)',
+  joystickKnobColor: 'rgba(59, 110, 168, 0.8)',
+  renderInfo: 'rgba(29, 21, 49, 0.78)', // ?fps=1 확인 표시 바탕
   renderInfoText: '#ffffff',
 } as const;
 
@@ -127,9 +142,9 @@ export const size = {
   avatarFeet: 0.3, // 발밑 충돌 반경(칸)
   reach: 0.8, // 사물과 이 거리(칸) 안이면 살펴볼 수 있다
   spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
-  labelFont: '15px',
+  labelFont: '12px', // Galmuri11은 12px의 정수 배에서 또렷하다
   labelPad: 4, // 그림 위 이름표 바탕의 좌우 여백(픽셀)
-  nicknameFont: '14px',
+  nicknameFont: '12px',
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
   textResolution: 2, // 아바타 글자를 이 배율로 그려 확대해도 덜 흐리게 한다
   viewMargin: 0.92, // 맵 전체를 화면에 맞출 때(골든벨, CCTV 전체 보기) 남기는 비율
@@ -149,51 +164,118 @@ export const size = {
   // 골든벨
   reserveGap: 12, // 문제 카드와 지도 사이(픽셀)
   // 골든벨 맵은 화면에 전체를 맞추므로 구역 글자는 칸 크기에 견주어 정한다(칸 60px 기준).
-  zoneLabelFont: '70px',
-  zoneTextFont: '25px',
+  zoneLabelFont: '72px',
+  zoneTextFont: '24px',
   zoneTextPad: 12,
-  livesFont: '13px',
+  livesFont: '12px',
   livesStroke: 3, // 하트 테두리 두께(픽셀)
 } as const;
 
-/** 대화상자·안내 크기(CSS) */
+/**
+ * 대화상자·안내 크기(CSS). 글꼴은 도트 글꼴이라 정해진 크기의 정수 배에서만 또렷하다(docs/art.md "글꼴"):
+ * Galmuri11은 12px·24px·36px, Galmuri9는 10px·20px.
+ */
 export const uiSize = {
-  font: '17px',
-  fontSmall: '14px',
-  fontTitle: '22px',
+  font: '12px', // 본문(Galmuri11)
+  fontSmall: '10px', // 작은 글·이름표(Galmuri9)
+  fontTitle: '24px', // 제목, 골든벨 문제(Galmuri11 2배)
+  fontHuge: '36px', // 선생님 골든벨 문제·남은 시간(프로젝터, Galmuri11 3배)
+  lineHeight: '1.5', // 12px × 1.5 = 18px(정수 픽셀)
   gap: '12px',
+  gapSmall: '6px',
   margin: '16px',
-  radius: '12px',
-  panelWidth: '520px',
+  panelWidth: '540px',
+  startWidth: '860px', // 첫 화면 카드 너비의 상한(캐릭터 8개가 한 줄에 들어가는 너비)
+  fieldMin: '200px', // 첫 화면 입력 칸 하나의 가장 작은 너비(넓으면 한 줄에 나란히)
   mapPanelWidth: '1160px', // 큰 지도 창 너비의 상한
-  buttonPad: '10px 18px',
+  // 9-slice 테두리 두께(도트 4개 × 3배, docs/art.md). 안쪽 여백은 따로 준다.
+  skinBorder: '12px',
+  skinBorderSmall: '9px', // panel-dark, bar(도트 3개 × 3배)
+  panelPad: '6px 9px', // 패널 테두리 안쪽 여백
+  buttonPad: '3px 9px', // 단추 테두리 안쪽 여백
+  buttonPadSmall: '0 3px',
+  touch: '48px', // 단추 높이의 아래 한도(누르기 44px 이상)
+  inputPad: '3px 6px',
+  hudPad: '3px 6px',
+  hudGap: '3px',
+  hudGapWide: '6px',
+  dangerGap: '18px', // 선생님 단추에서 되돌릴 수 없는 단추(2부 열기 등)를 떨어뜨리는 간격
+  badgePad: '0 6px',
+  badgeBorder: '3px', // 작은 표시(예시 문제, 문제 번호)의 외곽선(도트 1개 × 3배)
   joystickZone: '50%', // 조이스틱 영역: 화면 왼쪽에서 이 너비(높이는 전체)
   joystick: '132px',
   joystickKnob: '56px',
+  joystickLine: '3px',
   actionButton: '96px',
-  border: '1px',
-  choiceBorder: '2px',
-  hudPad: '8px 14px',
-  hudGap: '2px',
-  hudGapWide: '6px', // CCTV 목록에서 닉네임과 반 사이
-  badgePad: '2px 10px',
-  lineHeight: '1.6',
-  buttonPadSmall: '6px 12px',
-  cctvWidth: '300px',
-  cctvRowPad: '8px 10px',
-  gbQuestionFont: '20px',
+  cctvWidth: '330px',
+  rowPad: '6px 6px',
+  rowLine: '3px', // CCTV 목록·순위 줄 사이 선
+  stateBar: '6px', // CCTV 줄 왼쪽의 하는 일 띠
   codeSpacing: '6px', // 숫자 자물쇠 번호 칸 사이
   // 첫 화면 캐릭터 고르기: 시트(90×240)의 앞모습 서기 프레임(30×60, 왼쪽에서 30)을 2배로 보인다.
   charFaceWidth: '60px',
   charFaceHeight: '120px',
   charSheetSize: '180px 480px',
   charFacePosition: '-60px 0',
-  charMin: '72px', // 캐릭터 단추 하나의 가장 작은 너비
+  charMin: '84px', // 캐릭터 단추 하나의 가장 작은 너비(테두리 포함)
+  charRow: '714px', // 캐릭터 고르기가 이 너비 이상이면 8개 한 줄, 아니면 4개씩(84px × 8 + 6px × 7)
+  // 얼굴: 앞모습 서기 프레임의 머리 부분(위 26도트)을 2배로
+  faceWidth: '60px',
+  faceHeight: '52px',
+  // 가진 물건 칸(slot 그림, 안쪽 36px). 아이콘 30×30을 2배(60px)로 칸 테두리에 겹쳐 놓는다.
+  slotInner: '36px',
+  slotIcon: '60px',
+  slotIconOffset: '-12px',
+  // 대화상자의 사물 그림: 도트 2배, 틀에 안 들어가면 1배(src/ui/pictures.ts)
+  pictureMaxWidth: '192px',
+  pictureMaxHeight: '120px',
+  // 시간 막대(bar 그림 8×10도트를 3배): 안쪽 높이 12px, 채움(bar-fill 6×8도트)은 막대 테두리 안쪽 1도트부터
+  barHeight: '12px',
+  barFillBorder: '6px',
+  barFillHeight: '24px',
+  barFillOffset: '-6px',
+  // 골든벨 시상대
+  podiumWidth: '96px',
+  rankNo: '36px', // 순위 줄의 등수 칸 너비
+  rankMin: '220px', // 학생 문제 카드에서 순위 한 칸의 가장 작은 너비(넓으면 여러 칸으로)
+  podium1: '84px',
+  podium2: '60px',
+  podium3: '42px',
 } as const;
 
-/** 글꼴(게임 화면과 HTML에 함께 쓴다) */
-export const fontFamily =
-  'system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+/** 9-slice 그림(public/sprites/ui, docs/art.md "UI 그림")의 border-image 값. 도트 하나를 uiDot 픽셀로 그린다. */
+const uiDot = 3;
+const nine = (name: string, cut: number) => `url("sprites/ui/${name}.png") ${cut} fill / ${cut * uiDot}px / 0 stretch`;
+export const uiSkin = {
+  panel: nine('panel', 4),
+  panelDark: nine('panel-dark', 3),
+  btn: nine('btn', 4),
+  btnDown: nine('btn-down', 4),
+  btnLight: nine('btn-light', 4),
+  btnLightDown: nine('btn-light-down', 4),
+  btnGold: nine('btn-gold', 4),
+  btnGoldDown: nine('btn-gold-down', 4),
+  btnOff: nine('btn-off', 4),
+  slot: nine('slot', 4),
+  bar: nine('bar', 3),
+  barFill: `url("sprites/ui/bar-fill.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillWarn: `url("sprites/ui/bar-fill-warn.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+  barFillLow: `url("sprites/ui/bar-fill-low.png") 2 fill / ${2 * uiDot}px / 0 stretch`,
+} as const;
+
+/** 시간 막대 색이 바뀌는 남은 비율(넘으면 초록, 이하면 노랑, low 이하면 빨강) */
+export const timeBar = { warn: 0.5, low: 0.2 } as const;
+
+/**
+ * 글꼴(게임 화면과 HTML에 함께 쓴다). Galmuri(SIL OFL, public/fonts, docs/art.md "글꼴").
+ * src/ui/fonts.ts가 처음에 읽어 두고, 다 읽은 뒤 게임 화면을 시작한다. 못 읽으면 뒤의 시스템 글꼴로 보인다.
+ */
+const systemFonts = 'system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
+export const fontFiles = { Galmuri11: 'fonts/Galmuri11.woff2', Galmuri9: 'fonts/Galmuri9.woff2' } as const;
+export const fontFamily = `Galmuri11, ${systemFonts}`;
+export const fontFamilySmall = `Galmuri9, ${systemFonts}`;
+/** 글꼴을 이 시간(ms) 안에 못 읽으면 기다리지 않고 시작한다. */
+export const fontWaitMs = 4000;
 
 export const alpha = {
   floorLine: 0.6,
@@ -225,7 +307,7 @@ export const minimap = {
   label: '#2e2a26',
   landmarkLabel: '#ffffff', // 지붕 위에 적는 건물 이름
   lockedLabel: '#5b544c',
-  labelFont: '13px',
+  labelFont: '12px',
   me: '#e2433b', // 내 위치 점
   meLine: '#ffffff',
   dot: 3, // 작은 지도의 점 반지름(CSS 픽셀)
@@ -235,12 +317,14 @@ export const minimap = {
   bigWidth: 1100, // 큰 지도 너비의 상한(화면이 좁으면 화면에 맞춤)
 } as const;
 
-/** uiColor, uiSize를 CSS 변수(--df-이름)로 넣는다. */
+/** uiColor, uiSize, uiSkin(--df-skin-이름), 글꼴을 CSS 변수(--df-이름)로 넣는다. */
 export function applyCssTheme(root: HTMLElement = document.documentElement) {
   const entries: [string, string][] = [
     ...Object.entries(uiColor),
     ...Object.entries(uiSize),
+    ...Object.entries(uiSkin).map(([k, v]): [string, string] => [`skin-${k}`, v]),
     ['fontFamily', fontFamily],
+    ['fontFamilySmall', fontFamilySmall],
   ];
   for (const [key, value] of entries) {
     root.style.setProperty(`--df-${key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}`, value);

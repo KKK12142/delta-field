@@ -1,4 +1,5 @@
 import { el, uiRoot } from './dom';
+import { itemIcon } from './pictures';
 
 /** 터치로 누른 뒤 이 시간(ms) 안에 오는 click은 같은 누름으로 보고 버린다. */
 const TOUCH_CLICK_GUARD = 800;
@@ -6,23 +7,23 @@ const TOUCH_CLICK_GUARD = 800;
 /** 위쪽 안내(지금 장소, 목표, 조작 방법 / 방 코드, 접속 상태, 가진 물건)와 오른쪽 아래 살펴보기 단추 */
 export class Hud {
   private readonly top = el('div', 'df-hud');
-  private readonly place = el('strong', '');
+  private readonly place = el('strong', 'df-hud-place');
   private readonly right = el('div', 'df-hud-box');
   private readonly help = el('span', 'df-muted');
-  private readonly items = el('span', 'df-text');
+  private readonly items = el('div', 'df-items');
   private readonly room = el('strong', 'df-room-code');
   private readonly people = el('span', 'df-muted');
   private readonly status = el('span', 'df-status');
   readonly action = el('button', 'df-button df-action', '살펴보기');
   /** 얻은 힌트 카드를 다시 본다(모두). 글에 얻은 수를 적는다. */
-  readonly notebook = el('button', 'df-button df-button-small', '힌트 수첩');
-  /** 선생님 화면에만 보인다. */
-  readonly escapeFile = el('button', 'df-button df-button-small', '방탈출 자료');
+  readonly notebook = el('button', 'df-button df-button-small df-button-light', '힌트 수첩');
+  /** 선생님 화면에만 보인다. 자주 누르는 단추(CCTV 파랑, 모으기 금색)와 되돌리기 어려운 단추(자료 바꾸기, 2부 열기)를 떼어 놓는다. */
+  readonly escapeFile = el('button', 'df-button df-button-small df-button-light', '방탈출 자료');
   readonly cctv = el('button', 'df-button df-button-small', 'CCTV 보기');
   /** 강당으로 모으기(모으는 중에는 모으기 그만두기) */
-  readonly goldenbell = el('button', 'df-button df-button-small', '강당으로 모으기');
+  readonly goldenbell = el('button', 'df-button df-button-small df-button-gold', '강당으로 모으기');
   /** 2부 열기(연 뒤에는 잠긴다) */
-  readonly part = el('button', 'df-button df-button-small', '2부 열기');
+  readonly part = el('button', 'df-button df-button-small df-button-light', '2부 열기');
   /** 강당으로 모으기 남은 시간과 안내(모두에게) */
   private readonly notice = el('div', 'df-hud-box df-hud-notice');
   private readonly left = el('div', 'df-hud-column');
@@ -38,6 +39,11 @@ export class Hud {
     this.people.hidden = true;
     this.status.hidden = true;
     this.cctv.hidden = this.goldenbell.hidden = this.part.hidden = this.escapeFile.hidden = !teacher;
+    const teacherMain = el('div', 'df-hud-buttons');
+    teacherMain.append(this.cctv, this.goldenbell);
+    const teacherDanger = el('div', 'df-hud-buttons df-hud-danger');
+    teacherDanger.append(this.escapeFile, this.part);
+    teacherMain.hidden = teacherDanger.hidden = !teacher;
     this.right.append(
       this.room,
       this.people,
@@ -45,10 +51,8 @@ export class Hud {
       el('span', 'df-muted', '가진 물건'),
       this.items,
       this.notebook,
-      this.escapeFile,
-      this.cctv,
-      this.goldenbell,
-      this.part,
+      teacherMain,
+      teacherDanger,
     );
     this.top.append(this.left, this.right);
     this.action.disabled = true;
@@ -87,8 +91,29 @@ export class Hud {
     this.place.textContent = name;
   }
 
+  /** 가진 물건: 아이콘 칸(아이콘이 없으면 이름을 적은 칸). 이름은 늘 글로도 넣어 둔다(읽어 주기·확인용). */
   setItems(names: string[]) {
-    this.items.textContent = names.length ? names.join(', ') : '없음';
+    const key = names.join('\n');
+    if (this.items.dataset.key === key) return;
+    this.items.dataset.key = key;
+    if (!names.length) {
+      this.items.replaceChildren(el('span', 'df-muted', '없음'));
+      return;
+    }
+    this.items.replaceChildren(
+      ...names.map((name) => {
+        const icon = itemIcon(name);
+        const slot = el('span', icon ? 'df-slot' : 'df-slot df-slot-text');
+        slot.title = name;
+        if (icon) {
+          const img = el('img', 'df-slot-icon');
+          img.src = icon;
+          img.alt = '';
+          slot.append(img, el('span', 'df-sr', name));
+        } else slot.textContent = name;
+        return slot;
+      }),
+    );
   }
 
   setRoomCode(code: string) {
