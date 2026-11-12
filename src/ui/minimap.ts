@@ -21,6 +21,7 @@ export function drawMinimap(
   part: number,
   me: { col: number; row: number } | null,
   labels: boolean,
+  mark: Rect | null = null,
 ) {
   const cols = room.layout[0].length;
   const rows = room.layout.length;
@@ -73,6 +74,13 @@ export function drawMinimap(
       label(text, a, locked(a));
     }
   }
+  if (mark) {
+    // 알림 표시: 2부가 열린 문이나 모이는 강당에 테를 두른다.
+    const [x, y, rw, rh] = rect(mark);
+    ctx.lineWidth = M.markLine;
+    ctx.strokeStyle = M.mark;
+    ctx.strokeRect(x - M.markPad, y - M.markPad, rw + 2 * M.markPad, rh + 2 * M.markPad);
+  }
   if (me) {
     const r = labels ? M.dotBig : M.dot;
     ctx.beginPath();
@@ -106,11 +114,11 @@ export class Minimap {
   }
 
   /** 내 위치와 열린 부가 바뀌었으면 다시 그린다. */
-  update(me: { col: number; row: number }, part: number) {
-    const key = `${me.col.toFixed(1)},${me.row.toFixed(1)},${part}`;
+  update(me: { col: number; row: number }, part: number, mark: Rect | null = null) {
+    const key = `${me.col.toFixed(1)},${me.row.toFixed(1)},${part},${mark ? `${mark.col},${mark.row}` : ''}`;
     if (key === this.shown) return;
     this.shown = key;
-    drawMinimap(this.canvas, this.room, M.smallWidth / this.room.layout[0].length, part, me, false);
+    drawMinimap(this.canvas, this.room, M.smallWidth / this.room.layout[0].length, part, me, false, mark);
   }
 
   setHidden(hidden: boolean) {

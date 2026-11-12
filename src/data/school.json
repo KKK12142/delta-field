@@ -135,6 +135,7 @@
     {"id": "star-chart", "name": "별자리판", "kind": "starChart", "col": 115, "row": 3, "w": 3, "h": 1, "mission": "star-chart"},
     {"id": "compass-sign", "name": "방위 표지", "kind": "compassSign", "col": 30, "row": 21, "w": 1, "h": 2, "mission": "compass-sign"},
     {"id": "sundial", "name": "해시계", "kind": "sundial", "col": 36, "row": 28, "w": 2, "h": 2, "mission": "sundial"},
+    {"id": "time-capsule", "name": "타임캡슐", "kind": "timeCapsule", "col": 56, "row": 29, "w": 2, "h": 1, "mission": "time-capsule"},
     {"id": "auditorium-door", "name": "강당 문", "kind": "auditoriumDoor", "col": 65, "row": 26, "w": 1, "h": 3}
   ]
 }

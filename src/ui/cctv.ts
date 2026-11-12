@@ -29,7 +29,12 @@ export interface CctvHandlers {
   close: () => void;
   /** 구역 보기 단추를 눌렀을 때(null은 전체) */
   view: (id: string | null) => void;
+  /** 목록 정렬(반 순서 ↔ 진행 낮은 순)을 바꿀 때 */
+  sort: () => void;
 }
+
+/** 목록 정렬: 반 순서(반, 닉네임) 또는 진행 낮은 순 */
+export type CctvSort = 'class' | 'progress';
 
 /** CCTV 구역 보기 단추 하나(맵의 views) */
 export interface CctvView {
@@ -55,6 +60,11 @@ export class CctvPanel {
   /** 구역 보기 단추들(전체 + 맵의 구역). 학생 수를 함께 적는다. */
   private readonly views = el('div', 'df-cctv-views');
   private readonly viewButtons = new Map<string | null, { node: HTMLButtonElement; name: string }>();
+  /** 진행 요약(1부 완료·보너스·막힌 학생 수), 막힌 학생 목록, 정렬 단추. 겉모양은 화면 담당 */
+  private readonly summary = el('div', 'df-cctv-summary');
+  private readonly summaryLine = el('span', 'df-text df-cctv-summary-line');
+  private readonly stuck = el('ul', 'df-cctv-stuck');
+  private readonly sortButton = el('button', 'df-button df-button-small df-cctv-sort');
 
   constructor(handlers: CctvHandlers, touch: boolean, views: CctvView[] = []) {
     const head = el('div', 'df-cctv-head');
@@ -102,8 +112,22 @@ export class CctvPanel {
     }
     this.views.setAttribute('aria-label', '구역 보기');
     this.views.hidden = views.length === 0;
+    this.sortButton.type = 'button';
+    this.sortButton.addEventListener('click', () => {
+      this.sortButton.blur();
+      handlers.sort();
+    });
+    // 막힌 학생 이름을 누르면 그 학생을 따라간다.
+    this.stuck.addEventListener('click', (e) => {
+      const id = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')?.dataset.id;
+      if (id) handlers.pick(id);
+    });
+    const summaryHead = el('div', 'df-row df-row-split');
+    summaryHead.append(this.summaryLine, this.sortButton);
+    this.summary.append(summaryHead, this.stuck);
+    this.summary.setAttribute('aria-label', '진행 요약');
     this.node.setAttribute('aria-label', 'CCTV');
-    this.node.append(head, this.views, this.empty, this.list, this.detail);
+    this.node.append(head, this.views, this.summary, this.empty, this.list, this.detail);
     uiRoot().append(this.node);
   }
 
@@ -126,9 +150,32 @@ export class CctvPanel {
     }
   }
 
+  /**
+   * 진행 요약: 한 줄 요약, 막힌 학생 목록(이름 · 까닭, 누르면 따라가기), 정렬 단추 글(지금 정렬의 반대로 바꾸는 단추)
+   */
+  setSummary(line: string, stuck: StudentView[], sort: CctvSort) {
+    setText(this.summaryLine, line);
+    setText(this.sortButton, sort === 'class' ? '진행 낮은 순으로' : '반 순서로');
+    const key = stuck.map((s) => `${s.id}:${s.stuck}`).join('|');
+    if (this.stuck.dataset.key === key) return;
+    this.stuck.dataset.key = key;
+    this.stuck.replaceChildren(
+      ...stuck.map((s) => {
+        const li = el('li', 'df-cctv-stuck-row');
+        const b = el('button', 'df-cctv-stuck-name', s.nickname);
+        b.type = 'button';
+        b.dataset.id = s.id;
+        li.append(b, el('span', 'df-muted', s.stuck ?? ''));
+        return li;
+      }),
+    );
+    this.stuck.hidden = stuck.length === 0;
+  }
+
   /** 전체 보기: 학생 목록(이미 정렬한 순서대로) */
   showList(students: StudentView[]) {
     this.detail.hidden = true;
+    this.summary.hidden = false;
     this.list.hidden = false;
     this.views.hidden = this.viewButtons.size <= 1;
     this.empty.hidden = students.length > 0;
@@ -153,7 +200,9 @@ export class CctvPanel {
       setText(row.name, s.nickname);
       setText(row.className, s.className);
       setText(row.progress, s.progress);
-      setText(row.doing, s.doing);
+      setText(row.doing, s.stuck ? `${s.doing} · 막힘: ${s.stuck}` : s.doing);
+      row.node.classList.toggle('is-stuck', s.stuck !== null);
+      row.node.classList.toggle('is-finished', s.finished);
     }
     for (const [id, row] of this.rows) {
       if (seen.has(id)) continue;
@@ -170,6 +219,7 @@ export class CctvPanel {
   /** 따라가기: 한 학생의 정보 */
   showDetail(s: StudentView) {
     this.views.hidden = true;
+    this.summary.hidden = true;
     this.list.hidden = true;
     this.empty.hidden = true;
     this.detail.hidden = false;

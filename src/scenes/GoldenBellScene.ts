@@ -1,6 +1,7 @@
 import { activeZones, type Zone, type Zones } from '../../shared/goldenbell.ts';
 import type { Player } from '../../shared/schema.ts';
 import { cardView, livesTag, mineView, panelView } from '../game/goldenbell';
+import { hintSummary } from '../game/progress';
 import { GbHud, GbPanel } from '../ui/goldenbell';
 import { alpha, color, fontFamily, motion, size } from '../theme';
 import type { TagStyle } from './avatar';
@@ -61,6 +62,8 @@ export class GoldenBellScene extends MapScene {
         next: () => void this.ask(() => this.net.gbNext()),
         end: () => void this.confirmEnd(),
         accept: (key, accept) => void this.ask(() => this.net.gbAccept(key, accept)),
+        close: () => void this.ask(() => this.net.gbClose()),
+        resetTotal: () => void this.confirmResetTotal(),
       });
     }
     this.events.once('shutdown', () => {
@@ -162,7 +165,8 @@ export class GoldenBellScene extends MapScene {
     const me = this.net.me();
     const players = [...this.net.room.state.players.values()];
     const teacher = this.net.role === 'teacher';
-    this.hud.showCard(cardView(gb, me, players, teacher));
+    const rounds = this.net.room.state.gbRounds ?? 0;
+    this.hud.showCard(cardView(gb, me, players, teacher, rounds));
     // 키보드가 있는 기기에서는 단답형 문제가 시작되면 답 칸에 바로 쓸 수 있게 한다(터치 기기에서는 화면 키보드가 갑자기 떠 지도를 가리므로 하지 않는다).
     if (!teacher && !this.touch && gb.phase === 'question' && gb.type === 'short' && this.focusedIndex !== gb.index) {
       this.focusedIndex = gb.index;
@@ -170,9 +174,9 @@ export class GoldenBellScene extends MapScene {
     }
     if (me && !teacher) {
       this.hud.showMine(mineView(gb, me, this.zones));
-      this.hud.setHints(me.hints.length, this.net.escape.hintTotal);
+      this.hud.setHints(hintSummary(this.net.escape, [...me.hints]));
     }
-    this.panel?.show(panelView(gb, players, this.zones), this.waiting);
+    this.panel?.show(panelView(gb, players, this.zones, rounds), this.waiting);
     this.avatar.setAlpha(me?.gbOut ? alpha.outAvatar : 1);
     if (me && this.avatar.tag) setTag(this.avatar.tag, livesTag(me));
 
@@ -256,6 +260,17 @@ export class GoldenBellScene extends MapScene {
     const left = gb.phase === 'end' ? '' : ` 아직 ${Math.max(0, gb.total - gb.index - 1)}문제가 남아 있습니다.`;
     const sure = await this.dialog.confirm('골든벨 끝내기', `골든벨을 끝내고 모두 학교로 돌려보냅니다.${left}`, '끝내기');
     if (sure) await this.ask(() => this.net.gbEnd());
+  }
+
+  /** 합산 순위를 처음으로 돌리기 전에 묻는다. */
+  private async confirmResetTotal() {
+    if (this.waiting || this.dialog.isOpen()) return;
+    const sure = await this.dialog.confirm(
+      '합계 처음으로',
+      '앞서 한 골든벨 판들의 합계 점수를 지웁니다. 지금 판 점수부터 다시 셉니다. 되돌릴 수 없습니다.',
+      '처음으로',
+    );
+    if (sure) await this.ask(() => this.net.gbResetTotal());
   }
 
   /** 선생님 요청을 보내고, 거절되면 그 까닭을 보인다. 답을 받을 때까지 단추를 잠근다. */

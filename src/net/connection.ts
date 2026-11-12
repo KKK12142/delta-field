@@ -183,6 +183,16 @@ export class Net {
     return this.room.request('gbNext');
   }
 
+  /** 선생님: 마감(남은 시간을 0으로 하고 정답 공개) */
+  gbClose(): Promise<GbReply> {
+    return this.room.request('gbClose');
+  }
+
+  /** 선생님: 골든벨 합산 순위를 처음으로 */
+  gbResetTotal(): Promise<GbReply> {
+    return this.room.request('gbResetTotal');
+  }
+
   gbEnd(): Promise<GbReply> {
     return this.room.request('gbEnd');
   }

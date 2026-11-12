@@ -76,6 +76,7 @@ export const color = {
     starChart: 0x2c3a5e,
     compassSign: 0x8a6d4a,
     sundial: 0xa8a39a,
+    timeCapsule: 0x8a8f96,
     partDoor: 0x6b4a33,
     auditoriumDoor: 0x7a3f3f,
   },
@@ -312,6 +313,8 @@ export const motion = {
   remoteWalkGap: 3, // 다른 사람 아바타가 서버 위치와 이 거리(픽셀) 넘게 떨어져 있으면 걷는 중으로 본다
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
   gbFadeMs: 2000, // 골든벨 문제가 시작되면 다른 학생이 이 시간(ms) 동안 흐려지다 사라진다(학생 화면만)
+  bannerMs: 4000, // 화면 가운데 큰 알림(2부 열림, 강당으로 모으기)이 보이는 시간(ms)
+  mapMarkMs: 60000, // 미니맵에 2부 문을 표시해 두는 시간(ms)
 } as const;
 
 /** 미니맵(src/ui/minimap.ts, 캔버스에 그리므로 CSS 변수가 아니라 값을 바로 쓴다) */
@@ -329,6 +332,9 @@ export const minimap = {
   dot: 3, // 작은 지도의 점 반지름(CSS 픽셀)
   dotBig: 7,
   dotLine: 2,
+  mark: '#f2b134', // 알림 표시(2부가 열린 문, 모이는 강당)의 테
+  markLine: 3, // 그 테의 두께(CSS 픽셀)
+  markPad: 2, // 그 테를 사물 밖으로 띄우는 거리(CSS 픽셀)
   smallWidth: 200, // 작은 지도 너비(CSS 픽셀). 높이는 맵 비율대로
   bigWidth: 1100, // 큰 지도 너비의 상한(화면이 좁으면 화면에 맞춤)
 } as const;

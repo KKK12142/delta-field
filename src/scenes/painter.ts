@@ -214,10 +214,12 @@ export class MapPainter {
     const hasOpen = hasSprite && this.scene.textures.exists(openName);
     const hasOn = hasSprite && this.scene.textures.exists(onName);
     let body: GameObjects.Image | GameObjects.Rectangle;
+    /** 그림을 차지 칸의 가로 가운데에 둔다. 열림·켜짐 그림은 크기가 다를 수 있어(-on은 사방 1도트 큼) 바꿀 때마다 다시 맞춘다. 아래 끝은 origin으로 맞춰진다. */
+    const center = (img: GameObjects.Image) => img.setX(x + Math.floor((o.w * t - img.displayWidth) / 2));
     if (hasSprite) {
       const img = this.scene.add.image(0, depth, name).setScale(size.dotScale).setOrigin(0, 1).setDepth(depth).setFlipX(o.flip === true);
-      img.setX(x + Math.floor((o.w * t - img.displayWidth) / 2));
       body = img;
+      center(img);
     } else {
       body = this.scene.add.rectangle(x, y, o.w * t, o.h * t, color.object[o.kind]).setOrigin(0, 0).setDepth(depth);
     }
@@ -243,7 +245,7 @@ export class MapPainter {
         body.setDepth(open ? y : depth);
         label?.setDepth(open ? y + 1 : depth + 1);
         // 열린 그림이 있으면 바꿔 끼우고, 없으면 닫힌 모양을 흐리게 그린다.
-        if (hasOpen && body instanceof GameObjects.Image) body.setTexture(open ? openName : name);
+        if (hasOpen && body instanceof GameObjects.Image) center(body.setTexture(open ? openName : name));
         else body.setAlpha(a);
       },
       setHidden(hidden: boolean) {
@@ -251,7 +253,7 @@ export class MapPainter {
         label?.setVisible(!hidden);
       },
       setLit(lit: boolean) {
-        if (hasOn && body instanceof GameObjects.Image) body.setTexture(lit ? onName : name);
+        if (hasOn && body instanceof GameObjects.Image) center(body.setTexture(lit ? onName : name));
       },
       setName(text: string) {
         if (label && label.text !== text) label.setText(text);
