@@ -146,7 +146,7 @@ export const size = {
   spawnSpread: 1.5, // 시작 위치를 이 거리(칸) 안에서 흩어 놓는다
   labelFont: '12px', // Galmuri11은 12px의 정수 배에서 또렷하다
   labelPad: 4, // 그림 위 이름표 바탕의 좌우 여백(픽셀)
-  stepMarkFont: '22px', // 순서 맞추기 번호
+  stepMarkFont: '24px', // 순서 맞추기 번호(Galmuri11은 12px의 정수 배에서 또렷하다)
   stepMarkPad: 6, // 번호 바탕의 여백(픽셀)
   nicknameFont: '12px',
   nicknameGap: 2, // 머리 꼭대기와 닉네임 사이(픽셀)
