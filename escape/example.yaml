@@ -8,8 +8,19 @@
 #   선생님 CCTV에는 "힌트 얻은 수/전체"가 보입니다. 카드는 여기에 적은 순서로 수첩에 놓입니다.
 # missions: 미션 id: 내용. 미션 id는 맵(src/data/school.json)의 사물에 적힌 mission과 같아야 합니다.
 #   맵에 미션 id가 있어도 이 파일에 없으면 그 사물은 살펴볼 수 없습니다(잠긴 문이면 열린 채로 둡니다).
-#   type: clue(단서 글), quiz(문제), open(문: 맞히면 열려 지나감, 학생마다 따로), exit(출구: 맞히면 탈출)
-#   text: clue의 글
+#   type: 아래 가운데 하나
+#     clue: 단서 글(text)을 보입니다. 살펴보면 바로 마칩니다.
+#     quiz: 문제(아래)를 맞히면 마칩니다.
+#     code: 숫자 자물쇠. code: "0412"처럼 번호를 큰따옴표로 감싸 씁니다(1~8자리). 학생은 번호 단추를 눌러 엽니다. text는 자물쇠 안내 글입니다.
+#     pickup: 바닥에 놓인 물건. 살펴보면 gives의 아이템을 주워 들고 다니고, 그 학생 화면에서 물건이 사라집니다(맵 사물 kind: item).
+#     deliver: 놓을 곳. needs: [아이템1, 아이템2]를 모두 들고 살펴보면 내려놓고(가진 물건에서 빠짐) 마칩니다.
+#       모자라면 locked 글(쓰지 않으면 "○○을(를) 모두 가져와야 합니다.")과 가져온 수가 보입니다.
+#     order: 순서 맞추기. 맵에서 같은 mission을 단 사물 여러 개를 order: [사물1, 사물2, ...]의 순서로 살펴봅니다(사물 id는 맵의 id).
+#       틀린 사물을 살펴보면 처음부터 다시 합니다. texts: { 사물 id: 글 }은 그 사물을 살펴볼 때 보이는 글입니다.
+#     open: 문. 맞히면(문제가 없으면 살펴보면) 열려 지나갑니다. 학생마다 따로 열립니다. 맵의 문 사물에만 둡니다.
+#     exit: 출구. 맞히면(문제가 없으면 살펴보면) 탈출합니다.
+#   text: clue의 글, code의 안내 글, pickup·deliver를 마칠 때 보이는 글
+#   after: 마친 뒤 이어서 보이는 글(예: 다음 자물쇠 번호의 실마리)
 #   문제(quiz에는 꼭, open·exit에는 쓰면 문제를 맞혀야 열림):
 #     question: 문제 글
 #     객관식: choices: [보기1, 보기2, ...], answer: 정답 보기 번호(1부터). 틀리면 그 보기를 지우고 다시 고릅니다.
@@ -25,10 +36,11 @@
 title: 예시 방탈출(학교)
 
 items:
-  locker-key: 사물함 열쇠
   door-key: 교실 문 열쇠
   lab-key: 실험실 열쇠
   entrance-key: 현관 열쇠
+  part-a: 센서 부품
+  part-b: 전선 부품
 
 hints:
   h-force:
@@ -40,11 +52,14 @@ hints:
   h-wave:
     title: 파동과 수
     text: 1초에 진동하는 횟수와 한 번 진동하는 동안 나아가는 거리를 곱하면 1초에 나아가는 거리가 됩니다.
+  h-energy:
+    title: 에너지
+    text: 높은 곳에 있는 물체가 떨어지면 위치 에너지가 운동 에너지로 바뀝니다. 질량, 중력 가속도, 높이를 곱해 보세요.
 
 missions:
   blackboard:
     type: clue
-    text: 칠판에 글이 적혀 있습니다. "교탁 위 문제를 풀면 사물함 열쇠를 얻습니다."
+    text: 칠판에 글이 적혀 있습니다. "사물함 번호 자물쇠의 앞 두 자리는 31입니다. 뒤 두 자리는 교탁 위 문제를 풀면 알 수 있습니다."
 
   teacher-desk:
     type: quiz
@@ -52,18 +67,14 @@ missions:
     question: 마찰이 없는 수평면에 놓인 질량 2 kg인 물체에 수평 방향으로 6 N의 힘을 가했습니다. 물체의 가속도 크기는 얼마입니까?
     choices: [2 m/s², 3 m/s², 6 m/s², 12 m/s²]
     answer: 2
-    gives: locker-key
     hint: h-force
-    done: 교탁 위 문제는 이미 풀었습니다.
+    after: 교탁 서랍에 쪽지가 있습니다. "사물함 번호의 뒤 두 자리는 41입니다."
+    done: 교탁 서랍의 쪽지에 "사물함 번호의 뒤 두 자리는 41입니다."라고 적혀 있습니다.
 
   locker:
-    type: quiz
-    example: true
-    requires: locker-key
-    locked: 사물함이 잠겨 있습니다. 열쇠가 있어야 열 수 있습니다.
-    question: 사물함 안쪽에 문제가 붙어 있습니다. 물체를 가만히 놓아 떨어뜨렸습니다. 공기 저항을 무시하고 중력 가속도를 10 m/s²라 할 때, 2초 뒤 물체의 속력은 얼마입니까?
-    choices: [5 m/s, 10 m/s, 20 m/s, 40 m/s]
-    answer: 3
+    type: code
+    text: 사물함에 네 자리 번호 자물쇠가 걸려 있습니다.
+    code: "3141"
     gives: door-key
     done: 사물함은 비어 있습니다.
 
@@ -94,9 +105,17 @@ missions:
     requires: lab-key
     locked: 실험실 문이 잠겨 있습니다. 실험실 열쇠가 있어야 합니다.
 
+  part-a:
+    type: pickup
+    gives: part-a
+
+  part-b:
+    type: pickup
+    gives: part-b
+
   cabinet:
     type: clue
-    text: 약품장 유리문에 쪽지가 붙어 있습니다. "현관 열쇠는 실험대 서랍에 있습니다. 실험대 위 문제를 풀면 서랍이 열립니다."
+    text: 약품장 유리문에 쪽지가 붙어 있습니다. "현관 열쇠는 실험대 ㄴ → ㄱ → ㄷ 순서로 살펴보면 나옵니다. 복도에 떨어진 부품 두 개는 실험대 ㅁ에 가져다 둡니다."
 
   lab-bench:
     type: quiz
@@ -110,9 +129,26 @@ missions:
         question: 실험대 위 컴퓨터 화면에 2진수 101이 떠 있습니다. 이 수를 10진수로 바꾸면 얼마입니까?
         choices: ["3", "4", "5", "6"]
         answer: 3
-    gives: entrance-key
     hint: h-wave
+    done: 실험대 위 문제는 이미 풀었습니다.
+
+  lab-order:
+    type: order
+    order: [bench-4, bench-3, bench-5]
+    texts:
+      bench-3: 실험대 ㄱ에 저울이 놓여 있습니다.
+      bench-4: 실험대 ㄴ에 자가 놓여 있습니다.
+      bench-5: 실험대 ㄷ에 기록장이 놓여 있습니다.
+    gives: entrance-key
     done: 실험대 서랍은 비어 있습니다.
+
+  parts-bench:
+    type: deliver
+    needs: [part-a, part-b]
+    locked: 실험대 ㅁ에 화분 장치가 있습니다. 센서 부품과 전선 부품이 빠져 있습니다.
+    text: 센서 부품과 전선 부품을 끼우니 화분 장치에 불이 켜졌습니다.
+    hint: h-energy
+    done: 화분 장치에 불이 켜져 있습니다.
 
   entrance:
     type: open

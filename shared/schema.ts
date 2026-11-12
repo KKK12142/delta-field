@@ -92,6 +92,8 @@ export const Escape = schema(
     missions: t.array('string'),
     /** 잠긴 문(open 미션) id. 여기에 없는 문은 처음부터 열려 있다. */
     doors: t.array('string'),
+    /** 줍기(pickup) 미션 id. 주운 학생의 화면에서는 그 사물이 사라진다. */
+    pickups: t.array('string'),
     /** 아이템 id → 이름 */
     items: t.map('string'),
     /** 힌트 카드 수 */

@@ -9,11 +9,13 @@ type FloorId = Extract<(typeof TILES)[TileChar], { floor: true }>['id'];
 type WallId = Extract<(typeof TILES)[TileChar], { floor: false }>['id'];
 
 /** 이름표를 어두운 글자로 쓰는 밝은 사물 */
-const LIGHT_KINDS: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['desk', 'goalpost']);
+const LIGHT_KINDS: ReadonlySet<ObjectKind> = new Set<ObjectKind>(['desk', 'goalpost', 'item']);
 
 /** 화면에 그린 사물 하나. 문은 열림과 닫힘 모양을 바꾼다. */
 export interface ObjectView {
   setOpen(open: boolean): void;
+  /** 주운 물건처럼 화면에서 감춘다. */
+  setHidden(hidden: boolean): void;
 }
 
 export class MapPainter {
@@ -85,6 +87,10 @@ export class MapPainter {
         const a = open ? alpha.openDoor : 1;
         body.setAlpha(a);
         label?.setAlpha(a);
+      },
+      setHidden(hidden: boolean) {
+        body.setVisible(!hidden);
+        label?.setVisible(!hidden);
       },
     };
   }

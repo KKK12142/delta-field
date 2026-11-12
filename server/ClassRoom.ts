@@ -128,15 +128,15 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     // 방탈출: 자료 파일 고르기(선생님), 미션 살펴보기·답 내기·다시 하기·힌트 수첩(모두). 채점은 서버가 한다.
     this.onMessage('escapeFiles', (client: Client): EscapeFileInfo[] => (this.isTeacher(client) ? listEscapeFiles() : []));
     this.onMessage('escapeLoad', (client: Client, message: { file?: unknown }) => this.escapeLoad(client, message));
-    this.onMessage('missionOpen', (client: Client, message: { id?: unknown }): MissionView => {
+    this.onMessage('missionOpen', (client: Client, message: { object?: unknown }): MissionView => {
       const p = this.state.players.get(client.sessionId);
       if (!p || p.map !== 'school') return { kind: 'none', text: '지금은 살펴볼 수 없습니다.' };
-      return this.escape.open(p, message?.id);
+      return this.escape.open(p, message?.object);
     });
     this.onMessage('missionAnswer', (client: Client, message: MissionAnswerMessage): MissionAnswerReply => {
       const p = this.state.players.get(client.sessionId);
       if (!p || p.map !== 'school') return { correct: false, reward: null, error: '지금은 답을 낼 수 없습니다.' };
-      return this.escape.answer(p, message?.id, message?.answer);
+      return this.escape.answer(p, message?.object, message?.answer);
     });
     this.onMessage('escapeRestart', (client: Client): GbReply => {
       const p = this.state.players.get(client.sessionId);
