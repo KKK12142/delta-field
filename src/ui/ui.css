@@ -320,6 +320,32 @@
   touch-action: none;
 }
 
+/* 미니맵: 오른쪽 아래, 살펴보기 단추 위(학생 학교 맵) */
+.df-minimap {
+  position: absolute;
+  right: var(--df-margin);
+  bottom: calc(2 * var(--df-margin) + var(--df-action-button) + env(safe-area-inset-bottom, 0px));
+  padding: 0;
+  border: var(--df-border) solid var(--df-panel-border);
+  border-radius: var(--df-radius);
+  overflow: hidden;
+  line-height: 0;
+  cursor: pointer;
+  background: var(--df-panel);
+}
+.df-minimap canvas,
+.df-map-big canvas {
+  display: block;
+}
+/* 큰 지도 창 */
+.df-panel.df-map-panel {
+  width: min(var(--df-map-panel-width), calc(100vw - 2 * var(--df-margin)));
+  align-items: center;
+}
+.df-panel.df-map-panel > .df-row {
+  align-self: stretch;
+}
+
 /* 조이스틱: 화면 왼쪽 절반(높이 전체)의 어디든 누르면 그 자리에 바탕과 손잡이가 나타난다. */
 .df-joystick-zone {
   position: absolute;

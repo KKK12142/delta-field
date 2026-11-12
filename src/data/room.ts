@@ -135,6 +135,8 @@ export interface Room {
   /** 시작 위치(칸 좌표, 칸 가운데는 .5) */
   start: { col: number; row: number };
   objects: RoomObject[];
+  /** 미니맵에만 그리는 건물(들어가지 않는 강당 등) */
+  landmarks?: (Rect & { id: string; name: string })[];
   /** 선생님 CCTV의 구역 보기(넓은 맵을 나눠 크게 본다). 없으면 전체 보기만 */
   views?: (Rect & { id: string; name: string })[];
   /** 골든벨 맵: 답 구역 */

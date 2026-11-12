@@ -39,6 +39,9 @@ function variantAt(col: number, row: number, count: number) {
   return ((h ^ (h >>> 16)) >>> 0) % count;
 }
 
+/** 칸 하나의 도트 수(바닥을 구울 때 칸 하나의 픽셀) */
+const DOT_TILE = size.tile / size.dotScale;
+
 /** 0xRRGGBB → CSS 색 */
 const css = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
@@ -57,12 +60,15 @@ export class MapPainter {
     private readonly room: Room,
   ) {}
 
-  /** 바닥과 벽(바뀌지 않는 것)을 그림으로 구워 맨 아래에 깐다. 같은 맵은 한 번만 굽는다. */
+  /**
+   * 바닥과 벽(바뀌지 않는 것)을 그림으로 구워 맨 아래에 깐다. 같은 맵은 한 번만 굽는다.
+   * 도트 크기(칸 하나 = 30픽셀)로 구워 dotScale배로 보인다(그래픽 메모리가 4분의 1이고, 도트 그림이라 모양은 같다).
+   * 맵이 커도 그래픽 카드의 텍스처 크기 한도를 넘지 않게 groundChunk칸씩 나눠 굽는다.
+   */
   ground() {
-    // 맵이 커도 그래픽 카드의 텍스처 크기 한도(낮은 기기 4096px)를 넘지 않게 groundChunk칸씩 나눠 굽는다.
     const { cols, rows } = mapSize(this.room);
     const n = size.groundChunk;
-    const t = size.tile;
+    const t = DOT_TILE;
     for (let r0 = 0; r0 < rows; r0 += n) {
       for (let c0 = 0; c0 < cols; c0 += n) {
         const key = `df-ground-${this.room.id}-${c0}-${r0}`;
@@ -79,7 +85,11 @@ export class MapPainter {
           tex.refresh();
           tex.setFilter(Textures.FilterMode.NEAREST);
         }
-        this.scene.add.image(c0 * t, r0 * t, key).setOrigin(0, 0).setDepth(0);
+        this.scene.add
+          .image(c0 * size.tile, r0 * size.tile, key)
+          .setOrigin(0, 0)
+          .setScale(size.dotScale)
+          .setDepth(0);
       }
     }
   }
@@ -121,35 +131,35 @@ export class MapPainter {
   private tile(ctx: CanvasRenderingContext2D, name: string, col: number, row: number, x: number, y: number) {
     if (!this.scene.textures.exists(name)) return false;
     const img = this.scene.textures.get(name).getSourceImage() as CanvasImageSource & { width: number };
-    const dot = size.tile / size.dotScale;
-    const v = variantAt(col, row, Math.max(1, Math.round(img.width / dot)));
-    ctx.drawImage(img, v * dot, 0, dot, dot, x, y, size.tile, size.tile);
+    const v = variantAt(col, row, Math.max(1, Math.round(img.width / DOT_TILE)));
+    ctx.drawImage(img, v * DOT_TILE, 0, DOT_TILE, DOT_TILE, x, y, DOT_TILE, DOT_TILE);
     return true;
   }
 
   /** 그림이 없는 바닥 한 칸(색 네모, 칸 번갈이와 줄) */
   private floor(ctx: CanvasRenderingContext2D, id: FloorId, col: number, row: number, x: number, y: number) {
-    const t = size.tile;
+    const t = DOT_TILE;
     const style = color.tile[id];
     ctx.fillStyle = css((col + row) % 2 === 0 ? style.fill : style.alt);
     ctx.fillRect(x, y, t, t);
     if (style.line === null) return;
     ctx.globalAlpha = alpha.floorLine;
     ctx.strokeStyle = css(style.line);
-    ctx.lineWidth = size.floorLine;
+    ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, t - 1, t - 1);
     ctx.globalAlpha = 1;
   }
 
   /** 그림이 없는 벽 한 칸. face는 아래 칸이 바닥이라 앞면이 보이는 벽(아래쪽 size.wallFace 픽셀을 앞면으로 칠한다) */
   private wall(ctx: CanvasRenderingContext2D, id: WallId, x: number, y: number, face: boolean) {
-    const t = size.tile;
+    const t = DOT_TILE;
+    const faceH = size.wallFace / size.dotScale;
     const style = color.tile[id];
     ctx.fillStyle = css(style.top);
     ctx.fillRect(x, y, t, t);
     if (!face) return;
     ctx.fillStyle = css(style.face);
-    ctx.fillRect(x, y + t - size.wallFace, t, size.wallFace);
+    ctx.fillRect(x, y + t - faceH, t, faceH);
   }
 
   /** 사물 하나. 아래쪽에 있는 것이 앞에 보이게 깊이를 사물의 아래 끝(픽셀)으로 둔다. 살펴볼 수 있는 사물에는 이름을 적는다. */

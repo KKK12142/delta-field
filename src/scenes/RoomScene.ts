@@ -7,7 +7,8 @@ import { formatDuration, RunState } from '../game/state';
 import { CctvPanel } from '../ui/cctv';
 import { objectParticle } from '../ui/dom';
 import { Hud } from '../ui/hud';
-import { color, size } from '../theme';
+import { Minimap, drawMinimap } from '../ui/minimap';
+import { color, minimap, size } from '../theme';
 import { MapScene, type MapContext, type Reserved } from './MapScene';
 
 /** 선생님의 CCTV 모드 */
@@ -29,6 +30,8 @@ const REOPEN_GUARD = 250;
 export class RoomScene extends MapScene {
   readonly mapId = 'school';
   private hud!: Hud;
+  /** 학생 화면의 미니맵(선생님은 CCTV가 있어 두지 않는다) */
+  private minimap: Minimap | null = null;
   private highlight!: Phaser.GameObjects.Graphics;
   private target: RoomObject | null = null;
   private busy = false;
@@ -79,6 +82,7 @@ export class RoomScene extends MapScene {
     // 연 문, 가진 물건, 힌트 카드 수는 서버의 진행을 따른다(골든벨에 다녀와도 그대로).
     this.syncEscape();
     this.hud.onAction(this.onActionButton);
+    this.minimap = teacher ? null : new Minimap(this.room, () => void this.openMap());
     this.hud.notebook.addEventListener('click', this.onNotebookButton);
     this.hud.escapeFile.addEventListener('click', this.onEscapeFileButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
@@ -96,6 +100,8 @@ export class RoomScene extends MapScene {
       this.input.off('pointerdown', this.onPointerDown, this);
       this.input.off('pointermove', this.onPointerMove, this);
       this.hud.destroy();
+      this.minimap?.destroy();
+      this.minimap = null;
     });
     this.fitCamera();
     // 선생님이 방을 만들었는데 방탈출 자료를 아직 고르지 않았으면 바로 고르게 한다(이 접속에서 한 번).
@@ -113,6 +119,11 @@ export class RoomScene extends MapScene {
       hidden: () => this.room.objects.filter((o) => this.isHidden(o)).map((o) => o.id),
       /** 켜 보이는 사물 id(순서 맞추기, 마친 미션) */
       lit: () => [...this.lit],
+      /** 미니맵: 보이는지, 큰 지도가 열렸는지 */
+      minimap: () => ({
+        shown: !!document.querySelector('.df-minimap') && !document.querySelector<HTMLElement>('.df-minimap')!.hidden,
+        big: !!document.querySelector('.df-map-big canvas'),
+      }),
       escapeFile: () => this.net.escape.file,
       place: () => this.place,
       target: () => this.target?.id ?? null,
@@ -248,6 +259,7 @@ export class RoomScene extends MapScene {
     if (this.net.role === 'student') this.net.sendStatus(this.state.toStatus());
     this.updateGather();
     this.syncEscape();
+    this.minimap?.update(this.pos, this.net.part);
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {
@@ -663,6 +675,19 @@ export class RoomScene extends MapScene {
     }
     if (r.after) await this.dialog.message(o.name, r.after);
     if (r.hint) await this.dialog.message(`힌트 카드: ${r.hint.title}`, r.hint.text, '수첩에 넣기');
+  }
+
+  // ---- 미니맵 ----
+
+  /** 큰 지도를 연다(여는 동안은 걷지 않는다). */
+  private async openMap() {
+    if (this.dialog.isOpen() || this.busy) return;
+    const cols = this.room.layout[0].length;
+    await this.dialog.map('학교 지도', (width) => {
+      const canvas = document.createElement('canvas');
+      drawMinimap(canvas, this.room, Math.min(width, minimap.bigWidth) / cols, this.net.part, this.pos, true);
+      return canvas;
+    });
   }
 
   // ---- 힌트 수첩·방탈출 자료 ----

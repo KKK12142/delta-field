@@ -105,7 +105,7 @@ export const uiColor = {
 
 /** 게임 화면 크기. 길이는 픽셀, 칸 좌표의 크기는 칸 단위 */
 export const size = {
-  groundChunk: 32, // 바닥·벽을 이 칸 수씩 나눠 한 장으로 굽는다(32칸 = 1920px, 텍스처 크기 한도 아래)
+  groundChunk: 32, // 바닥·벽을 이 칸 수씩 나눠 한 장으로 굽는다(도트 크기로 구워 32칸 = 960px, 텍스처 크기 한도 아래)
   tile: 60, // 바닥 한 칸의 한 변(픽셀). 타일 그림 30도트를 2배로 그린다(docs/art.md). 캐릭터(60×120)는 1×2칸
   floorLine: 1,
   viewTiles: 15, // 내 아바타를 따라갈 때 화면 짧은 쪽에 보이는 칸 수쯤(확대 배율을 정한다)
@@ -164,6 +164,7 @@ export const uiSize = {
   margin: '16px',
   radius: '12px',
   panelWidth: '520px',
+  mapPanelWidth: '1160px', // 큰 지도 창 너비의 상한
   buttonPad: '10px 18px',
   joystickZone: '50%', // 조이스틱 영역: 화면 왼쪽에서 이 너비(높이는 전체)
   joystick: '132px',
@@ -212,6 +213,24 @@ export const motion = {
   remoteWalkGap: 3, // 다른 사람 아바타가 서버 위치와 이 거리(픽셀) 넘게 떨어져 있으면 걷는 중으로 본다
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)
   gbFadeMs: 2000, // 골든벨 문제가 시작되면 다른 학생이 이 시간(ms) 동안 흐려지다 사라진다(학생 화면만)
+} as const;
+
+/** 미니맵(src/ui/minimap.ts, 캔버스에 그리므로 CSS 변수가 아니라 값을 바로 쓴다) */
+export const minimap = {
+  background: '#8a7f72', // 벽·바깥
+  landmark: '#a59a8c', // 강당 등 들어가지 않는 건물
+  door: '#e3e1db', // 장소 사이 문(지나가는 곳)
+  lockedAlpha: 0.35, // 아직 열리지 않은 2부 장소
+  label: '#2e2a26',
+  lockedLabel: '#5b544c',
+  labelFont: '13px',
+  me: '#e2433b', // 내 위치 점
+  meLine: '#ffffff',
+  dot: 3, // 작은 지도의 점 반지름(CSS 픽셀)
+  dotBig: 7,
+  dotLine: 2,
+  smallWidth: 200, // 작은 지도 너비(CSS 픽셀). 높이는 맵 비율대로
+  bigWidth: 1100, // 큰 지도 너비의 상한(화면이 좁으면 화면에 맞춤)
 } as const;
 
 /** uiColor, uiSize를 CSS 변수(--df-이름)로 넣는다. */

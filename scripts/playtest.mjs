@@ -161,6 +161,22 @@ await b.shot('touch');
 // ---- 카메라: 내 아바타를 따라가고 맵 밖은 비추지 않는다 ----
 const [aw, ah] = await a.js(`[innerWidth, innerHeight]`);
 const placeOf = (pg) => pg.js(`document.querySelector('.df-hud .df-hud-box strong').textContent`);
+// ---- 미니맵: 학생 화면 오른쪽 아래에 작게, 누르면 큰 지도(걷지 않음), 바깥을 누르면 닫힘 ----
+check('미니맵: 학생 화면에 보이고 선생님 화면에는 없음',
+  (await a.js(`__df.minimap().shown`)) === true && (await teacher.js(`!!document.querySelector('.df-minimap')`)) === false);
+const mm = await a.js(`(() => { const m = document.querySelector('.df-minimap').getBoundingClientRect(); const b = document.querySelector('.df-action').getBoundingClientRect();
+  const h = document.querySelector('.df-hud > .df-hud-box').getBoundingClientRect(); return { m: [m.left, m.top, m.right, m.bottom], b: [b.top], h: [h.bottom] }; })()`);
+check('미니맵: 살펴보기 단추 위, 오른쪽 위 안내 아래(겹치지 않음)', mm.m[3] <= mm.b[0] && mm.m[1] >= mm.h[0], JSON.stringify(mm));
+await a.js(`document.querySelector('.df-minimap').click()`);
+await wait(400);
+check('미니맵: 누르면 큰 지도가 열림', (await a.js(`__df.minimap().big`)) === true && /학교 지도/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));
+const mapPos = await a.js(`__df.pos()`);
+await a.press('ArrowLeft', 400);
+check('미니맵: 큰 지도를 보는 동안은 걷지 않음', Math.abs((await a.js(`__df.pos().col`)) - mapPos.col) < 0.01);
+await a.shot('minimap-big');
+await a.js(`document.querySelector('.df-dialog').click()`);
+await wait(300);
+check('미니맵: 바깥을 누르면 닫힘', (await a.dialogText()) === null && (await a.js(`__df.minimap().big`)) === false);
 check('처음 장소는 교실(안내에 보임)', (await a.js(`__df.place()`)) === '교실' && (await placeOf(a)) === '교실', await placeOf(a));
 const camAt = async (col, row) => {
   await a.js(`__df.teleport(${col}, ${row})`);

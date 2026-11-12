@@ -53,6 +53,9 @@
     {"id": "rooftop", "name": "옥상 천문대", "col": 104, "row": 2, "w": 16, "h": 15, "part": 2},
     {"id": "field", "name": "운동장", "col": 1, "row": 19, "w": 64, "h": 17}
   ],
+  "landmarks": [
+    {"id": "auditorium", "name": "강당", "col": 65, "row": 19, "w": 56, "h": 18}
+  ],
   "views": [
     {"id": "building1", "name": "1부 건물", "col": 0, "row": 0, "w": 67, "h": 19},
     {"id": "building2", "name": "2부 건물", "col": 64, "row": 0, "w": 57, "h": 19},

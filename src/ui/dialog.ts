@@ -245,6 +245,36 @@ export class Dialog {
     });
   }
 
+  /**
+   * 큰 지도: content(그림)를 넓은 창에 보인다. 닫기, Esc, 창 바깥 누르기로 닫는다.
+   * 창 안의 너비(CSS 픽셀)를 draw에 넘겨 그 너비에 맞춰 그리게 한다.
+   */
+  map(title: string, draw: (width: number) => HTMLElement): Promise<void> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      panel.classList.add('df-map-panel');
+      const row = el('div', 'df-row');
+      const ok = el('button', 'df-button', '닫기');
+      row.append(ok);
+      const done = () => {
+        this.close();
+        resolve();
+      };
+      ok.addEventListener('click', done);
+      this.open(panel, (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') done();
+      });
+      const box = el('div', 'df-map-big');
+      panel.append(box, row);
+      box.append(draw(panel.clientWidth - 2 * parseFloat(getComputedStyle(panel).paddingLeft)));
+      // 창 바깥(어두운 바탕)을 누르면 닫는다.
+      panel.parentElement?.addEventListener('click', (e) => {
+        if (e.target === panel.parentElement) done();
+      });
+      ok.focus();
+    });
+  }
+
   /** 힌트 수첩: 얻은 힌트 카드를 모두 보인다. */
   notebook(cards: NoteCard[], total: number): Promise<void> {
     return new Promise((resolve) => {
