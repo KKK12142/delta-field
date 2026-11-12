@@ -971,12 +971,23 @@ check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.queryS
 // ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
 const teacher2 = await openPage('teacher2', touchUrl, { touch: true });
 await teacher2.enter({ teacher: true, nickname: '선생님2', code, pw: password });
+// 글꼴을 읽은 뒤 장면이 시작되므로 부하가 크면 늦다. 장면(__df)이 뜰 때까지 기다린다.
+for (let i = 0; i < 40 && (await teacher2.js(`typeof window.__df?.role === 'function'`)) !== true; i++) await wait(250);
 check('선생님이 방 코드로 기존 방에 다시 들어감', (await teacher2.js(`window.__df?.role()`)) === 'teacher' && (await teacher2.js(`__df.code()`)) === code);
 
 // ---- 태블릿 선생님: CCTV 모드에서는 조이스틱 영역이 감춰져 지도 위 학생을 누를 수 있다 ----
 await clickText(teacher2, '.df-hud button', 'CCTV 보기');
 await wait(400);
-const aAt = await teacher2.js(`__df.screenOf('가람')`);
+// 가람이 지도에 보이게 전체 보기로 둔다(처음에는 학생이 가장 많은 구역을 비춘다).
+await teacher2.js(`[...document.querySelectorAll('.df-cctv-view')].find((b) => b.textContent.startsWith('전체'))?.click()`);
+await wait(600);
+let aAt = null;
+for (let i = 0; i < 20 && !aAt; i++) {
+  aAt = (await teacher2.js(`window.__df?.screenOf('가람') ?? null`)) ?? null;
+  if (!aAt) await wait(250);
+}
+check('태블릿 선생님: CCTV 지도에 가람이 보임', aAt !== null, JSON.stringify(aAt));
+aAt ??= { x: 0, y: 0 };
 check('태블릿 선생님: CCTV 모드에서는 조이스틱 영역이 감춰짐',
   (await teacher2.js(`document.querySelector('.df-joystick-zone').hidden && document.elementFromPoint(${vw * 0.25}, ${vh / 2})?.tagName === 'CANVAS'`)) === true);
 await teacher2.touch('touchStart', [{ x: aAt.x, y: aAt.y }]);
