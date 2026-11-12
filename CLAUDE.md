@@ -10,8 +10,9 @@
 - 구조: src/main.ts(시작), src/render.ts(그리는 방식: 주소의 ?render=dpr·free·css, ?fps=1), src/scenes/(MapScene.ts 맵·움직임·카메라 바탕, painter.ts 맵 그리기, RoomScene.ts 학교 맵·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨, avatar.ts 캐릭터 아바타),
   src/data/(맵 데이터 JSON과 형식: school.json, goldenbell.json. 형식은 docs/map.md. characters.json 캐릭터 목록), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
   src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창·골든벨 안내, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
-  server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기), shared/(서버와 화면이 함께 쓰는 약속·상태·골든벨 규칙),
-  goldenbell/(골든벨 문제 YAML. 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다),
+  server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기, escape.ts 방탈출 자료 읽기, EscapeGame.ts 방탈출 채점·진행),
+  shared/(서버와 화면이 함께 쓰는 약속·상태·골든벨 규칙, escape.ts 방탈출 약속),
+  goldenbell/(골든벨 문제 YAML), escape/(방탈출 자료 YAML: 미션·자물쇠 문제·힌트 카드). 둘 다 정답이 있어 example.yaml 말고는 저장소에 올리지 않는다,
   public/sprites/(게임이 읽는 그림), art/src/(도트 글자판·색표), docs/art.md(그림 규격과 만드는 과정), scripts/art/(그림 생성 받기·다듬기, pnpm art:gen·art:fit·art:grid)
 - 서버 코드는 Node가 TypeScript를 그대로 실행한다(타입 지우기). 상대 경로 import에 .ts를 붙이고, 타입만 가져올 때는 import type을 쓰고, enum·namespace는 쓰지 않는다.
   서버 타입 검사 설정은 server/tsconfig.json. express는 타입 정의를 내려받지 않고 server/express.d.ts에 쓰는 부분만 적어 두었다.
@@ -19,7 +20,7 @@
   pnpm start(수업용: 빌드한 뒤 게임 서버가 화면까지 한 주소로 내어 줌. 교사의 맥에서 쓴다),
   pnpm playtest(화면·게임 서버를 켠 채로 DF_TEACHER_PASSWORD를 넘겨, 헤드리스 크롬에서 선생님 1명·학생 2명으로 한 판을 자동으로 해 본다.
   방 데이터를 바꾸면 scripts/playtest.mjs도 맞춘다. 확인용 게임 서버는 확인용 비밀번호로 따로 켜고, 끝나면 끈다.
-  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell(README)),
+  공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell, 방탈출 확인용 자료는 DF_ESCAPE_DIR=scripts/playtest-escape(README)),
   pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
 - 그림 생성 키: ~/.config/delta-field/baze.env의 BAZE_API_KEY(저장소 밖, chmod 600). 교사가 직접 넣는다. pnpm art:gen만 읽고 내용을 출력하지 않는다.
