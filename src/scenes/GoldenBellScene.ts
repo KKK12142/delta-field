@@ -4,6 +4,7 @@ import { cardView, livesTag, mineView, panelView } from '../game/goldenbell';
 import { hintSummary } from '../game/progress';
 import { askAnnounce } from '../ui/announce';
 import { GbHud, GbPanel } from '../ui/goldenbell';
+import { SeeThrough } from '../ui/seeThrough';
 import { alpha, color, fontFamily, motion, size } from '../theme';
 import type { TagStyle } from './avatar';
 import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
@@ -17,6 +18,8 @@ const ZONE_TEXT_DEPTH = 1_000_000;
 export class GoldenBellScene extends MapScene {
   readonly mapId = 'goldenbell';
   private hud!: GbHud;
+  /** 문제 카드·내 상태 뒤에 들어간 캐릭터 자리를 뚫는다. */
+  private seeThrough!: SeeThrough;
   private panel: GbPanel | null = null;
   private zones!: Zones;
   private zoneLayer!: Phaser.GameObjects.Graphics;
@@ -59,6 +62,7 @@ export class GoldenBellScene extends MapScene {
       (text) => void this.submit(text),
       () => void this.openNotebook(),
     );
+    this.seeThrough = new SeeThrough(() => this.hud.overMap);
     if (teacher) {
       this.panel = new GbPanel({
         next: () => void this.ask(() => this.net.gbNext()),
@@ -127,6 +131,7 @@ export class GoldenBellScene extends MapScene {
       this.hudBottom = bottom;
       this.fitCamera();
     }
+    this.seeThrough.update(this.avatarSpots());
   }
 
   /** 학생은 모두 머리 위에 목숨을 띄운다(선생님은 띄우지 않는다). */

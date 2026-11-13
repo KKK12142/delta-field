@@ -1,4 +1,6 @@
-// 지도 위에 겹쳐 뜬 안내(왼쪽 위 장소 안내, 미니맵) 뒤에 캐릭터가 들어가면 그 자리만 안내를 뚫는다(교사 요청 2026-11-13).
+// 지도 위에 겹쳐 뜬 안내(학교 맵의 왼쪽 위·오른쪽 위 안내와 미니맵, 골든벨 맵의 문제 카드·내 상태) 뒤에 캐릭터가 들어가면
+// 그 자리만 안내를 뚫는다(교사 요청 2026-11-13). mask는 겉모양만 바꾸므로 뚫린 자리의 단추도 그대로 눌린다.
+// 선생님 공지(.df-announce)와 대화상자는 뚫지 않는다(여기 넘기지 않는다).
 // CSS mask에 타원 구멍(radial-gradient)을 캐릭터 수만큼 겹쳐(intersect) 넣는다. 겹친 캐릭터가 없으면 mask를 지운다.
 // 매 프레임 부르지만, mask 글이 달라졌을 때만 스타일을 쓴다(구멍 위치는 seeThrough.step 픽셀 단위로 맞춘다).
 import { seeThrough as S } from '../theme';
@@ -29,12 +31,14 @@ export class SeeThrough {
     this.nodes = nodes;
   }
 
+  /** spots는 내 캐릭터를 맨 앞에 둔다. 안내 하나와 겹치는 캐릭터가 seeThrough.maxHoles를 넘으면 앞의 것만 뚫는다. */
   update(spots: Spot[]) {
     for (const node of this.nodes()) {
       const r = node.getBoundingClientRect();
       const holes: string[] = [];
       if (r.width > 0 && r.height > 0) {
         for (const s of spots) {
+          if (holes.length >= S.maxHoles) break;
           if (s.x + s.rx <= r.left || s.x - s.rx >= r.right || s.y + s.ry <= r.top || s.y - s.ry >= r.bottom) continue;
           const rx = Math.max(S.step, snap(s.rx));
           const ry = Math.max(S.step, snap(s.ry));

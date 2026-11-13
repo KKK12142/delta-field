@@ -101,7 +101,7 @@ export class RoomScene extends MapScene {
     this.syncEscape();
     this.hud.onAction(this.onActionButton);
     this.minimap = teacher ? null : new Minimap(this.room, () => void this.openMap());
-    this.seeThrough = new SeeThrough(() => (this.minimap ? [this.hud.overMap, this.minimap.element] : [this.hud.overMap]));
+    this.seeThrough = new SeeThrough(() => (this.minimap ? [...this.hud.overMap, this.minimap.element] : this.hud.overMap));
     this.hud.notebook.addEventListener('click', this.onNotebookButton);
     this.hud.escapeFile.addEventListener('click', this.onEscapeFileButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);

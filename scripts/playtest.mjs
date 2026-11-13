@@ -5,7 +5,7 @@
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 사물 위치는 src/data/school.json에, 미션 답 번호는 escape/example.yaml에 맞춰 두었다. 맵이나 예시 자료를 바꾸면 함께 고친다.
 import { mkdirSync, rmSync } from 'node:fs';
-import { size } from '../src/theme.ts';
+import { seeThrough, size } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
@@ -217,8 +217,8 @@ const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽 빈 띠 없음)',
   Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
 // 맵 왼쪽 위 구석에서는 내 아바타가 왼쪽 위 안내 뒤에 들어간다. 그 자리만 안내를 뚫어(mask) 캐릭터가 보인다.
-const holeOf = () => a.js(`(() => {
-  const n = document.querySelector('.df-hud-column');
+const holeOf = (sel = '.df-hud-column') => a.js(`(() => {
+  const n = document.querySelector(${JSON.stringify(sel)});
   const r = n.getBoundingClientRect(), me = __df.camera().me;
   return { mask: getComputedStyle(n).maskImage || getComputedStyle(n).webkitMaskImage || 'none',
     under: me.x > r.left && me.x < r.right && me.y > r.top && me.y < r.bottom };
@@ -232,6 +232,26 @@ const noHole = await holeOf();
 check('안내 뚫기: 안내 뒤에서 나오면 구멍이 사라짐', !noHole.under && noHole.mask === 'none', `mask ${noHole.mask.slice(0, 60)}`);
 check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 121) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
+// 오른쪽 위 구석에서는 오른쪽 위 안내(방 코드·가진 물건·힌트 수첩) 뒤에 들어간다. 뚫린 자리의 단추도 그대로 눌린다.
+await camAt(119.5, 2.5);
+const rightHole = await holeOf('.df-hud > .df-hud-box');
+check('안내 뚫기: 오른쪽 위 안내 뒤에 들어가면 그 자리에 구멍이 생김',
+  rightHole.under && /radial-gradient/.test(rightHole.mask), `캐릭터가 안내 뒤 ${rightHole.under}, mask ${rightHole.mask.slice(0, 60)}`);
+await a.shot('see-through-right');
+// 힌트 수첩 단추에서 구멍 안(내 몸통 가운데에 가장 가까운 점)을 누른다.
+const inHole = await a.js(`(() => {
+  const b = [...document.querySelectorAll('.df-hud button')].find((x) => x.textContent.startsWith('힌트 수첩')).getBoundingClientRect();
+  const me = __df.camera().me, tall = __df.avatar().height;
+  const x = Math.min(Math.max(me.x, b.left + 2), b.right - 2), y = Math.min(Math.max(me.y, b.top + 2), b.bottom - 2);
+  const inside = ((x - me.x) / (tall * ${seeThrough.rx})) ** 2 + ((y - me.y) / (tall * ${seeThrough.ry})) ** 2 < 1;
+  return { x, y, inside };
+})()`);
+await a.click(inHole.x, inHole.y);
+await wait(300);
+check('안내 뚫기: 뚫린 자리의 힌트 수첩 단추도 눌림', inHole.inside && /힌트 수첩 \(/.test((await a.dialogText()) ?? ''),
+  `구멍 안 ${inHole.inside}, 창 ${fmt(await a.dialogText())?.slice(0, 40)}`);
+await a.press('Escape');
+await wait(300);
 await a.js(`__df.teleport(46.5, 35.5)`);
 await wait(200);
 check('장소: 운동장', (await placeOf(a)) === '운동장');
@@ -930,6 +950,23 @@ await wait(500);
 check('골든벨 중에도 힌트 수첩을 봄(4/4)', /힌트 수첩 \(4\/4\)/.test((await a.dialogText()) ?? '') && /운동량/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));
 await a.press('Escape');
 await wait(300);
+// 골든벨 맵: 문제 카드 아래 끝에 내 몸통이 걸치게 세우면 카드에 구멍이 생긴다(지도는 카드 아래에 맞추므로 머리·목숨 글이 걸칠 때 쓰인다).
+const gbFrom = await a.js(`__df.pos()`);
+await a.js(`(() => {
+  const card = document.querySelector('.df-gb-card').getBoundingClientRect(), cam = __df.camera();
+  const tile = cam.zoom * ${size.tile};
+  const col = (card.left + card.width / 2 - cam.map.x) / tile;
+  const row = (card.bottom - 4 - cam.map.y) / tile + ${size.avatarHeight / 2 / size.tile};
+  __df.teleport(col, row);
+})()`);
+await wait(400);
+const gbHole = await holeOf('.df-gb-card');
+check('안내 뚫기: 골든벨 문제 카드 뒤에 들어가면 그 자리에 구멍이 생김', gbHole.under && /radial-gradient/.test(gbHole.mask),
+  `캐릭터가 카드 뒤 ${gbHole.under}, mask ${gbHole.mask.slice(0, 60)}`);
+await a.shot('see-through-goldenbell');
+await a.js(`__df.teleport(${gbFrom.col}, ${gbFrom.row})`);
+await wait(400);
+check('안내 뚫기: 골든벨 카드 뒤에서 나오면 구멍이 사라짐', (await holeOf('.df-gb-card')).mask === 'none');
 const looks = (pg) => pg.js(`__df.looks()`);
 let la = await looks(a);
 check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 하트 5개, B는 3개)', la.me.tag === '♥♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
