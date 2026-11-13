@@ -5,6 +5,8 @@ export const ROOM_NAME = 'class';
 export const MAX_CLIENTS = 40;
 export const MAX_NICKNAME = 12;
 export const CODE_LENGTH = 4;
+/** 학생 암호 자릿수(2026-11-13 교사 결정: 닉네임+암호로 이어 하기) */
+export const PIN_LENGTH = 4;
 /** 와이파이가 잠깐 끊겨도 이 시간(초) 안에 돌아오면 같은 자리로 다시 붙는다. */
 export const RECONNECT_SECONDS = 20;
 /** 내 위치를 서버로 보내는 가장 짧은 간격(ms) */
@@ -39,6 +41,8 @@ export interface JoinOptions {
   classGroup?: string;
   /** 선생님만 넣는다. */
   password?: string;
+  /** 학생의 암호(숫자 PIN_LENGTH자리). 같은 닉네임으로 다시 들어와 이어 받을 때 처음 정한 것과 같아야 한다. 선생님은 넣지 않는다. */
+  pin?: string;
 }
 
 export interface MoveMessage {
@@ -161,7 +165,24 @@ export const RejectCode = {
   badNickname: 422,
   /** 같은 IP에서 선생님 비밀번호를 1분에 5번 틀려 잠깐 막음 */
   tooManyTries: 429,
+  /** 학생 암호가 숫자 PIN_LENGTH자리가 아님 */
+  badPin: 400,
+  /** 이미 있는 닉네임인데 암호가 처음 정한 것과 다름 */
+  wrongPin: 401,
+  /** 그 닉네임의 암호를 1분에 5번 틀려 잠깐 막음 */
+  pinLocked: 423,
 } as const;
+
+/** 숫자 PIN_LENGTH자리 암호면 그대로, 아니면 null */
+export function cleanPin(value: unknown): string | null {
+  return typeof value === 'string' && new RegExp(`^\\d{${PIN_LENGTH}}$`).test(value) ? value : null;
+}
+
+/** 선생님이 암호를 지울 수 있는 학생(요청 'pinList'). online: 접속 중 true, 연결 끊김 false, 나감 null */
+export interface PinOwner {
+  nickname: string;
+  online: boolean | null;
+}
 
 /** 앞뒤 빈칸을 지우고 1~MAX_NICKNAME자인지 본다. 맞지 않으면 null */
 export function cleanNickname(value: unknown): string | null {

@@ -1258,6 +1258,11 @@ span.df-rank-medal {
 .df-gb-classes .df-emblem {
   margin-right: var(--df-hud-gap);
 }
+/* CCTV 창의 학생 암호 지우기 단추: 줄 하나를 다 차지하지 않게 */
+.df-button.df-cctv-pins {
+  align-self: flex-start;
+  flex: none;
+}
 /* 골든벨 선생님 창의 전체 공지 단추: 줄 하나를 다 차지하지 않게 */
 .df-button.df-gb-announce {
   align-self: flex-start;

@@ -105,8 +105,8 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
       },
       dialogText: () => p.js(`document.querySelector('.df-dialog')?.innerText ?? null`),
       error: () => p.js(`(() => { const e = document.querySelector('.df-error'); return e && !e.hidden ? e.textContent : null; })()`),
-      /** 첫 화면에 입력하고 들어가기를 누른다. teacher면 선생님 화면으로 바꾸고, character를 주면 그 캐릭터를 고른다. */
-      enter: async ({ teacher = false, nickname, code = '', pw = '', character = null, classGroup = 'science' }) => {
+      /** 첫 화면에 입력하고 들어가기를 누른다(학생 암호 pin은 주지 않으면 1234). teacher면 선생님 화면으로 바꾸고, character를 주면 그 캐릭터를 고른다. */
+      enter: async ({ teacher = false, nickname, code = '', pw = '', pin = '1234', character = null, classGroup = 'science' }) => {
         await p.js(`(() => {
           const sw = document.querySelector('.df-link');
           if (${teacher} !== sw.textContent.includes('학생')) sw.click();
@@ -119,6 +119,7 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
           set('df-nickname', ${JSON.stringify(nickname)});
           set('df-code', ${JSON.stringify(code)});
           set('df-password', ${JSON.stringify(pw)});
+          set('df-pin', ${JSON.stringify(pin)});
           document.querySelector('.df-start form').requestSubmit();
         })()`);
         await wait(1500);

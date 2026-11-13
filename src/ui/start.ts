@@ -1,4 +1,4 @@
-import { CLASS_GROUPS, CODE_LENGTH, MAX_NICKNAME, type OpenRoomInfo } from '../../shared/protocol.ts';
+import { CLASS_GROUPS, CODE_LENGTH, MAX_NICKNAME, PIN_LENGTH, RejectCode, cleanPin, type OpenRoomInfo } from '../../shared/protocol.ts';
 import characters from '../data/characters.json';
 import { closeRoom, listRooms, type Entry } from '../net/connection';
 import { Dialog } from './dialog';
@@ -258,6 +258,17 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     code.placeholder = `숫자 ${CODE_LENGTH}자리`;
     codeLabel.htmlFor = code.id;
 
+    // 학생 암호: 같은 닉네임으로 다시 들어와 이어 받을 때 쓴다. 숫자 자판이 뜨게 하고, 기억하기 쉽게 글자를 보인다. 저장하지 않는다.
+    const pinLabel = el('label', 'df-muted', `암호(숫자 ${PIN_LENGTH}자리)`);
+    const pin = el('input', 'df-input');
+    pin.id = 'df-pin';
+    pin.inputMode = 'numeric';
+    pin.maxLength = PIN_LENGTH;
+    pin.autocomplete = 'off';
+    pin.placeholder = `숫자 ${PIN_LENGTH}자리`;
+    pinLabel.htmlFor = pin.id;
+    const pinHelp = el('span', 'df-muted', '다시 들어올 때 쓰는 숫자 4자리입니다. 잊지 않게 기억합니다.');
+
     const classes = classPicker();
     const picker = characterPicker();
 
@@ -277,6 +288,7 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       return box;
     };
     const passField = field(passLabel, password);
+    const pinField = field(pinLabel, pin, pinHelp);
     const rooms = roomList(
       () => password.value,
       (roomCode) => {
@@ -289,7 +301,7 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     roomsRow.append(rooms.open);
     password.addEventListener('input', rooms.reset);
     const fields = el('div', 'df-fields');
-    fields.append(field(nickLabel, nickname), field(codeLabel, code), passField);
+    fields.append(field(nickLabel, nickname), field(codeLabel, code), pinField, passField);
     const classField = field(classes.label, classes.group);
     form.append(logo, intro, fields, roomsRow, rooms.box, classField, field(picker.label, picker.grid), error, row);
     wrap.append(form);
@@ -300,6 +312,7 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
         ? '비밀번호를 넣고 새 방을 만듭니다. 이미 만든 방으로 돌아갈 때는 방 코드도 넣습니다.'
         : '선생님이 알려 준 방 코드와 닉네임을 넣고 들어갑니다.';
       passField.hidden = roomsRow.hidden = !teacher;
+      pinField.hidden = teacher;
       if (!teacher) rooms.reset();
       classField.hidden = teacher;
       codeLabel.textContent = teacher ? '방 코드(새 방이면 비워 둡니다)' : '방 코드';
@@ -337,13 +350,15 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       if (!teacher && !codeOk) return showError(`방 코드는 숫자 ${CODE_LENGTH}자리입니다.`, code);
       if (teacher && roomCode && !codeOk) return showError(`방 코드는 숫자 ${CODE_LENGTH}자리이거나 비어 있어야 합니다.`, code);
       if (teacher && !password.value) return showError('선생님 비밀번호를 입력합니다.', password);
+      const pinValue = pin.value.trim();
+      if (!teacher && !cleanPin(pinValue)) return showError(`암호는 숫자 ${PIN_LENGTH}자리입니다. 처음이면 정해서 넣습니다.`, pin);
       const classGroup = classes.selected();
       if (!teacher && !classGroup) return showError('반을 골라야 들어갈 수 있습니다.', classes);
 
       const character = picker.selected();
       const entry: Entry = teacher
         ? { role: 'teacher', nickname: nick, character, password: password.value, code: roomCode }
-        : { role: 'student', nickname: nick, character, classGroup, code: roomCode };
+        : { role: 'student', nickname: nick, character, classGroup, pin: pinValue, code: roomCode };
       submit.disabled = true;
       submit.textContent = '들어가는 중';
       try {
@@ -353,7 +368,9 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
         wrap.remove();
         resolve(result);
       } catch (err) {
-        showError(describeError(err, entry), teacher && !roomCode ? password : nickname);
+        const rejected = (err as { code?: unknown })?.code;
+        const pinError = rejected === RejectCode.wrongPin || rejected === RejectCode.badPin;
+        showError(describeError(err, entry), teacher && !roomCode ? password : pinError ? pin : nickname);
       } finally {
         submit.disabled = false;
         submit.textContent = '들어가기';

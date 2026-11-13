@@ -30,6 +30,9 @@ const teacher = await openPage('teacher', baseUrl);
 await teacher.enter({ teacher: true, nickname: '선생님', pw: 'wrong-password' });
 check('선생님 비밀번호가 틀리면 안내', /비밀번호가 맞지 않습니다/.test((await teacher.error()) ?? ''), await teacher.error());
 await teacher.enter({ teacher: true, nickname: '선생님', pw: password });
+// 글꼴을 읽은 뒤 장면이 시작되므로(개발 서버를 막 켠 뒤에는 첫 화면 읽기가 느리다) 장면(__df)이 뜰 때까지 기다린다.
+const sceneUp = async (pg) => { for (let i = 0; i < 60 && (await pg.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250); };
+await sceneUp(teacher);
 const code = await teacher.js(`window.__df?.code()`);
 check('선생님이 방을 만들고 방 코드를 받음', /^\d{4}$/.test(code ?? ''), code);
 check('첫 화면: 선생님에게는 반 고르기가 없음', (await teacher.js(`document.querySelector('.df-classes')`)) === null);
@@ -70,6 +73,10 @@ await a.enter({ nickname: '', code });
 check('빈 닉네임이면 안내', /닉네임을 입력해야/.test((await a.error()) ?? ''));
 await a.enter({ nickname: '가람', code: '12' });
 check('방 코드가 4자리가 아니면 안내', /숫자 4자리/.test((await a.error()) ?? ''));
+check('첫 화면: 학생에게 암호 칸(숫자 자판, 4자리)과 안내', (await a.js(`(() => { const i = document.getElementById('df-pin');
+  return !i.closest('.df-field').hidden && i.inputMode === 'numeric' && i.maxLength === 4 && /다시 들어올 때 쓰는 숫자 4자리/.test(i.closest('.df-field').innerText); })()`)) === true);
+await a.enter({ nickname: '가람', code: '1234', pin: '12a' });
+check('암호가 숫자 4자리가 아니면 안내', /암호는 숫자 4자리/.test((await a.error()) ?? ''), await a.error());
 const wrongCode = code === '0000' ? '0001' : '0000';
 await a.enter({ nickname: '가람', code: wrongCode });
 check('없는 방 코드면 안내', /인 방이 없습니다/.test((await a.error()) ?? ''), await a.error());
@@ -77,6 +84,7 @@ await a.enter({ nickname: '선생님', code });
 check('겹치는 닉네임이면 안내(지금 들어와 있으면 거절, 조금 뒤 다시)', /같은 닉네임이 지금 들어와 있습니다/.test((await a.error()) ?? '') && /조금 뒤 다시/.test((await a.error()) ?? ''), await a.error());
 await a.shot('nickname-taken');
 await a.enter({ nickname: '가람', code, character: 'char-03', classGroup: 'aisw' });
+await sceneUp(a);
 check('학생 A가 방 코드로 들어감', (await a.js(`window.__df?.code()`)) === code);
 for (let i = 0; i < 20 && !(await a.dialogText()); i++) await wait(150);
 check('이야기 카드: 들어오면 자료의 intro가 한 번 뜸', /과학 탐구 대회 날/.test((await a.dialogText()) ?? '') && /시작하기/.test((await a.dialogText()) ?? ''),
@@ -88,6 +96,7 @@ await wait(300);
 // ---- 학생 B(태블릿) ----
 const b = await openPage('student-b', touchUrl, { touch: true });
 await b.enter({ nickname: '나래', code, character: 'char-05', classGroup: 'science' });
+await sceneUp(b);
 // 이야기 카드가 뜨면 닫는다(부하가 크면 늦게 뜨므로 잠깐 기다린다).
 for (let i = 0; i < 20 && !(await b.dialogText()); i++) await wait(150);
 check('학생 B가 들어감', (await b.js(`window.__df?.code()`)) === code);
@@ -1252,6 +1261,7 @@ check('두 번째 판 끝: 모두 학교 맵으로', (await maps()) === 'school,
 await clickText(teacher, '.df-hud button', 'CCTV 보기');
 await wait(300);
 const bBeforeClose = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
+const cBeforeClose = await teacher.js(`__df.others().find((o) => o.nickname === '다온')`);
 await b.close();
 await c.close();
 await wait(1000);
@@ -1267,6 +1277,9 @@ check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.queryS
 const progressOf = (p) => p && JSON.stringify({ done: [...p.done].sort(), items: [...p.items].sort(), finished: p.finished, gbScore: p.gbScore, gbTotal: p.gbTotal,
   gbLives: p.gbLives, gbOut: p.gbOut, classGroup: p.classGroup });
 const b2 = await openPage('student-b2', touchUrl, { touch: true });
+await b2.enter({ nickname: '나래', code, pin: '9999' });
+check('이어 하기: 같은 닉네임에 다른 암호면 거절', /이미 있는 닉네임입니다. 처음 정한 암호를 넣거나 다른 닉네임을 씁니다/.test((await b2.error()) ?? '') &&
+  (await b2.js(`document.activeElement?.id`)) === 'df-pin', await b2.error());
 await b2.enter({ nickname: '나래', code, character: 'char-02', classGroup: 'aisw' });
 for (let i = 0; i < 40 && (await b2.js(`typeof window.__df?.pos === 'function'`)) !== true; i++) await wait(250);
 await wait(600);
@@ -1292,6 +1305,41 @@ await wait(2000);
 const nb3 = await teacher.js(`__df.others().filter((o) => o.nickname === '나래')`);
 check('이어 하기: 다시 붙기를 기다리는 자리를 새 접속이 넘겨받음(한 명, 접속 중, 진행 그대로)', nb3.length === 1 && nb3[0].online === true &&
   progressOf(nb3[0]) === progressOf(bBeforeClose) && nb3[0].character === 'char-04', JSON.stringify(nb3.map(progressOf)));
+
+// ---- 암호: 같은 닉네임에 1분 5번 틀리면 그 닉네임을 막고, 선생님이 암호를 지우면 새 암호로 이어 받는다(나간 학생 C, 다온) ----
+const cp2 = await openPage('student-cp2', baseUrl);
+const pinTries = [];
+for (let i = 0; i < 5; i++) {
+  await cp2.enter({ nickname: '다온', code, pin: `000${i}` });
+  pinTries.push((await cp2.error()) ?? '');
+}
+await cp2.enter({ nickname: '다온', code });
+check('암호: 5번 틀리면 맞는 암호도 그 닉네임은 막힘', pinTries.every((t) => /이미 있는 닉네임입니다/.test(t)) && /여러 번 틀려 1분 동안 막았습니다/.test((await cp2.error()) ?? ''),
+  `${pinTries.length}번 → ${await cp2.error()}`);
+await clickText(teacher, '.df-hud button', 'CCTV 보기');
+await wait(400);
+await clickText(teacher, '.df-cctv button', '학생 암호 지우기');
+await wait(600);
+const pinPick = (await teacher.dialogText()) ?? '';
+check('암호 지우기: 선생님 CCTV에서 암호가 있는 학생을 고름(나간 학생도)', /다온[\s\S]*나감/.test(pinPick) && /나래[\s\S]*접속 중/.test(pinPick) && /가람/.test(pinPick), fmt(pinPick));
+await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.startsWith('다온')).click()`);
+await wait(300);
+check('암호 지우기: 확인 창', /다온의 암호를 지웁니다/.test((await teacher.dialogText()) ?? ''), fmt(await teacher.dialogText()));
+await clickText(teacher, '.df-dialog .df-button', '지우기');
+await wait(500);
+check('암호 지우기: 지웠다는 안내', /다온의 암호를 지웠습니다/.test((await teacher.dialogText()) ?? ''), fmt(await teacher.dialogText()));
+await clickText(teacher, '.df-dialog .df-button', '확인');
+await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
+await wait(300);
+await cp2.enter({ nickname: '다온', code, pin: '5678' });
+for (let i = 0; i < 40 && (await cp2.js(`typeof window.__df?.pos === 'function'`)) !== true; i++) await wait(250);
+await wait(600);
+const nc = await teacher.js(`__df.others().find((o) => o.nickname === '다온')`);
+check('암호 지우기: 지운 뒤 새 암호로 들어오면 이어 받음(막힘도 풀림)', !!nc && progressOf(nc) === progressOf(cBeforeClose) && (await cp2.js(`__df.announcement()?.text`)) === '하던 것을 이어서 합니다.',
+  `${progressOf(cBeforeClose)} → ${progressOf(nc)}`);
+const cp3 = await openPage('student-cp3', baseUrl);
+await cp3.enter({ nickname: '다온', code, pin: '1234' });
+check('암호 지우기: 그 뒤에는 새로 정한 암호를 써야 함', /이미 있는 닉네임입니다/.test((await cp3.error()) ?? ''), await cp3.error());
 
 // ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
 const teacher2 = await openPage('teacher2', touchUrl, { touch: true });
@@ -1324,12 +1372,20 @@ check('태블릿 선생님: CCTV를 끄면 조이스틱 영역이 돌아옴', (a
 
 // ---- 모르는 캐릭터 id로 들어오면 서버가 char-01로 받는다 ----
 const { Client } = await import('@colyseus/sdk');
-const odd = await new Client(new URL('colyseus', baseUrl).href).joinById(code, { nickname: '모름', character: 'char-99' });
+const odd = await new Client(new URL('colyseus', baseUrl).href).joinById(code, { nickname: '모름', character: 'char-99', pin: '8642' });
 await wait(500);
 const oddChar = await teacher2.js(`__df.others().find((o) => o.nickname === '모름')?.character ?? null`);
 check('모르는 캐릭터 id는 char-01로 받음', oddChar === 'char-01', oddChar);
 const oddClass = await teacher2.js(`__df.others().find((o) => o.nickname === '모름')?.classGroup ?? null`);
 check('반을 넣지 않고 들어오면 반 없음(\'\')으로 받음', oddClass === '', JSON.stringify(oddClass));
+// 상태의 이름(키)과 글 값을 모두 모아 본다(숫자 값의 자릿수가 우연히 겹치는 것은 보지 않는다).
+const stateWords = [];
+const collect = (v) => {
+  if (typeof v === 'string') stateWords.push(v);
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) (stateWords.push(k), collect(x));
+};
+collect(odd.state.toJSON());
+check('암호는 상태(모두에게 가는 값)에 없음', stateWords.includes('모름') && !stateWords.some((w) => w.includes('8642') || /^pin/i.test(w)), `글 ${stateWords.length}개`);
 await odd.leave();
 
 // ---- 선생님이 지금 자료를 다시 고르면 아무 일도 없고, 다른 자료로 바꾸면(확인 창) 모두의 진행이 처음으로 ----
@@ -1365,6 +1421,7 @@ const openRooms = async (pw) => {
   await wait(800);
 };
 check('열린 방 목록: 학생 화면에는 단추가 없고, 선생님으로 바꾸면 보임', (await admin.js(`document.querySelector('.df-rooms-open').offsetParent !== null`)) === true);
+check('첫 화면: 선생님에게는 암호 칸이 없음', (await admin.js(`document.getElementById('df-pin').closest('.df-field').hidden`)) === true);
 await openRooms('wrong-password');
 check('열린 방 목록: 틀린 비밀번호면 거절하고 목록이 보이지 않음', /비밀번호가 맞지 않습니다/.test((await admin.error()) ?? '') && (await roomsBox()) === null, await admin.error());
 const roomsApi = new URL('colyseus/df/rooms', baseUrl).href;

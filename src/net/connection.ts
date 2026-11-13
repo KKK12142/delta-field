@@ -16,6 +16,7 @@ import {
   type JoinOptions,
   type MapId,
   type MoveMessage,
+  type PinOwner,
   type RoomClosedMessage,
   type RoomsReply,
   type RoomsRequest,
@@ -32,7 +33,7 @@ function endpoint() {
 }
 
 export type Entry =
-  | { role: 'student'; nickname: string; character: string; classGroup: string; code: string }
+  | { role: 'student'; nickname: string; character: string; classGroup: string; pin: string; code: string }
   | { role: 'teacher'; nickname: string; character: string; password: string; code: string };
 
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'closed';
@@ -282,6 +283,16 @@ export class Net {
     this.room.send('miniTug');
   }
 
+  /** 선생님: 암호가 있는 학생(접속 중·연결 끊김·나감) */
+  pinList(): Promise<PinOwner[]> {
+    return this.room.request('pinList');
+  }
+
+  /** 선생님: 학생의 암호를 지운다(잊었을 때). 다음에 그 닉네임으로 들어오는 사람이 새 암호를 정한다. */
+  pinClear(nickname: string): Promise<GbReply> {
+    return this.room.request('pinClear', { nickname });
+  }
+
   /** 같은 닉네임으로 다시 들어와 하던 것을 이어 받았는지(서버가 한 번만 true를 준다) */
   async wasResumed(): Promise<boolean> {
     try {
@@ -335,7 +346,7 @@ export async function connect(entry: Entry): Promise<Net> {
   const client = new Client(endpoint());
   let room: Room<any, ClassState>;
   if (entry.role === 'student') {
-    const options: JoinOptions = { nickname: entry.nickname, character: entry.character, classGroup: entry.classGroup };
+    const options: JoinOptions = { nickname: entry.nickname, character: entry.character, classGroup: entry.classGroup, pin: entry.pin };
     room = await client.joinById<ClassState>(entry.code, options);
   } else {
     const options: JoinOptions = { nickname: entry.nickname, character: entry.character, password: entry.password };
@@ -379,6 +390,12 @@ export function joinErrorText(error: unknown, entry: Entry): string {
   switch (code) {
     case RejectCode.wrongPassword:
       return '선생님 비밀번호가 맞지 않습니다.';
+    case RejectCode.badPin:
+      return '암호는 숫자 4자리입니다.';
+    case RejectCode.wrongPin:
+      return '이미 있는 닉네임입니다. 처음 정한 암호를 넣거나 다른 닉네임을 씁니다.';
+    case RejectCode.pinLocked:
+      return '이 닉네임은 암호를 여러 번 틀려 1분 동안 막았습니다. 암호를 잊었으면 선생님께 말합니다.';
     case RejectCode.tooManyTries:
       return '비밀번호를 여러 번 틀려 1분 동안 막았습니다. 잠시 뒤 다시 합니다.';
     case RejectCode.noTeacherPassword:

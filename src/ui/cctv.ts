@@ -32,6 +32,8 @@ export interface CctvHandlers {
   view: (id: string | null) => void;
   /** 목록 정렬(반 순서 ↔ 진행 낮은 순)을 바꿀 때 */
   sort: () => void;
+  /** 학생 암호 지우기(암호를 잊은 학생, 나간 학생도 고를 수 있다) */
+  pins: () => void;
 }
 
 /** 목록 정렬: 반 순서(반, 닉네임) 또는 진행 낮은 순 */
@@ -66,6 +68,8 @@ export class CctvPanel {
   private readonly summaryLine = el('span', 'df-text df-cctv-summary-line');
   private readonly stuck = el('ul', 'df-cctv-stuck');
   private readonly sortButton = el('button', 'df-button df-button-small df-cctv-sort');
+  /** 학생 암호 지우기(전체 보기 맨 아래, 되돌릴 수 없어 크림색) */
+  private readonly pinsButton = el('button', 'df-button df-button-small df-button-light df-cctv-pins', '학생 암호 지우기');
 
   constructor(handlers: CctvHandlers, touch: boolean, views: CctvView[] = []) {
     const head = el('div', 'df-cctv-head');
@@ -128,7 +132,12 @@ export class CctvPanel {
     this.summary.append(summaryHead, this.stuck);
     this.summary.setAttribute('aria-label', '진행 요약');
     this.node.setAttribute('aria-label', 'CCTV');
-    this.node.append(head, this.views, this.summary, this.empty, this.list, this.detail);
+    this.pinsButton.type = 'button';
+    this.pinsButton.addEventListener('click', () => {
+      this.pinsButton.blur();
+      handlers.pins();
+    });
+    this.node.append(head, this.views, this.summary, this.empty, this.list, this.pinsButton, this.detail);
     uiRoot().append(this.node);
   }
 
@@ -178,6 +187,7 @@ export class CctvPanel {
     this.detail.hidden = true;
     this.summary.hidden = false;
     this.list.hidden = false;
+    this.pinsButton.hidden = false;
     this.views.hidden = this.viewButtons.size <= 1;
     this.empty.hidden = students.length > 0;
     const seen = new Set<string>();
@@ -227,6 +237,7 @@ export class CctvPanel {
     this.summary.hidden = true;
     this.list.hidden = true;
     this.empty.hidden = true;
+    this.pinsButton.hidden = true;
     this.detail.hidden = false;
     setText(this.detailName, s.nickname);
     setFace(this.detailFace, s.character);

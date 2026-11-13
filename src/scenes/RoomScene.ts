@@ -634,6 +634,7 @@ export class RoomScene extends MapScene {
         sort: () => {
           if (this.cctv) this.cctv.sort = this.cctv.sort === 'class' ? 'progress' : 'class';
         },
+        pins: () => void this.clearPin(),
       },
       this.touch,
       this.room.views ?? [],
@@ -749,6 +750,43 @@ export class RoomScene extends MapScene {
       if (better) best = { id, hit, y: a.y, d };
     }
     return best?.id ?? null;
+  }
+
+  /**
+   * 선생님: 암호를 잊은 학생의 암호를 지운다(고르기 → 확인 창). 나간 학생도 고를 수 있다.
+   * 지우면 다음에 그 닉네임으로 들어오는 사람이 새 암호를 정하고 하던 것을 이어 받는다.
+   */
+  private async clearPin() {
+    if (this.dialog.isOpen() || this.busy) return;
+    this.busy = true;
+    const title = '학생 암호 지우기';
+    try {
+      const owners = await this.net.pinList();
+      if (!owners.length) {
+        await this.dialog.message(title, '암호를 정한 학생이 없습니다.');
+        return;
+      }
+      const state = (online: boolean | null) => (online === null ? '나감' : online ? '접속 중' : '연결 끊김');
+      const picked = await this.dialog.choose(
+        title,
+        '암호를 잊은 학생을 고릅니다. 지우면 그 닉네임으로 다음에 들어오는 사람이 새 암호를 정하고 하던 것을 이어 받습니다.',
+        owners.map((o) => ({ label: o.nickname, detail: state(o.online) })),
+      );
+      if (picked === null) return;
+      const nick = owners[picked].nickname;
+      const sure = await this.dialog.confirm(
+        title,
+        `${nick}의 암호를 지웁니다. 다음에 ${nick}(으)로 들어오는 사람이 새 암호를 정하고 하던 것을 이어 받습니다. 본인이 들어올 때 지웁니다.`,
+        '지우기',
+      );
+      if (!sure) return;
+      const reply = await this.net.pinClear(nick);
+      await this.dialog.message(title, reply.error ?? `${nick}의 암호를 지웠습니다. ${nick}에게 새 암호를 정해 들어오라고 알려 줍니다.`);
+    } catch {
+      await this.dialog.message(title, '서버에서 답을 받지 못했습니다. 잠시 뒤 다시 누릅니다.');
+    } finally {
+      this.busy = false;
+    }
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer) {

@@ -1,5 +1,6 @@
 // 수업 하나 = 방 하나. 선생님이 비밀번호로 만들고, 학생은 방 코드로 들어온다.
 // 학교(교실·복도·실험실·운동장이 이어진 방탈출) 맵과 골든벨 맵이 있고, 골든벨을 시작하면 모두 골든벨 맵으로 옮긴다.
+import { createHash, randomBytes } from 'node:crypto';
 import { Room, ServerError, matchMaker, type AuthContext, type Client, type Deferred } from '@colyseus/core';
 import school from '../src/data/school.json' with { type: 'json' };
 import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
@@ -28,6 +29,8 @@ import {
   classGroupName,
   cleanAnnounce,
   cleanNickname,
+  cleanPin,
+  type PinOwner,
   type AnnounceBroadcast,
   type AnnounceMessage,
   type GbAcceptMessage,
@@ -94,6 +97,8 @@ function replaceAll(list: string[] & { clear(): void }, values: string[]) {
 }
 
 const ok: GbReply = { error: null };
+const PIN_FAIL_WINDOW_MS = 60_000;
+const PIN_FAIL_LIMIT = 5;
 const refuse = (error: string): GbReply => ({ error });
 
 export class ClassRoom extends Room<{ state: ClassState }> {
@@ -121,6 +126,14 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private gbGame = 0;
   /** 다시 붙기를 기다리는 접속 id → 기다림. 같은 닉네임이 새로 들어오면 끝낸다. */
   private reconnections = new Map<string, Deferred<Client>>();
+  /**
+   * 학생 암호(2026-11-13 교사 결정): 닉네임 → sha256(방마다 다른 소금 + 닉네임 + 암호). 방의 메모리에만 두고 상태·기록에 넣지 않는다.
+   * 같은 닉네임으로 이어 받으려면 처음 정한 암호를 넣어야 한다. 선생님이 지우면 다음에 들어오는 사람이 새로 정한다.
+   */
+  private pins = new Map<string, string>();
+  private readonly pinSalt = randomBytes(16);
+  /** 닉네임 → 암호를 틀린 시각들(최근 1분). 5번이면 그 닉네임을 1분 막는다. */
+  private pinFailures = new Map<string, number[]>();
   /** 이어 받아 들어온 접속 id(화면이 한 번 물어 안내를 띄운다) */
   private resumed = new Set<string>();
   /** 방을 만든 시각(ms). 선생님 첫 화면의 열린 방 목록에 쓴다. */
@@ -238,6 +251,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     });
     this.onMessage('clock', (): number => Date.now());
     // 이어 받아 들어왔는지(한 번만 true)
+    this.onMessage('pinList', (client: Client): PinOwner[] => (this.isTeacher(client) ? this.pinOwners() : []));
+    this.onMessage('pinClear', (client: Client, message: { nickname?: unknown }) => this.pinClear(client, message));
     this.onMessage('resumed', (client: Client): boolean => this.resumed.delete(client.sessionId));
     this.onMessage('announce', (client: Client, message: AnnounceMessage) => this.announce(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
@@ -283,13 +298,20 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     const teacher = typeof options?.password === 'string' && options.password !== '';
     if (teacher) checkTeacher(options.password);
     const role = teacher ? 'teacher' : 'student';
+    const pin = teacher ? null : cleanPin(options?.pin);
+    if (!teacher && !pin) throw new ServerError(RejectCode.badPin, '암호는 숫자 4자리입니다.');
+    let same: { id: string; player: Player } | null = null;
+    for (const [id, p] of this.state.players) if (p.nickname === nickname) same = { id, player: p };
+    // 학생끼리 같은 닉네임이면 처음 정한 암호가 맞아야 한다(접속 중인지 알려 주기 전에 본다).
+    const knownRole = same?.player.role ?? this.departed.get(nickname)?.player.role;
+    if (pin && knownRole === 'student') this.checkPin(nickname, pin);
     // 같은 닉네임이 다시 붙기를 기다리는 중이면 그 자리를 넘겨받는다. 지금 접속 중이거나 역할이 다르면 거절한다.
-    let waiting: { id: string; player: Player } | null = null;
-    for (const [id, p] of this.state.players) {
-      if (p.nickname !== nickname) continue;
-      if (p.online || p.role !== role) throw new ServerError(RejectCode.nicknameTaken, '같은 닉네임이 지금 들어와 있습니다.');
-      waiting = { id, player: p };
+    if (same && (same.player.online || same.player.role !== role)) {
+      throw new ServerError(RejectCode.nicknameTaken, '같은 닉네임이 지금 들어와 있습니다.');
     }
+    const waiting = same;
+    // 암호가 없던(선생님이 지운) 닉네임은 지금 넣은 암호로 정한다.
+    if (pin) this.pins.set(nickname, this.pinHash(nickname, pin));
     // 모르는 캐릭터면 기본 캐릭터로 받는다(거절하지 않는다). 이어 하기에서도 캐릭터는 새로 고른 것을 쓴다.
     const character = options?.character;
     const characterId = typeof character === 'string' && CHARACTER_IDS.has(character) ? character : DEFAULT_CHARACTER;
@@ -319,6 +341,45 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     // 골든벨을 하는 중에 들어오면 골든벨 맵으로 들어온다.
     if (this.state.goldenbell.phase !== '') this.enterGoldenBell(player);
     this.state.players.set(client.sessionId, player);
+  }
+
+  private pinHash(nickname: string, pin: string) {
+    return createHash('sha256').update(this.pinSalt).update(`${nickname}\n${pin}`, 'utf8').digest('hex');
+  }
+
+  /** 이미 있는 학생 닉네임의 암호를 본다. 1분에 5번 틀리면 그 닉네임을 1분 막는다. 지운 암호(없음)면 통과. */
+  private checkPin(nickname: string, pin: string) {
+    const now = Date.now();
+    const recent = (this.pinFailures.get(nickname) ?? []).filter((t) => now - t < PIN_FAIL_WINDOW_MS);
+    if (recent.length >= PIN_FAIL_LIMIT) {
+      this.pinFailures.set(nickname, recent);
+      throw new ServerError(RejectCode.pinLocked, '이 닉네임은 암호를 여러 번 틀려 1분 동안 막았습니다.');
+    }
+    const stored = this.pins.get(nickname);
+    if (!stored || stored === this.pinHash(nickname, pin)) return;
+    recent.push(now);
+    this.pinFailures.set(nickname, recent);
+    console.log(`방 ${this.roomId}: ${nickname}의 암호가 틀렸습니다(1분 안에 ${recent.length}번).`);
+    throw new ServerError(RejectCode.wrongPin, '이미 있는 닉네임입니다.');
+  }
+
+  /** 암호가 있는 학생(접속 중·연결 끊김·나감), 닉네임 순 */
+  private pinOwners(): PinOwner[] {
+    const present = new Map<string, boolean>();
+    for (const p of this.state.players.values()) present.set(p.nickname, p.online);
+    return [...this.pins.keys()]
+      .map((nickname) => ({ nickname, online: present.has(nickname) ? present.get(nickname)! : null }))
+      .sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+  }
+
+  /** 선생님이 학생의 암호를 지운다(잊었을 때). 다음에 그 닉네임으로 들어오는 사람이 새 암호를 정하고 이어 받는다. */
+  private pinClear(client: Client, message: { nickname?: unknown }): GbReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 암호를 지울 수 있습니다.');
+    const nickname = typeof message?.nickname === 'string' ? message.nickname : '';
+    if (!this.pins.delete(nickname)) return refuse('그 학생의 암호가 없습니다.');
+    this.pinFailures.delete(nickname);
+    console.log(`방 ${this.roomId}: ${nickname}의 암호를 선생님이 지웠습니다.`);
+    return ok;
   }
 
   /** 다시 붙기를 기다리던 자리를 새 접속이 넘겨받는다. 옛 접속의 기다림은 끝낸다(옛 접속의 onLeave는 아무것도 남기지 않는다). */
