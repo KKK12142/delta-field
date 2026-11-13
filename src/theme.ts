@@ -385,7 +385,7 @@ export const alpha = {
 
 /** 움직임 */
 export const motion = {
-  speed: 4, // 칸/초
+  speed: 4.4, // 칸/초(2026-11-13 교사 요청으로 4에서 10% 빠르게)
   joystickDeadZone: 0.15,
   walkFps: 8, // 걷기 애니메이션 빠르기(프레임/초)
   facingKeep: 0.7, // 대각선으로 갈 때 지금 보는 쪽의 성분이 다른 쪽의 이 비율 이상이면 방향을 바꾸지 않는다(깜빡임 막기)
