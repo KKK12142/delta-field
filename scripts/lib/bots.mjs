@@ -42,6 +42,8 @@ export class Bot {
   constructor(i, gameUrl) {
     this.gameUrl = gameUrl;
     this.nickname = `봇${String(i + 1).padStart(2, '0')}`;
+    /** 학생 암호(숫자 4자리, 봇마다 다름) */
+    this.pin = String(1000 + i);
     this.character = characters[i % characters.length].id;
     // 반은 번갈아 고른다(shared/protocol.ts CLASS_GROUPS).
     this.classGroup = CLASS_GROUPS[i % CLASS_GROUPS.length].id;
@@ -63,7 +65,7 @@ export class Bot {
 
   async join(code) {
     const t0 = performance.now();
-    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character, classGroup: this.classGroup });
+    this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character, classGroup: this.classGroup, pin: this.pin });
     this.joinMs = performance.now() - t0;
     this.room.send('move', { ...this.pos, map: this.map });
   }
