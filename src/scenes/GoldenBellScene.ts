@@ -18,7 +18,7 @@ const ZONE_TEXT_DEPTH = 1_000_000;
 export class GoldenBellScene extends MapScene {
   readonly mapId = 'goldenbell';
   private hud!: GbHud;
-  /** 문제 카드·내 상태 뒤에 들어간 캐릭터 자리를 뚫는다. */
+  /** 문제 카드·내 상태(순위 포함) 뒤에 들어간 내 캐릭터 자리를 뚫는다. */
   private seeThrough!: SeeThrough;
   private panel: GbPanel | null = null;
   private zones!: Zones;
@@ -131,7 +131,8 @@ export class GoldenBellScene extends MapScene {
       this.hudBottom = bottom;
       this.fitCamera();
     }
-    this.seeThrough.update(this.avatarSpots());
+    // 선생님 화면(맵 전체 보기, 나를 따라가지 않음)은 뚫지 않는다.
+    this.seeThrough.update(this.net.role === 'teacher' ? [] : this.mySpot());
   }
 
   /** 학생은 모두 머리 위에 목숨을 띄운다(선생님은 띄우지 않는다). */
