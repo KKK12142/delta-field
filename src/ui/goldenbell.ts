@@ -2,11 +2,15 @@ import { GB_MAX_ANSWER } from '../../shared/goldenbell.ts';
 import type { AnswerGroup, BoardRow, CardView, MineView, PanelView, RankRow } from '../game/goldenbell';
 import { timeBar } from '../theme';
 import { el, uiRoot } from './dom';
+import { isPhone, watchPhone } from './phone';
 import { CLASS_GROUPS } from '../../shared/protocol.ts';
 import { MEDAL, emblem, face, uiIcon } from './pictures';
 
-/** 학생 화면 순위를 접어 두었는지(골든벨 맵을 다시 열어도 이어진다) */
-let rankingFolded = false;
+/**
+ * 학생이 순위를 접었는지 폈는지(골든벨 맵을 다시 열어도 이어진다). 고르지 않았으면 휴대폰은 접고(맵을 가리지 않게), 태블릿·PC는 편다.
+ */
+let rankingChoice: boolean | null = null;
+const rankingFolded = () => rankingChoice ?? isPhone();
 
 /** 목숨 글자를 그림으로(public/sprites/ui): ♥ 남은 목숨, ♡ 잃은 목숨, 💀 탈락 */
 const LIFE_ICON: Record<string, string> = { '♥': 'heart', '♡': 'heart-empty', '💀': 'skull' };
@@ -175,6 +179,9 @@ export class GbHud {
   private readonly liveRanking = el('ol', 'df-gb-ranking df-gb-live');
   private readonly rankToggle = el('button', 'df-button df-button-small df-button-light df-gb-rank-toggle');
   private liveRows = 0;
+  /** 휴대폰: 문제 카드를 한 줄(번호·남은 시간)로 접는 단추. 새 문제가 나오면 다시 편다. */
+  private readonly cardFold = el('button', 'df-button df-button-small df-button-light df-gb-fold', '접기');
+  private shownQuestion = '';
   private answerShown = false;
 
   /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다), onNotebook: 힌트 수첩 단추를 눌렀을 때 */
@@ -204,8 +211,16 @@ export class GbHud {
     this.timer.append(this.bar, this.seconds);
     this.timer.hidden = true;
     this.podium.hidden = true;
+    watchPhone();
+    this.cardFold.type = 'button';
+    this.cardFold.addEventListener('click', () => {
+      this.cardFold.blur();
+      this.setCardFolded(!card.classList.contains('is-folded'));
+    });
+    const headRow = el('div', 'df-gb-headrow');
+    headRow.append(this.head, this.cardFold);
     card.append(
-      this.head,
+      headRow,
       this.timer,
       this.question,
       this.choices,
@@ -229,7 +244,7 @@ export class GbHud {
     this.rankToggle.type = 'button';
     this.rankToggle.addEventListener('click', () => {
       this.rankToggle.blur();
-      rankingFolded = !rankingFolded;
+      rankingChoice = !rankingFolded();
       this.showLiveRanking();
     });
     this.mine.append(this.lives, this.score, this.where, this.notebook, this.rankToggle, this.liveRanking);
@@ -264,6 +279,10 @@ export class GbHud {
     }
     setText(this.head, v.head);
     this.showTime(v.timeLeft);
+    if (v.question !== this.shownQuestion) {
+      this.shownQuestion = v.question;
+      this.setCardFolded(false);
+    }
     setText(this.question, v.question);
     setText(this.line, v.line);
     setText(this.result, v.result);
@@ -275,6 +294,14 @@ export class GbHud {
     setText(this.totalsTitle, v.totalsTitle);
     setRankList(this.totals, v.totals);
     setList(this.classes, v.classes);
+  }
+
+  /** 문제 카드를 접거나 편다(접기 단추는 휴대폰에서만 보인다). */
+  private setCardFolded(folded: boolean) {
+    this.card.classList.toggle('is-folded', folded);
+    const label = folded ? '펼치기' : '접기';
+    if (this.cardFold.textContent !== label) this.cardFold.textContent = label;
+    this.cardFold.setAttribute('aria-expanded', String(!folded));
   }
 
   /** 남은 시간 막대: 처음 본 값이 전체, 50% 이하 노랑, 20% 이하 빨강(theme timeBar) */
@@ -304,12 +331,13 @@ export class GbHud {
   /** 순위가 있으면 접기·펴기 단추를 보이고, 펴 두었으면 순위를 보인다(매 프레임 불러도 바뀐 것만 고친다). */
   private showLiveRanking() {
     const none = this.liveRows === 0;
+    const folded = rankingFolded();
     if (this.rankToggle.hidden !== none) this.rankToggle.hidden = none;
-    if (this.liveRanking.hidden !== (none || rankingFolded)) this.liveRanking.hidden = none || rankingFolded;
-    const label = rankingFolded ? '순위 펴기' : '순위 접기';
+    if (this.liveRanking.hidden !== (none || folded)) this.liveRanking.hidden = none || folded;
+    const label = folded ? '순위 펴기' : '순위 접기';
     if (this.rankToggle.textContent !== label) {
       this.rankToggle.textContent = label;
-      this.rankToggle.setAttribute('aria-expanded', String(!rankingFolded));
+      this.rankToggle.setAttribute('aria-expanded', String(!folded));
     }
   }
 

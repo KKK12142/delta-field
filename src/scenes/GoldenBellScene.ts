@@ -5,6 +5,7 @@ import { hintSummary } from '../game/progress';
 import { askAnnounce } from '../ui/announce';
 import { GbHud, GbPanel } from '../ui/goldenbell';
 import { SeeThrough } from '../ui/seeThrough';
+import { snapZoom } from '../render';
 import { alpha, color, fontFamily, motion, size } from '../theme';
 import type { TagStyle } from './avatar';
 import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
@@ -170,6 +171,25 @@ export class GoldenBellScene extends MapScene {
   protected fitCamera() {
     if (this.net.role === 'teacher') super.fitCamera();
     else this.followCamera(this.avatar, true);
+  }
+
+  /**
+   * 학생 따라가기 배율(교사 요청 2026-11-13 "태블릿에서도 좀 더 키울 수 있나"): 맵이 화면을 빈 곳 없이 채우는 배율(cover)을 쓰고,
+   * 넘치는 쪽은 나를 따라 움직인다. 화면 짧은 쪽에 size.gbMinTiles칸 이상은 보이게 상한을 둔다(상한에 걸리면 한쪽에 빈 곳이 남는다).
+   * 도트가 정수 픽셀이 되게 맞추는 그리기 방식이면 1/zoomSnap 단위로 올려 맞추되, 상한을 넘으면 맞추지 않는다. 학교 맵 배율보다 작아지지는 않는다.
+   */
+  protected viewZoom() {
+    const base = super.viewZoom();
+    if (this.net.role === 'teacher') return base;
+    const cam = this.cameras.main;
+    const map = this.mapPixels();
+    const cap = Math.min(cam.width, cam.height) / (size.gbMinTiles * size.tile);
+    let zoom = Math.min(Math.max(cam.width / map.w, cam.height / map.h), cap);
+    if (snapZoom) {
+      const up = Math.ceil(zoom * size.zoomSnap - 1e-6) / size.zoomSnap;
+      if (up <= cap) zoom = up;
+    }
+    return Math.min(this.css(size.zoomMax), Math.max(base, zoom));
   }
 
   protected reserved(): Reserved {

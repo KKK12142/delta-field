@@ -141,6 +141,11 @@ export const uiColor = {
   renderInfoText: '#ffffff',
 } as const;
 
+/** 화면 종류 판정(CSS 픽셀) */
+export const screen = {
+  phoneShort: 500, // 화면 짧은 쪽이 이 값 이하면 휴대폰 모양(세로·가로 모두, src/ui/phone.ts)
+} as const;
+
 /** 게임 화면 크기. 길이는 픽셀, 칸 좌표의 크기는 칸 단위 */
 export const size = {
   groundChunk: 32, // 바닥·벽을 이 칸 수씩 나눠 한 장으로 굽는다(도트 크기로 구워 32칸 = 960px, 텍스처 크기 한도 아래)
@@ -175,6 +180,7 @@ export const size = {
   zoomMin: 0.05, // 화면(CSS) 배율(넓힌 학교 맵 전체를 CCTV에 맞출 때 0.1쯤)
   zoomMax: 2,
   reserveTop: 100, // 위쪽 안내 자리(픽셀)
+  gbMinTiles: 9.5, // 골든벨 학생 화면은 맵이 화면을 빈 곳 없이 채우게 키우되, 화면 짧은 쪽에 이 칸 수 이상은 보이게(캐릭터가 너무 커지지 않게)
   // CCTV 모드
   tagFont: '12px',
   tagPadX: 5,
@@ -308,6 +314,12 @@ export const uiSize = {
   cardImageHeight: '56px',
   rankMin: '220px',
   gbMineMax: '240px', // 골든벨 학생 오른쪽 위(목숨·점수·힌트 수첩·순위)의 너비 상한
+  // 휴대폰(screen.phoneShort 이하, 2026-11-13 교사 요청): 골든벨·학교 맵 안내를 줄여 맵이 화면 절반 넘게 보이게
+  phoneMargin: '6px', // 화면 가장자리와 안내 사이
+  phoneCardMax: '36vh', // 골든벨 문제 카드 높이 상한(넘치면 카드 안에서 넘겨 본다)
+  phoneCardWidth: '60%', // 가로 폰에서 문제 카드 너비(넓게 써서 카드 안 넘겨 보기를 줄인다)
+  phoneTouch: '32px', // 휴대폰 안내의 작은 단추 높이
+  phoneRankWidth: '200px', // 휴대폰에서 펼친 순위 창 너비
   // 보상 카드: 맞음 도장 24×24 2배, 반짝임 9×9 2배(4프레임 시트 36×9), 빛살 48×48 2배 위에 힌트 카드 40×56 1배
   stampSize: '48px',
   sparkleSize: '18px',

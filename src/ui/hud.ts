@@ -1,5 +1,6 @@
 import { motion } from '../theme';
 import { el, uiRoot } from './dom';
+import { watchPhone } from './phone';
 import { itemIcon } from './pictures';
 
 /** 터치로 누른 뒤 이 시간(ms) 안에 오는 click은 같은 누름으로 보고 버린다. */
@@ -39,6 +40,7 @@ export class Hud {
 
   constructor(goal: string, touch: boolean, teacher: boolean) {
     this.touch = touch;
+    watchPhone();
     const left = el('div', 'df-hud-box');
     left.append(this.place, el('span', 'df-text', goal), this.help);
     this.notice.hidden = true;

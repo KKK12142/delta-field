@@ -284,6 +284,28 @@ const marksOk = (m) => m.me.marked && m.me.plate === color.plateMeText && Math.a
   m.others.length > 0 && m.others.every((o) => !o.marked && o.plate === color.plateText && Math.abs(o.depth - o.y) < 1e-6);
 const marksA = await a.js(`__df.meMarks()`);
 check('내 캐릭터 표시(학교 맵): 내 아바타에만 고리·▼·강조 이름표, 앞에 그림', marksOk(marksA), JSON.stringify(marksA));
+// 휴대폰 크기(짧은 쪽 screen.phoneShort 이하): 안내가 덮지 않은 화면 비율(60×60 점으로 센다)
+const PHONES = [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 360, height: 740 }, { width: 740, height: 360 }];
+const seenRatio = (pg, selector) => pg.js(`(() => {
+  const rs = [...document.querySelectorAll(${JSON.stringify(selector)})].filter((n) => n.getClientRects().length > 0).map((n) => n.getBoundingClientRect());
+  const W = innerWidth, H = innerHeight, N = 60; let free = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const x = ((i + 0.5) * W) / N, y = ((j + 0.5) * H) / N;
+    if (!rs.some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)) free++;
+  }
+  return { ratio: free / (N * N), phone: document.documentElement.classList.contains('is-phone') };
+})()`);
+const schoolPhone = [];
+for (const s of PHONES) {
+  await a.resize(s);
+  await wait(1200);
+  const v = await seenRatio(a, '.df-hud-column, .df-hud > .df-hud-box, .df-minimap, .df-action');
+  schoolPhone.push({ size: `${s.width}x${s.height}`, ...v });
+  await a.shot(`phone-school-${s.width}x${s.height}`);
+}
+await a.resize(null);
+check('휴대폰(학교 맵): 휴대폰 모양이 켜지고 안내가 덮지 않은 화면이 절반 넘음', schoolPhone.every((v) => v.phone && v.ratio > 0.5),
+  schoolPhone.map((v) => `${v.size} ${(v.ratio * 100).toFixed(0)}%`).join(', '));
 const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽 빈 띠 없음)',
   Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
@@ -1065,13 +1087,34 @@ await a.js(`__df.teleport(${gbMarkFrom.a.col}, ${gbMarkFrom.a.row})`);
 await b.js(`__df.teleport(${gbMarkFrom.b.col}, ${gbMarkFrom.b.row})`);
 await teacher.js(`__df.teleport(${gbMarkFrom.t.col}, ${gbMarkFrom.t.row})`);
 await wait(1500);
+// 휴대폰 크기 골든벨: 문제 카드·내 상태가 덮지 않은 화면이 절반 넘고, 문제 글자는 본문 크기(uiSize.font)
+const GB_HUD = '.df-gb-card, .df-gb-mine, .df-gb-live';
+async function gbPhones(scene) {
+  const out = [];
+  for (const s of PHONES) {
+    await a.resize(s);
+    await a.js(`__df.teleport(9.5, 9.5)`);
+    await wait(2000);
+    const v = await seenRatio(a, GB_HUD);
+    const font = await a.js(`getComputedStyle(document.querySelector('.df-gb-question')).fontSize`);
+    out.push({ size: `${s.width}x${s.height}`, ...v, font });
+    await a.shot(`phone-gb-${scene}-${s.width}x${s.height}`);
+  }
+  await a.resize(null);
+  check(`휴대폰(골든벨 ${scene}): 안내가 덮지 않은 화면이 절반 넘고 문제 글자 ${uiSize.font}`,
+    out.every((v) => v.phone && v.ratio > 0.5 && v.font === uiSize.font), out.map((v) => `${v.size} ${(v.ratio * 100).toFixed(0)}% ${v.font}`).join(', '));
+}
+await gbPhones('문제 전');
+await a.js(`__df.teleport(${gbMarkFrom.a.col}, ${gbMarkFrom.a.row})`);
+await wait(1500);
 const [tw, th2] = await teacher.js(`[innerWidth, innerHeight]`);
 const gm = (await teacher.js(`__df.camera()`)).map;
 check('골든벨 선생님 화면은 맵 전체가 맞춰짐(따라가지 않음)', gm.x >= 0 && gm.y >= 0 && gm.x + gm.w <= tw && gm.y + gm.h <= th2,
   `맵 화면 ${gm.x.toFixed(0)},${gm.y.toFixed(0)} ${gm.w.toFixed(0)}×${gm.h.toFixed(0)}`);
 const ga = await a.js(`__df.camera()`);
-check('골든벨 학생 화면은 학교 맵처럼 화면 가득, 같은 배율로 나를 따라감', Math.abs(ga.zoom - zoomA) < 1e-6 && (ga.map.w > aw || ga.map.h > ah),
-  `배율 ${ga.zoom} (학교 ${zoomA}), 맵 화면 ${ga.map.w.toFixed(0)}×${ga.map.h.toFixed(0)}`);
+check('골든벨 학생 화면은 맵이 화면 폭을 빈 곳 없이 채우고(학교 맵 배율 이상) 나를 따라감',
+  ga.zoom >= zoomA - 1e-6 && ga.map.x <= 0.5 && ga.map.x + ga.map.w >= aw - 0.5,
+  `배율 ${ga.zoom} (학교 ${zoomA}), 맵 화면 ${ga.map.x.toFixed(0)}~${(ga.map.x + ga.map.w).toFixed(0)} / 화면 ${aw}`);
 
 // 골든벨 맵의 답 구역 가운데쯤(구역은 4행부터, 가운데 9열은 통로)
 const ZONE = { O: [4.5, 6.5], X: [14.5, 6.5], 1: [4.5, 6.5], 2: [14.5, 6.5], 3: [4.5, 12.5], 4: [14.5, 12.5], 밖: [9.5, 6.5] };
@@ -1128,11 +1171,14 @@ await gbRound(3, 1, async () => {
 const gbTop = async (label) => {
   await a.js(`__df.teleport(2.5, 3)`); // 맨 윗줄 바닥(2행, 무대 옆)
   await wait(2500);
-  const v = await a.js(`(() => { const c = __df.camera(); return { zoom: c.zoom, dpr: c.dpr, mapY: c.map.y, card: document.querySelector('.df-gb').getBoundingClientRect().bottom, w: innerWidth, h: innerHeight }; })()`);
-  const ideal = (Math.min(v.w, v.h) * v.dpr) / (size.viewTiles * size.tile);
-  const want = (freeRender ? ideal : Math.max(1, Math.round(ideal * 2)) / 2) / v.dpr;
-  check(`골든벨 학생 화면(${label}): 객관식에도 학교 맵과 같은 배율, 맨 윗줄 구역이 카드에 가리지 않음`,
-    Math.abs(v.zoom - Math.min(size.zoomMax, want)) < 1e-6 && v.mapY >= v.card - 1, `배율 ${v.zoom} (기대 ${want}), 맵 위 끝 ${v.mapY.toFixed(0)}, 안내 아래 끝 ${v.card.toFixed(0)}`);
+  const v = await a.js(`(() => { const c = __df.camera(); return { zoom: c.zoom, map: c.map, mapY: c.map.y, card: document.querySelector('.df-gb').getBoundingClientRect().bottom, w: innerWidth, h: innerHeight }; })()`);
+  // 맵이 화면 폭(또는 높이)을 빈 곳 없이 채운다(cover). 짧은 쪽에 gbMinTiles칸 이상은 보인다.
+  const fillW = v.map.x <= 0.5 && v.map.x + v.map.w >= v.w - 0.5;
+  const fillH = v.map.h >= v.h - 0.5;
+  const tiles = Math.min(v.w, v.h) / (v.zoom * size.tile);
+  check(`골든벨 학생 화면(${label}): 객관식에도 맵이 화면을 채움(양옆 빈칸 없음), 맨 윗줄 구역이 카드에 가리지 않음`,
+    (fillW || fillH) && tiles >= size.gbMinTiles - 0.01 && v.mapY >= v.card - 1,
+    `배율 ${v.zoom.toFixed(3)}, 맵 ${v.map.x.toFixed(0)}~${(v.map.x + v.map.w).toFixed(0)}(화면 ${v.w}), 짧은 쪽 ${tiles.toFixed(1)}칸, 맵 위 끝 ${v.mapY.toFixed(0)}, 안내 아래 끝 ${v.card.toFixed(0)}`);
   // 객관식 보기는 2행 2열(1 2 / 3 4), 글자는 uiSize.gbChoiceFont, 정답 공개 때 정답 보기(3번)를 강조한다.
   const ch = await a.js(`[...document.querySelectorAll('.df-gb-choice')].map((li) => { const r = li.getBoundingClientRect();
     return { top: Math.round(r.top), left: Math.round(r.left), font: getComputedStyle(li).fontSize, answer: li.classList.contains('is-answer') }; })`);
@@ -1153,7 +1199,6 @@ const gbTop = async (label) => {
 };
 const gbZones = JSON.parse(readFileSync(new URL('../src/data/goldenbell.json', import.meta.url), 'utf8')).zones.choice;
 const gbSeen = [];
-check('골든벨 학생 화면: 객관식 문제 카드에도 배율은 학교 맵과 같음', Math.abs((await a.js(`__df.camera().zoom`)) - zoomA) < 1e-6);
 await a.resize({ width: 1280, height: 800 });
 await gbTop('1280x800');
 await a.resize({ width: 1024, height: 768 });
@@ -1161,6 +1206,7 @@ await gbTop('1024x768');
 await a.resize({ width: 768, height: 1024 });
 await gbTop('768x1024');
 await a.resize(null);
+await gbPhones('객관식 정답 공개');
 check('골든벨 학생 화면: 맵 가운데에서 보이는 객관식 구역 수(기록)', true, gbSeen.join(' / '));
 check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.test((await gbCard(a)) ?? '') && /목숨이 1개 남았습니다/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
 

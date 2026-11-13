@@ -817,6 +817,16 @@
 .df-gb-mine {
   max-width: var(--df-gb-mine-max);
 }
+/* 문제 카드 머리 줄: 번호·남은 시간 글과 접기 단추(접기는 휴대폰에서만 보인다) */
+.df-gb-headrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--df-gap-small);
+}
+.df-gb-fold {
+  display: none;
+}
 .df-gb-live {
   font-family: var(--df-font-family-small);
   font-size: var(--df-font-small);
@@ -1651,4 +1661,78 @@ span.df-rank-medal {
   width: var(--df-choice-icon);
   height: var(--df-choice-icon);
   image-rendering: pixelated;
+}
+
+/* ---- 휴대폰(화면 짧은 쪽 screen.phoneShort 이하, src/ui/phone.ts가 <html>에 is-phone·is-portrait를 붙임) ----
+   교사 요청 2026-11-13: 문제 카드와 오른쪽 칸이 맵을 다 가리고 글자가 너무 크다. 글자를 줄이고 칸을 얇게 해 맵이 절반 넘게 보이게 한다. */
+.is-phone #ui > .df-hud {
+  top: var(--df-phone-margin);
+  left: var(--df-phone-margin);
+  right: var(--df-phone-margin);
+  gap: var(--df-phone-margin);
+}
+.is-phone .df-hud .df-button {
+  min-height: var(--df-phone-touch);
+  font-size: var(--df-font-small);
+  font-family: var(--df-font-family-small);
+}
+.is-phone .df-hud-box {
+  border-width: var(--df-skin-border-small);
+}
+/* 학교 맵: 목표·조작 글은 작은 글자로 */
+.is-phone .df-hud-box .df-text,
+.is-phone .df-hud-box .df-muted {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+}
+/* 골든벨: 문제·보기·남은 시간은 본문 크기(24px → 12px), 카드 높이 상한(넘치면 카드 안에서 넘겨 봄) */
+.is-phone .df-gb-question,
+.is-phone .df-gb-seconds,
+.is-phone .df-gb-choices {
+  font-size: var(--df-font);
+}
+.is-phone .df-gb-head {
+  font-size: var(--df-font-small);
+}
+.is-phone .df-gb-card {
+  max-height: var(--df-phone-card-max);
+  overflow-y: auto;
+}
+.is-phone .df-gb-fold {
+  display: inline-block;
+  flex: none;
+}
+/* 접은 카드: 번호·남은 시간과 펼치기 단추 한 줄 */
+.is-phone .df-gb-card.is-folded > :not(.df-gb-headrow):not(.df-gb-timer) {
+  display: none;
+}
+/* 내 상태(목숨·점수·힌트 수첩·순위 단추)는 얇은 한 줄. 펼친 순위는 그 아래에 맵 위로 겹쳐 뜨는 작은 창 */
+.is-phone .df-gb-mine {
+  position: relative;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--df-gap-small);
+  max-width: none;
+}
+.is-phone .df-gb-mine .df-gb-live {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: var(--df-phone-rank-width);
+  background: var(--df-panel);
+  border: var(--df-badge-border) solid var(--df-text);
+}
+/* 세로 폰: 문제 카드는 위쪽 전체 폭 한 장, 내 상태는 그 아래 한 줄 */
+.is-phone.is-portrait .df-hud.df-gb {
+  flex-direction: column;
+  align-items: stretch;
+}
+/* 가로 폰: 문제 카드는 왼쪽 위(너비 상한), 내 상태는 오른쪽 작은 칸 */
+.is-phone:not(.is-portrait) .df-gb-card {
+  flex: 0 0 auto;
+  width: var(--df-phone-card-width);
+}
+.is-phone:not(.is-portrait) .df-gb-mine {
+  flex: 0 1 auto;
 }
