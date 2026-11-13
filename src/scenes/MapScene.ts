@@ -451,6 +451,13 @@ export abstract class MapScene extends Scene {
           })),
         drawn: () =>
           [...this.remotes.values()].map((r) => ({ x: r.avatar.x, y: r.avatar.y, ...r.avatar.look() })),
+        /**
+         * 내 캐릭터 표시(고리·▼·강조 이름표): 내 아바타와 다른 사람 아바타 각각. 이름표 글자 색과 깊이(내 것은 발 y + meDepthBias)도 함께
+         */
+        meMarks: () => ({
+          me: { marked: this.avatar.meMarked, plate: this.avatar.namePlate.label.style.color, depth: this.avatar.depth, y: this.avatar.y },
+          others: [...this.remotes.values()].map((r) => ({ marked: r.avatar.meMarked, plate: r.avatar.namePlate.label.style.color, depth: r.avatar.depth, y: r.avatar.y })),
+        }),
         /** 내 아바타: 캐릭터, 걷기 애니메이션(멈췄으면 null), 프레임 번호, 몸 높이(화면 CSS 픽셀) */
         avatar: () => ({ ...this.avatar.look(), height: (this.avatar.sprite.displayHeight * this.cameras.main.zoom) / this.dpr }),
         teleport: (col: number, row: number) => {
