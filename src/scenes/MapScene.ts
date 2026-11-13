@@ -105,7 +105,8 @@ export abstract class MapScene extends Scene {
 
     this.pos = this.startPoint();
     this.placeAvatar();
-    // 처음 위치(맵을 옮긴 뒤, 다시 하기 뒤에도)를 서버에 알린다.
+    // 처음 위치(맵을 옮긴 뒤, 다시 하기 뒤에도)를 서버에 알린다. 지금 서버의 옮김 번호를 붙인다(맵을 옮긴 뒤의 자리).
+    this.net.moveSeq = this.net.me()?.moveSeq ?? 0;
     this.net.sendMove(this.mapId, this.pos.col, this.pos.row, true);
   }
 

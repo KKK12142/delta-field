@@ -40,7 +40,12 @@ export type ConnectionStatus = 'connected' | 'reconnecting' | 'closed';
 
 export class Net {
   private lastSentAt = 0;
-  private lastSent = { col: NaN, row: NaN, map: '' };
+  private lastSent = { col: NaN, row: NaN, map: '', seq: -1 };
+  /**
+   * 마지막으로 받아 선 옮김 번호(Player.moveSeq). 장면이 서버가 세운 자리에 설 때(장면 시작, 미니게임 옮기기) 맞춘다.
+   * 서버는 이 번호가 다른 move를 버린다(느린 연결에서 옮기기 전에 보낸 자리가 늦게 닿아도 덮어쓰지 않게).
+   */
+  moveSeq = 0;
   private lastStatus = '';
   private readonly statusListeners = new Set<(status: ConnectionStatus) => void>();
   /** 선생님이 방을 닫았으면 그 안내(연결이 끊긴 까닭). 끊겨도 다시 붙지 않는다. */
@@ -119,12 +124,13 @@ export class Net {
   /** 위치가 바뀌었고 간격이 지났으면 보낸다. force면 간격을 따지지 않는다. */
   sendMove(map: MapId, col: number, row: number, force = false) {
     const now = performance.now();
-    if (col === this.lastSent.col && row === this.lastSent.row && map === this.lastSent.map) return;
+    const seq = this.moveSeq;
+    if (col === this.lastSent.col && row === this.lastSent.row && map === this.lastSent.map && seq === this.lastSent.seq) return;
     if (!force && now - this.lastSentAt < MOVE_INTERVAL_MS) return;
-    const message: MoveMessage = { col, row, map };
+    const message: MoveMessage = { col, row, map, seq };
     this.room.send('move', message);
     this.lastSentAt = now;
-    this.lastSent = { col, row, map };
+    this.lastSent = { col, row, map, seq };
   }
 
   /** 지금 하는 일이 바뀌었으면 보낸다. 연결이 끊긴 동안 보낸 것은 다시 붙으면 SDK가 보낸다. */

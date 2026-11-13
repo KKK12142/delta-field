@@ -259,6 +259,11 @@ export class MiniGameView {
 
   private updateDodge() {
     const me = this.host.net.me();
+    // 갇히지 않게: 이번 판 학생인데 내 자리가 운동장 밖이면(옛 자리를 받았을 때) 서버가 세운 운동장 안 자리로 다시 선다.
+    const here = this.host.pos();
+    if (this.student && me && !me.miniOut && this.playing === 'dodge' && !this.allows(here.col, here.row) && this.allows(me.col, me.row)) {
+      this.host.teleport(me.col, me.row);
+    }
     if (me?.miniOut && !this.outShown && this.student && this.mini.phase === 'play') {
       // 맞으면 서버가 세운 구경 자리로 옮기고 흐리게 보인다.
       this.outShown = true;

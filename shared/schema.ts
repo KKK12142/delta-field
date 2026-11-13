@@ -39,6 +39,11 @@ export const Player = schema(
     wrongs: t.map('uint8'),
     /** 마지막으로 미션을 마친(또는 2부가 열리거나 골든벨에서 돌아온) 때. 방의 시계(ClassState.now, 초) */
     lastProgressAt: t.uint32().default(0),
+    /**
+     * 옮김 번호: 서버가 이 사람의 자리를 옮길 때마다(공 피하기 시작·탈락 구경 자리, 골든벨 들어가기, 이어 하기) 하나 올린다.
+     * 화면은 마지막으로 받아 선 번호를 move에 붙이고, 서버는 번호가 다른(옮기기 전에 보낸) move를 버린다(느린 연결에서 옛 자리로 덮어쓰지 않게).
+     */
+    moveSeq: t.uint16().default(0),
     /** 보너스 미션을 마쳐 다음 골든벨 시작 때 받을 하트 +1이 남아 있으면 true(받으면 false) */
     bonusHeart: t.boolean().default(false),
     // 미니게임(shared/minigame.ts)

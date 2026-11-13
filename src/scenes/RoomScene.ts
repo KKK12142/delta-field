@@ -117,6 +117,8 @@ export class RoomScene extends MapScene {
       teleport: (col, row) => {
         this.pos = { col, row };
         this.placeAvatar();
+        // 서버가 세운 자리(공 피하기 시작·구경 자리)나 시작 전 자리에 섰으니 지금 서버의 옮김 번호로 보낸다.
+        this.net.moveSeq = this.net.me()?.moveSeq ?? this.net.moveSeq;
         this.net.sendMove(this.mapId, col, row, true);
       },
       setMyAlpha: (a) => this.avatar.setAlpha(a),

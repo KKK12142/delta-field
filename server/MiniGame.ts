@@ -19,7 +19,7 @@ import {
   standsSpot,
   type MiniKind,
 } from '../shared/minigame.ts';
-import { CLASS_GROUPS, classGroupName } from '../shared/protocol.ts';
+import { CLASS_GROUPS, classGroupName, nextMoveSeq } from '../shared/protocol.ts';
 import { MiniResult, Treasure, type ClassState, type Player } from '../shared/schema.ts';
 
 const SCHOOL = loadRoom(school);
@@ -135,6 +135,7 @@ export class MiniGames {
         const t = spots[i % spots.length];
         p.col = t.col + 0.3 + Math.random() * 0.4;
         p.row = t.row + 0.3 + Math.random() * 0.4;
+        p.moveSeq = nextMoveSeq(p.moveSeq);
       });
     }
     m.phase = 'count';
@@ -193,6 +194,14 @@ export class MiniGames {
     this.recent.delete(id);
   }
 
+  /** 공 피하기 중(세기·하는 중) 이번 판 학생은 운동장 밖 자리를 받지 않는다(탈락해 구경하는 학생은 빼고). */
+  allowsMove(id: string, p: Player, col: number, row: number) {
+    const m = this.state.mini;
+    if (m.kind !== 'dodge' || (m.phase !== 'count' && m.phase !== 'play') || !this.roster.has(id) || p.miniOut) return true;
+    const a = DODGE_ARENA;
+    return col >= a.col && col <= a.col + a.w && row >= a.row && row <= a.row + a.h;
+  }
+
   /** 보물을 줍는다. 서버가 아는 위치가 보물 가까이면 먼저 온 학생이 가진다. */
   pick(id: string, p: Player, treasureId: unknown) {
     const m = this.state.mini;
@@ -214,6 +223,7 @@ export class MiniGames {
     const spot = standsSpot(this.outCount++);
     p.col = spot.col;
     p.row = spot.row;
+    p.moveSeq = nextMoveSeq(p.moveSeq);
     // 둘 넘게 시작했으면 한 명만 남을 때, 혼자였으면 맞을 때 끝난다.
     const alive = [...this.roster].filter((sid) => {
       const q = this.state.players.get(sid);

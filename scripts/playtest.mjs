@@ -7,6 +7,7 @@
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { seeThrough, size, uiSize } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
+import { startDelayProxy } from './lib/delay-proxy.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
 const password = process.env.DF_TEACHER_PASSWORD;
@@ -22,6 +23,60 @@ const { openPage, consoleErrors } = chrome;
 const results = [];
 function check(name, ok, detail = '') { results.push(`${ok ? '통과' : '실패'}  ${name}${detail ? '  (' + detail + ')' : ''}`); }
 const fmt = (s) => s?.replace(/\n+/g, ' / ');
+
+// ---- 느린 연결(지연 프록시, 400ms씩): 걷는 중에 공 피하기가 시작돼도 운동장 안에 서고 움직인다(옮김 번호, 2026-11-13 버그) ----
+// 다른 창이 많이 열리기 전에(무거우면 늦은 화면이 더 느려진다) 따로 만든 방에서 한다. 화면 파일은 늦추지 않고 연 뒤, 게임 연결만 늦춘다.
+const clickIn = (page, selector, text) => page.js(`[...document.querySelectorAll(${JSON.stringify(selector)})].find((b) => b.textContent === ${JSON.stringify(text)})?.click()`);
+const webPort = Number(new URL(baseUrl).port);
+const slowProxy = await startDelayProxy(webPort + 1000, webPort, 0);
+const slowHost = await openPage('slow-host', baseUrl);
+await slowHost.enter({ teacher: true, nickname: '느린방선생님', pw: password });
+for (let i = 0; i < 60 && (await slowHost.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
+// 방을 만들면 뜨는 방탈출 자료 고르기 창이 뜰 때까지 기다렸다가 닫는다(창이 열려 있으면 미니게임 단추가 듣지 않는다).
+for (let i = 0; i < 60 && !/방탈출 자료/.test((await slowHost.dialogText()) ?? ''); i++) await wait(250);
+await clickIn(slowHost, '.df-dialog .df-button', '닫기');
+await wait(300);
+const slowCode = await slowHost.js(`__df.code()`);
+const slow = await openPage('slow', `http://127.0.0.1:${webPort + 1000}/`);
+await slow.enter({ nickname: '느림', code: slowCode });
+for (let i = 0; i < 80 && (await slow.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
+await wait(1000);
+for (let i = 0; i < 5 && (await slow.dialogText()) !== null; i++) {
+  await slow.js(`document.querySelector('.df-dialog .df-button')?.click()`);
+  await wait(300);
+}
+await slow.js(`__df.teleport(11.5, 8.5)`);
+await wait(800);
+slowProxy.setDelay(400);
+// 학생이 오른쪽·왼쪽으로 걷는 동안 선생님이 공 피하기를 시작한다(옮기기 전에 보낸 자리가 늦게 닿는다).
+const slowWalk = (async () => { for (let k = 0; k < 4; k++) await slow.press(k % 2 ? 'ArrowLeft' : 'ArrowRight', 500); })();
+await wait(700);
+await clickIn(slowHost, '.df-hud button', '미니게임 시작');
+await wait(500);
+await slowHost.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((b) => b.textContent.startsWith('공 피하기')).click()`);
+await wait(400);
+await clickIn(slowHost, '.df-dialog .df-button', '시작하기');
+await slowWalk;
+const slowAt = await slow.js(`__df.pos()`);
+await slow.press('ArrowUp', 500);
+const slowAfter = await slow.js(`__df.pos()`);
+const slowMini = await slow.js(`__df.mini()`);
+check('느린 연결: 걷는 중에 공 피하기가 시작돼도 운동장 안에 서고 움직임', slowAt.row >= 20 && slowAfter.row >= 20 &&
+  Math.hypot(slowAfter.col - slowAt.col, slowAfter.row - slowAt.row) > 0.2 && (slowMini.phase === 'count' || slowMini.phase === 'play'),
+  `${slowMini.phase} ${slowAt.col.toFixed(2)},${slowAt.row.toFixed(2)} → ${slowAfter.col.toFixed(2)},${slowAfter.row.toFixed(2)} | 선생님 창 ${fmt(await slowHost.dialogText())} | 학생 창 ${fmt(await slow.dialogText())}`);
+await wait(900);
+const slowOnServer = await slowHost.js(`__df.others().find((o) => o.nickname === '느림')`);
+// 그새 공에 맞았으면 서버가 구경 자리로 옮기므로 따지지 않는다.
+check('느린 연결: 서버 자리도 운동장 안(옛 자리로 덮어쓰지 않음)', slowOnServer.row >= 20 || slowOnServer.miniOut,
+  `${slowOnServer.col.toFixed(2)},${slowOnServer.row.toFixed(2)}${slowOnServer.miniOut ? ' 탈락' : ''}`);
+slowProxy.setDelay(0);
+await clickIn(slowHost, '.df-hud button', '미니게임 그만두기');
+await wait(400);
+await clickIn(slowHost, '.df-dialog .df-button', '그만두기');
+await wait(500);
+await slow.close();
+await slowHost.close();
+slowProxy.close();
 
 // ---- 선생님: 새 방 만들기 ----
 // 터치 화면은 주소에 touch=1을 붙인다(baseUrl에 ?render= 같은 것이 있어도 된다).

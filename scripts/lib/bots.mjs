@@ -67,11 +67,17 @@ export class Bot {
     const t0 = performance.now();
     this.room = await new Client(this.gameUrl).joinById(code, { nickname: this.nickname, character: this.character, classGroup: this.classGroup, pin: this.pin });
     this.joinMs = performance.now() - t0;
-    this.room.send('move', { ...this.pos, map: this.map });
+    this.seq = this.me()?.moveSeq ?? 0;
+    this.sendMove();
   }
 
   me() {
     return this.room?.state.players?.get(this.room.sessionId);
+  }
+
+  /** 내 자리를 보낸다. 마지막으로 받아 선 옮김 번호(Player.moveSeq)를 붙인다(서버는 번호가 다른 move를 버린다). */
+  sendMove() {
+    this.room.send('move', { ...this.pos, map: this.map, seq: this.seq });
   }
 
   /** 목표로 한 걸음. 서 있으면 보내지 않는다(실제 화면과 같다). */
@@ -84,6 +90,7 @@ export class Bot {
       this.pos = { col: me.col, row: me.row };
       this.target = { ...this.pos };
       this.answered = -1;
+      this.seq = me.moveSeq;
     }
     if (this.map === 'school' && this.playMini(dt, me)) {
       // 미니게임이 걸음을 정했다.
@@ -103,13 +110,19 @@ export class Bot {
     } else if (this.wander && Math.hypot(this.target.col - this.pos.col, this.target.row - this.pos.row) < 0.05) {
       this.target = randomSchool();
     }
+    // 그 밖에 서버가 자리를 옮겼으면(공 피하기 탈락 구경 자리 등) 그 자리에 선다.
+    if (me.moveSeq !== this.seq) {
+      this.seq = me.moveSeq;
+      this.pos = { col: me.col, row: me.row };
+      this.target = { ...this.pos };
+    }
     const dx = this.target.col - this.pos.col;
     const dy = this.target.row - this.pos.row;
     const d = Math.hypot(dx, dy);
     if (d < 0.01) return;
     const s = Math.min(d, motion.speed * dt);
     this.pos = { col: this.pos.col + (dx / d) * s, row: this.pos.row + (dy / d) * s };
-    this.room.send('move', { ...this.pos, map: this.map });
+    this.sendMove();
     this.sent++;
   }
 
@@ -126,12 +139,15 @@ export class Bot {
         this.hitSent = false;
         this.balls = m.kind === 'dodge' ? ballSchedule(m.seed, m.duration) : null;
         // 공 피하기는 서버가 운동장 안에 세운 자리에서 시작한다.
-        if (m.kind === 'dodge') this.pos = this.target = { col: me.col, row: me.row };
+        if (m.kind === 'dodge') {
+          this.pos = this.target = { col: me.col, row: me.row };
+          this.seq = me.moveSeq;
+        }
       } else if (this.miniHome) {
         // 끝나면 시작 전 자리로 돌아간다.
         this.pos = { ...this.miniHome };
         this.target = { ...this.pos };
-        this.room.send('move', { ...this.pos, map: this.map });
+        this.sendMove();
         this.miniHome = null;
       }
       this.miniKey = key;

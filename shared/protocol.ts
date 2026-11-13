@@ -50,6 +50,13 @@ export interface MoveMessage {
   row: number;
   /** 어느 맵에서의 위치인지. 서버가 아는 맵과 다르면(맵을 옮기는 중) 버린다. */
   map: MapId;
+  /** 화면이 마지막으로 받아 선 옮김 번호(Player.moveSeq). 서버의 번호와 다르면 버린다. */
+  seq: number;
+}
+
+/** 다음 옮김 번호(Player.moveSeq, uint16) */
+export function nextMoveSeq(seq: number): number {
+  return (seq + 1) % 65536;
 }
 
 /** 학생이 지금 하는 일. ''은 돌아다니는 중, 'look'은 사물을 살펴보는 중, 'quiz'는 퀴즈를 푸는 중 */

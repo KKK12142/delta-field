@@ -29,6 +29,7 @@ import {
   classGroupName,
   cleanAnnounce,
   cleanNickname,
+  nextMoveSeq,
   cleanPin,
   type PinOwner,
   type AnnounceBroadcast,
@@ -174,10 +175,16 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (!player || !message || !isFiniteNumber(message.col) || !isFiniteNumber(message.row)) return;
       // 맵을 옮기는 사이에 온, 앞 맵의 위치는 버린다.
       if (message.map !== player.map) return;
+      // 서버가 자리를 옮기기 전에 보낸 위치(느린 연결에서 늦게 온 것)는 버린다. 버리지 않으면 옮긴 자리를 옛 자리로 덮어쓴다.
+      if (message.seq !== player.moveSeq) return;
       const size = MAP_SIZES[player.map];
       if (!size) return;
-      player.col = Math.min(size.cols, Math.max(0, message.col));
-      player.row = Math.min(size.rows, Math.max(0, message.row));
+      const col = Math.min(size.cols, Math.max(0, message.col));
+      const row = Math.min(size.rows, Math.max(0, message.row));
+      // 공 피하기 중에는 운동장 밖 자리를 받지 않는다(화면이 그 사이 운동장 안으로 다시 맞춘다).
+      if (!this.mini.allowsMove(client.sessionId, player, col, row)) return;
+      player.col = col;
+      player.row = row;
     });
 
     // 학생이 지금 하는 일. 선생님의 CCTV 모드에 보인다.
@@ -432,6 +439,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     if (wasIn && p.map === 'school') {
       p.col = school.start.col;
       p.row = school.start.row;
+      p.moveSeq = nextMoveSeq(p.moveSeq);
     }
     p.gbResult = playing && p.map === 'goldenbell' ? p.gbResult : '';
     this.leaveMiniRound(record.sessionId, p);
@@ -517,6 +525,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     p.map = 'goldenbell';
     p.col = GB_SPAWN.col + Math.random() * GB_SPAWN.w;
     p.row = GB_SPAWN.row + Math.random() * GB_SPAWN.h;
+    p.moveSeq = nextMoveSeq(p.moveSeq);
     p.gbLives = Math.min(GB_MAX_LIVES, GB_LIVES + (p.bonusHeart ? 1 : 0) + (p.miniHeart ? 1 : 0));
     p.bonusHeart = false;
     p.miniHeart = false;
