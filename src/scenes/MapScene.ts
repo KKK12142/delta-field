@@ -9,7 +9,8 @@ import type { Net } from '../net/connection';
 import type { Dialog } from '../ui/dialog';
 import { Joystick } from '../ui/joystick';
 import { snapZoom } from '../render';
-import { motion, size } from '../theme';
+import { motion, seeThrough, size } from '../theme';
+import type { Spot } from '../ui/seeThrough';
 import { Avatar, loadCharacters, prepareCharacters, type TagStyle } from './avatar';
 import { MapPainter, loadMapSprites, prepareMapSprites, type ObjectView } from './painter';
 
@@ -381,6 +382,19 @@ export abstract class MapScene extends Scene {
       x: (cam.x + (avatar.x - cam.worldView.x) * cam.zoom) / this.dpr,
       y: (cam.y + (avatar.y - avatar.bodyOffset - cam.worldView.y) * cam.zoom) / this.dpr,
     };
+  }
+
+  /** 보이는 아바타(나와 다른 사람)의 화면 타원(창 기준 CSS 픽셀). 지도 위 안내를 그 자리만 뚫는 데 쓴다(src/ui/seeThrough.ts). */
+  protected avatarSpots(): Spot[] {
+    const canvas = this.game.canvas.getBoundingClientRect();
+    const spots: Spot[] = [];
+    for (const avatar of [this.avatar, ...[...this.remotes.values()].map((r) => r.avatar)]) {
+      if (!avatar.visible || avatar.alpha <= 0) continue;
+      const body = this.bodyOnScreen(avatar);
+      const tall = (avatar.sprite.displayHeight * this.cameras.main.zoom) / this.dpr;
+      spots.push({ x: canvas.left + body.x, y: canvas.top + body.y, rx: tall * seeThrough.rx, ry: tall * seeThrough.ry });
+    }
+    return spots;
   }
 
   // ---- 개발 중 자동 확인용(헤드리스 크롬). 빌드에는 들어가지 않는다. ----

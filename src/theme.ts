@@ -423,6 +423,19 @@ export const minimap = {
   bigWidth: 1100, // 큰 지도 너비의 상한(화면이 좁으면 화면에 맞춤)
 } as const;
 
+/**
+ * 지도 위에 겹친 안내(왼쪽 위 장소 안내, 미니맵) 뒤에 캐릭터가 들어가면 그 자리만 안내를 뚫어 캐릭터가 보이게 한다(src/ui/seeThrough.ts).
+ * 구멍은 캐릭터 몸통 가운데를 중심으로 한 타원이고, 크기는 화면에 보이는 캐릭터 키(머리 꼭대기~발)에 대한 비율이다.
+ */
+export const seeThrough = {
+  rx: 0.42, // 타원 가로 반지름(캐릭터 키에 대한 비율, 키 120px이면 50px)
+  ry: 0.78, // 타원 세로 반지름(머리 위 닉네임까지 덮는다)
+  clear: 0.6, // 타원 반지름의 이 비율까지는 다 뚫리고, 그 밖에서 끝까지 부드럽게 다시 덮인다
+  step: 2, // 구멍 위치·크기를 이 CSS 픽셀 단위로 맞춰, 조금 움직일 때마다 스타일을 다시 쓰지 않는다
+  hole: 'transparent', // 마스크: 뚫린 곳
+  keep: '#000', // 마스크: 덮인 곳(색은 쓰지 않고 불투명도만 쓴다)
+} as const;
+
 /** uiColor, uiSize, uiSkin(--df-skin-이름), 글꼴을 CSS 변수(--df-이름)로 넣는다. */
 export function applyCssTheme(root: HTMLElement = document.documentElement) {
   const entries: [string, string][] = [
