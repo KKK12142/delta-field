@@ -37,6 +37,8 @@ import {
   type GatherMessage,
   type JoinOptions,
   type MoveMessage,
+  type OpenRoomInfo,
+  type RoomClosedMessage,
   type StatusMessage,
 } from '../shared/protocol.ts';
 import { ClassState, Player } from '../shared/schema.ts';
@@ -45,6 +47,7 @@ import { EscapeGame } from './EscapeGame.ts';
 import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
 import { MiniGames } from './MiniGame.ts';
+import { hasTeacherPassword, teacherPasswordMatches } from './password.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../shared/escape.ts';
 
 /** 맵 id → 크기(칸) */
@@ -63,11 +66,10 @@ const CHARACTER_IDS = new Set(characters.map((c) => c.id));
 const GB_SPAWN = goldenbellMap.spawn;
 
 function checkTeacher(password: unknown) {
-  const expected = process.env.DF_TEACHER_PASSWORD;
-  if (!expected) {
+  if (!hasTeacherPassword()) {
     throw new ServerError(RejectCode.noTeacherPassword, '서버에 선생님 비밀번호가 설정되어 있지 않습니다.');
   }
-  if (password !== expected) {
+  if (!teacherPasswordMatches(password)) {
     throw new ServerError(RejectCode.wrongPassword, '선생님 비밀번호가 맞지 않습니다.');
   }
 }
@@ -109,6 +111,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private beforeJudge = new Map<string, GbScore>();
   /** 전체 공지: 선생님 접속 id → 마지막으로 보낸 시각(ms). 너무 잦은 공지를 막는다. */
   private lastAnnounceAt = new Map<string, number>();
+  /** 방을 만든 시각(ms). 선생님 첫 화면의 열린 방 목록에 쓴다. */
+  readonly openedAt = Date.now();
   private readonly escape = new EscapeGame(this.state);
   private readonly mini = new MiniGames(this.state, this.clock);
 
@@ -211,6 +215,33 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('gbAccept', (client: Client, message: GbAcceptMessage) => this.gbAccept(client, message));
 
     console.log(`방 ${this.roomId}을 만들었습니다.`);
+  }
+
+  /** 선생님 첫 화면의 열린 방 목록 한 줄(접속 중인 사람만 센다) */
+  summary(): OpenRoomInfo {
+    let teachers = 0;
+    let students = 0;
+    for (const p of this.state.players.values()) {
+      if (!p.online) continue;
+      if (p.role === 'teacher') teachers++;
+      else students++;
+    }
+    const activity = this.mini.active
+      ? '미니게임'
+      : this.state.goldenbell.phase !== ''
+        ? '골든벨'
+        : this.state.gatherLeft > 0
+          ? '강당으로 모으는 중'
+          : `방탈출 ${this.state.part}부`;
+    return { code: this.roomId, openedAt: this.openedAt, teachers, students, activity };
+  }
+
+  /** 선생님이 첫 화면에서 방을 닫는다. 모두에게 안내를 보낸 뒤 연결을 끊는다(다시 붙기 없음). */
+  closeByTeacher() {
+    const message: RoomClosedMessage = { text: '선생님이 방을 닫았습니다.' };
+    this.broadcast('roomClosed', message);
+    console.log(`방 ${this.roomId}을 선생님이 닫았습니다.`);
+    void this.disconnect();
   }
 
   onJoin(client: Client, options: Partial<JoinOptions>) {

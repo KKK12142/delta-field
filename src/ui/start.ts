@@ -1,6 +1,7 @@
-import { CLASS_GROUPS, CODE_LENGTH, MAX_NICKNAME } from '../../shared/protocol.ts';
+import { CLASS_GROUPS, CODE_LENGTH, MAX_NICKNAME, type OpenRoomInfo } from '../../shared/protocol.ts';
 import characters from '../data/characters.json';
-import type { Entry } from '../net/connection';
+import { closeRoom, listRooms, type Entry } from '../net/connection';
+import { Dialog } from './dialog';
 import { characterSheet } from '../scenes/avatar';
 import { el, uiRoot } from './dom';
 import { emblem, uiIcon } from './pictures';
@@ -104,6 +105,88 @@ function characterPicker() {
   return { label, grid, selected: () => selected };
 }
 
+/** 만든 시각(시:분) */
+function clockText(ms: number) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * 선생님: 열린 방 목록(방 코드, 만든 시각, 접속 중인 선생님·학생 수, 지금 하는 일). 비밀번호가 맞아야 서버가 목록을 준다.
+ * 줄마다 "들어가기"(그 코드로 선생님 입장)와 "닫기"(확인 창 뒤 방 안 모두를 내보내고 방을 없앰).
+ */
+function roomList(password: () => string, enter: (code: string) => void, showError: (text: string) => void) {
+  const open = el('button', 'df-button df-button-small df-button-light df-rooms-open', '열린 방 보기');
+  open.type = 'button';
+  const box = el('div', 'df-rooms');
+  const list = el('ul', 'df-rooms-list');
+  box.append(el('p', 'df-muted', '열린 방'), list);
+  box.hidden = true;
+  const dialog = new Dialog();
+  let busy = false;
+
+  const row = (r: OpenRoomInfo) => {
+    const li = el('li', 'df-room');
+    li.dataset.code = r.code;
+    const info = el('span', 'df-room-info');
+    info.append(
+      el('strong', 'df-room-name', `방 ${r.code}`),
+      el('span', 'df-muted', `${clockText(r.openedAt)} 만듦 · 선생님 ${r.teachers}명 · 학생 ${r.students}명 · ${r.activity}`),
+    );
+    const go = el('button', 'df-button df-button-small', '들어가기');
+    go.type = 'button';
+    go.addEventListener('click', () => enter(r.code));
+    const close = el('button', 'df-button df-button-small df-button-light', '닫기');
+    close.type = 'button';
+    close.addEventListener('click', () => void closeOne(r));
+    li.append(info, go, close);
+    return li;
+  };
+
+  const load = async () => {
+    if (busy) return;
+    if (!password()) return showError('선생님 비밀번호를 넣어야 열린 방을 볼 수 있습니다.');
+    busy = true;
+    open.disabled = true;
+    try {
+      const reply = await listRooms(password());
+      if (reply.error !== null) {
+        box.hidden = true;
+        return showError(reply.error);
+      }
+      const rooms = reply.rooms ?? [];
+      list.replaceChildren(...(rooms.length ? rooms.map(row) : [el('li', 'df-muted', '열린 방이 없습니다.')]));
+      box.hidden = false;
+      open.textContent = '목록 새로 보기';
+    } finally {
+      busy = false;
+      open.disabled = false;
+    }
+  };
+
+  const closeOne = async (r: OpenRoomInfo) => {
+    if (busy || dialog.isOpen()) return;
+    const sure = await dialog.confirm(
+      '방 닫기',
+      `방 ${r.code}을 닫습니다. 들어와 있는 학생 ${r.students}명이 모두 나가게 됩니다. 되돌릴 수 없습니다.`,
+      '닫기',
+    );
+    if (!sure) return;
+    const reply = await closeRoom(password(), r.code);
+    if (reply.error !== null) showError(reply.error);
+    await load();
+  };
+
+  open.addEventListener('click', () => void load());
+  /** 비밀번호를 바꾸거나 학생으로 바꾸면 목록을 감춘다. */
+  const reset = () => {
+    box.hidden = true;
+    list.replaceChildren();
+    open.textContent = '열린 방 보기';
+  };
+  return { open, box, reset };
+}
+
 /**
  * 첫 화면. 학생은 닉네임과 방 코드와 반, 선생님은 닉네임과 비밀번호(방 코드는 비우면 새 방)를 넣고, 모두 캐릭터를 고른다.
  * tryEnter가 실패하면 그 까닭을 보여 주고 다시 입력받는다. 성공하면 tryEnter의 결과를 돌려준다.
@@ -162,10 +245,21 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       return box;
     };
     const passField = field(passLabel, password);
+    const rooms = roomList(
+      () => password.value,
+      (roomCode) => {
+        code.value = roomCode;
+        form.requestSubmit();
+      },
+      (text) => showError(text, password),
+    );
+    const roomsRow = el('div', 'df-row');
+    roomsRow.append(rooms.open);
+    password.addEventListener('input', rooms.reset);
     const fields = el('div', 'df-fields');
     fields.append(field(nickLabel, nickname), field(codeLabel, code), passField);
     const classField = field(classes.label, classes.group);
-    form.append(logo, intro, fields, classField, field(picker.label, picker.grid), error, row);
+    form.append(logo, intro, fields, roomsRow, rooms.box, classField, field(picker.label, picker.grid), error, row);
     wrap.append(form);
     uiRoot().append(wrap);
 
@@ -173,7 +267,8 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       intro.textContent = teacher
         ? '비밀번호를 넣고 새 방을 만듭니다. 이미 만든 방으로 돌아갈 때는 방 코드도 넣습니다.'
         : '선생님이 알려 준 방 코드와 닉네임을 넣고 들어갑니다.';
-      passField.hidden = !teacher;
+      passField.hidden = roomsRow.hidden = !teacher;
+      if (!teacher) rooms.reset();
       classField.hidden = teacher;
       codeLabel.textContent = teacher ? '방 코드(새 방이면 비워 둡니다)' : '방 코드';
       switchRole.textContent = teacher ? '학생으로 들어가기' : '선생님으로 들어가기';

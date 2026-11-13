@@ -1243,6 +1243,70 @@ const aReset = await teacher2.js(`__df.others().find((o) => o.nickname === '가�
 check('방탈출 자료를 바꾸면 학생 진행(마친 미션, 힌트 카드, 1부 완료)이 처음으로', aReset.done.length === 0 && !aReset.finished && (await a.js(`__df.hints().length`)) === 0 &&
   /힌트 수첩 0\/0/.test((await a.js(`document.querySelector('.df-hud').innerText`)) ?? ''), JSON.stringify(aReset.done));
 
+// ---- 선생님 첫 화면: 열린 방 목록과 방 닫기(비밀번호가 맞아야 보임). 닫기는 따로 만든 방으로 한다. ----
+const admin = await openPage('admin', baseUrl);
+await admin.js(`document.querySelector('.df-link').click()`);
+await wait(200);
+const roomsBox = () => admin.js(`(() => { const b = document.querySelector('.df-rooms'); return b && !b.hidden ? b.innerText : null; })()`);
+const roomRow = (c) => admin.js(`document.querySelector('.df-room[data-code="${c}"]')?.innerText ?? null`);
+const openRooms = async (pw) => {
+  await admin.js(`(() => { const i = document.getElementById('df-password'); i.value = ${JSON.stringify(pw)}; i.dispatchEvent(new Event('input')); })()`);
+  await admin.js(`document.querySelector('.df-rooms-open').click()`);
+  await wait(800);
+};
+check('열린 방 목록: 학생 화면에는 단추가 없고, 선생님으로 바꾸면 보임', (await admin.js(`document.querySelector('.df-rooms-open').offsetParent !== null`)) === true);
+await openRooms('wrong-password');
+check('열린 방 목록: 틀린 비밀번호면 거절하고 목록이 보이지 않음', /비밀번호가 맞지 않습니다/.test((await admin.error()) ?? '') && (await roomsBox()) === null, await admin.error());
+const roomsApi = new URL('colyseus/df/rooms', baseUrl).href;
+const noPw = await fetch(roomsApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+const getRooms = await fetch(roomsApi);
+check('열린 방 목록: 비밀번호 없이 요청하거나 GET이면 방 코드를 주지 않음', noPw.status === 403 && getRooms.status === 405 &&
+  !/\d{4}/.test(JSON.stringify(await noPw.json())), `${noPw.status} ${getRooms.status}`);
+await openRooms(password);
+const onlineStudents = await teacher2.js(`__df.others().filter((o) => o.role === 'student' && o.online).length`);
+const mainRow = (await roomRow(code)) ?? '';
+check('열린 방 목록: 맞는 비밀번호면 지금 방이 보이고 학생 수·만든 시각·하는 일이 맞음',
+  (await roomsBox()) !== null && new RegExp(`학생 ${onlineStudents}명`).test(mainRow) && /\d\d:\d\d 만듦/.test(mainRow) && /방탈출 [12]부/.test(mainRow) &&
+    /선생님 \d명/.test(mainRow), fmt(mainRow));
+// 닫아 볼 방: 선생님이 새로 만들고 학생 한 명이 들어온다.
+const host = await openPage('host', baseUrl);
+await host.enter({ teacher: true, nickname: '닫는선생님', pw: password });
+for (let i = 0; i < 40 && (await host.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
+await wait(800);
+await host.js(`document.querySelector('.df-dialog .df-button-light, .df-dialog .df-button')?.click()`);
+const closeCode = await host.js(`__df.code()`);
+const guest = await openPage('guest', baseUrl);
+await guest.enter({ nickname: '다래', code: closeCode });
+for (let i = 0; i < 40 && (await guest.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
+await wait(800);
+await guest.press('Escape');
+await admin.js(`document.querySelector('.df-rooms-open').click()`);
+await wait(800);
+check('열린 방 목록: 새로 만든 방도 보이고 학생 1명', /학생 1명/.test((await roomRow(closeCode)) ?? '') && (await roomRow(code)) !== null, fmt(await roomRow(closeCode)));
+await admin.js(`[...document.querySelectorAll('.df-room[data-code="${closeCode}"] button')].find((b) => b.textContent === '닫기').click()`);
+await wait(400);
+check('방 닫기: 확인 창(학생 수와 되돌릴 수 없음)', new RegExp(`방 ${closeCode}을 닫습니다. 들어와 있는 학생 1명이 모두 나가게 됩니다. 되돌릴 수 없습니다`).test((await admin.dialogText()) ?? ''),
+  fmt(await admin.dialogText()));
+await clickText(admin, '.df-dialog .df-button', '닫기');
+await wait(1500);
+check('방 닫기: 학생 화면에 "선생님이 방을 닫았습니다" 안내', /방이 닫혔습니다/.test((await guest.dialogText()) ?? '') && /선생님이 방을 닫았습니다/.test((await guest.dialogText()) ?? ''),
+  fmt(await guest.dialogText()));
+check('방 닫기: 방에 있던 선생님 화면에도 안내', /선생님이 방을 닫았습니다/.test((await host.dialogText()) ?? ''), fmt(await host.dialogText()));
+check('방 닫기: 목록에서 사라지고 다른 방은 그대로', (await roomRow(closeCode)) === null && (await roomRow(code)) !== null && (await roomsBox()) !== null);
+await clickText(guest, '.df-dialog .df-button', '확인');
+await wait(2000);
+check('방 닫기: 학생이 확인을 누르면 첫 화면', (await guest.js(`!!document.querySelector('.df-start') && typeof window.__df === 'undefined'`)) === true);
+await guest.enter({ nickname: '다래', code: closeCode });
+check('방 닫기: 서버에서 방이 사라져 그 코드로 들어갈 수 없음', /인 방이 없습니다/.test((await guest.error()) ?? ''), await guest.error());
+check('방 닫기: 닫은 방이 아닌 학생은 그대로', (await a.js(`__df.code()`)) === code && (await a.dialogText()) === null);
+// 비밀번호가 1분에 5번 넘게 틀리면 맞는 비밀번호도 잠깐 받지 않는다(이 확인 뒤에는 목록을 열지 않는다).
+const post = (pw) => fetch(roomsApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) });
+const tries = [];
+for (let i = 0; i < 5; i++) tries.push((await post('wrong-' + i)).status);
+const blocked = await post(password);
+check('열린 방 목록: 1분에 5번 넘게 틀리면 맞는 비밀번호도 잠깐 거절', tries.slice(0, 3).every((t) => t === 403) && tries.at(-1) === 429 && blocked.status === 429 &&
+  /1분 뒤/.test((await blocked.json()).error ?? ''), `${tries.join(',')} → ${blocked.status}`);
+
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));
 console.log(`캡처: ${outDir}`);

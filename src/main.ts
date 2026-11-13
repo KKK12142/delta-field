@@ -33,12 +33,16 @@ const dialog = new Dialog();
 const announceBanner = new AnnounceBanner();
 net.onAnnounce((m) => announceBanner.show(m.text));
 
-// 다시 붙기를 끝내 못 하면 처음 화면으로 돌아가게 한다.
+// 다시 붙기를 끝내 못 하면 처음 화면으로 돌아가게 한다. 선생님이 방을 닫았으면(다시 붙지 않음) 그 안내를 띄운다.
 net.onStatus((status) => {
   if (status !== 'closed') return;
-  void dialog
-    .message('연결이 끊겼습니다', '서버와 연결이 끊겼습니다. 다시 들어가기를 누르면 처음 화면으로 갑니다.', '다시 들어가기')
-    .then(() => location.reload());
+  if (dialog.isOpen()) dialog.abandon();
+  const closed = net.closedText;
+  void (
+    closed
+      ? dialog.message('방이 닫혔습니다', `${closed} 확인을 누르면 처음 화면으로 갑니다.`)
+      : dialog.message('연결이 끊겼습니다', '서버와 연결이 끊겼습니다. 다시 들어가기를 누르면 처음 화면으로 갑니다.', '다시 들어가기')
+  ).then(() => location.reload());
 });
 
 const ctx: MapContext = {

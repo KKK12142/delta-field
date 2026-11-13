@@ -3,6 +3,8 @@ import { Client, type Room } from '@colyseus/sdk';
 import {
   MOVE_INTERVAL_MS,
   ROOM_NAME,
+  ROOMS_CLOSE_PATH,
+  ROOMS_PATH,
   RejectCode,
   type AnnounceBroadcast,
   type AnnounceMessage,
@@ -14,6 +16,9 @@ import {
   type JoinOptions,
   type MapId,
   type MoveMessage,
+  type RoomClosedMessage,
+  type RoomsReply,
+  type RoomsRequest,
   type Role,
   type StatusMessage,
 } from '../../shared/protocol.ts';
@@ -37,6 +42,8 @@ export class Net {
   private lastSent = { col: NaN, row: NaN, map: '' };
   private lastStatus = '';
   private readonly statusListeners = new Set<(status: ConnectionStatus) => void>();
+  /** 선생님이 방을 닫았으면 그 안내(연결이 끊긴 까닭). 끊겨도 다시 붙지 않는다. */
+  closedText: string | null = null;
   private readonly announceListeners = new Set<(message: AnnounceBroadcast) => void>();
 
   constructor(
@@ -49,6 +56,9 @@ export class Net {
     room.onDrop(() => this.emit('reconnecting'));
     room.onReconnect(() => this.emit('connected'));
     room.onLeave(() => this.emit('closed'));
+    room.onMessage('roomClosed', (message: RoomClosedMessage) => {
+      this.closedText = typeof message?.text === 'string' ? message.text : '선생님이 방을 닫았습니다.';
+    });
     room.onMessage('announce', (message: AnnounceBroadcast) => {
       if (typeof message?.text !== 'string') return;
       for (const l of this.announceListeners) l(message);
@@ -326,6 +336,32 @@ export async function connect(entry: Entry): Promise<Net> {
   }
   await firstState(room);
   return new Net(room, entry.role, entry.nickname, entry.character);
+}
+
+/** 열린 방 목록·닫기 요청(선생님 비밀번호). 서버에 닿지 못하면 error에 까닭을 적는다. */
+async function roomsRequest(path: string, request: RoomsRequest): Promise<RoomsReply> {
+  try {
+    const res = await fetch(`${endpoint()}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+      cache: 'no-store',
+    });
+    const reply = (await res.json()) as RoomsReply;
+    return { error: reply.error ?? (res.ok ? null : '서버가 요청을 받지 않았습니다.'), rooms: reply.rooms };
+  } catch {
+    return { error: '서버에 닿지 못했습니다. 잠시 뒤 다시 합니다.' };
+  }
+}
+
+/** 선생님 첫 화면: 이 서버에 열린 방 목록 */
+export function listRooms(password: string): Promise<RoomsReply> {
+  return roomsRequest(ROOMS_PATH, { password });
+}
+
+/** 선생님 첫 화면: 방을 닫는다(방 안의 모두가 안내를 받고 나간다). */
+export function closeRoom(password: string, code: string): Promise<RoomsReply> {
+  return roomsRequest(ROOMS_CLOSE_PATH, { password, code });
 }
 
 /** 들어가지 못한 까닭을 화면에 보일 문장으로 바꾼다. */

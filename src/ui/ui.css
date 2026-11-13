@@ -263,6 +263,32 @@
   grid-template-columns: repeat(auto-fit, minmax(var(--df-field-min), 1fr));
   gap: var(--df-gap);
 }
+/* 선생님: 열린 방 목록(방 코드·만든 시각·접속 수·하는 일, 들어가기·닫기) */
+.df-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+}
+.df-rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-hud-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.df-room {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--df-gap-small);
+}
+.df-room-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 var(--df-field-min);
+  min-width: 0;
+}
 /* 반 고르기(학생) */
 .df-classes {
   display: grid;

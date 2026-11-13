@@ -1,4 +1,4 @@
-// express는 타입 정의를 따로 내려받아야 한다(@types/express). 서버는 빌드한 화면 파일을 내어 주는 데만 쓰므로 그 부분만 적는다.
+// express는 타입 정의를 따로 내려받아야 한다(@types/express). 서버는 빌드한 화면 파일을 내어 주고 열린 방 목록(server/rooms.ts)을 거는 데만 쓰므로 그 부분만 적는다.
 declare module 'express' {
   import type { IncomingMessage, ServerResponse } from 'node:http';
 

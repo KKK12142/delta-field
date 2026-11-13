@@ -119,6 +119,40 @@ export interface GbAcceptMessage {
   accept: boolean;
 }
 
+/** 선생님 첫 화면의 열린 방 목록(2026-11-13 교사 요청). 비밀번호가 맞아야 받는다(POST ROOMS_PATH). */
+export const ROOMS_PATH = '/df/rooms';
+/** 방 닫기(POST, 비밀번호와 방 코드) */
+export const ROOMS_CLOSE_PATH = '/df/rooms/close';
+
+export interface OpenRoomInfo {
+  code: string;
+  /** 만든 시각(ms) */
+  openedAt: number;
+  /** 접속 중인 선생님·학생 수 */
+  teachers: number;
+  students: number;
+  /** 지금 하는 일(방탈출 1부·2부, 강당으로 모으는 중, 골든벨, 미니게임) */
+  activity: string;
+}
+
+/** 열린 방 목록·닫기 요청 */
+export interface RoomsRequest {
+  password: string;
+  /** 닫기만: 닫을 방 코드 */
+  code?: string;
+}
+
+/** 열린 방 목록·닫기의 답. 할 수 없으면 error에 까닭을 적는다. */
+export interface RoomsReply {
+  error: string | null;
+  rooms?: OpenRoomInfo[];
+}
+
+/** 선생님이 방을 닫을 때 방의 모두에게 보내는 안내(메시지 'roomClosed'). 받은 화면은 다시 붙지 않고 첫 화면으로 간다. */
+export interface RoomClosedMessage {
+  text: string;
+}
+
 /** 서버가 들어오기를 거절할 때 쓰는 번호. 방 만들기 오류는 HTTP 응답 번호로도 쓰이므로 200~599 안에서 고르고, Colyseus의 번호(520~526)와 겹치지 않게 했다. */
 export const RejectCode = {
   noTeacherPassword: 503,

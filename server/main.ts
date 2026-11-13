@@ -7,6 +7,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import express from 'express';
 import { ROOM_NAME } from '../shared/protocol.ts';
 import { ClassRoom } from './ClassRoom.ts';
+import { roomsHandler } from './rooms.ts';
 
 const port = Number(process.env.DF_PORT ?? 2567);
 const production = process.env.NODE_ENV === 'production';
@@ -19,12 +20,11 @@ if (!process.env.DF_TEACHER_PASSWORD) {
 const server = new Server({
   transport: new WebSocketTransport(),
   greet: false,
-  // 수업용으로 켤 때는 빌드한 게임 화면(dist/)도 이 서버가 내어 준다.
-  express: production
-    ? (app) => {
-        app.use(express.static(dist));
-      }
-    : undefined,
+  // 선생님 첫 화면의 열린 방 목록·닫기(server/rooms.ts). 수업용으로 켤 때는 빌드한 게임 화면(dist/)도 이 서버가 내어 준다.
+  express: (app) => {
+    app.use(roomsHandler);
+    if (production) app.use(express.static(dist));
+  },
 });
 server.define(ROOM_NAME, ClassRoom);
 await server.listen(port);
