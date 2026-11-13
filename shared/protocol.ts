@@ -159,6 +159,8 @@ export const RejectCode = {
   wrongPassword: 403,
   nicknameTaken: 409,
   badNickname: 422,
+  /** 같은 IP에서 선생님 비밀번호를 1분에 5번 틀려 잠깐 막음 */
+  tooManyTries: 429,
 } as const;
 
 /** 앞뒤 빈칸을 지우고 1~MAX_NICKNAME자인지 본다. 맞지 않으면 null */

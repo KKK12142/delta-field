@@ -8,6 +8,7 @@ import express from 'express';
 import { ROOM_NAME } from '../shared/protocol.ts';
 import { ClassRoom } from './ClassRoom.ts';
 import { roomsHandler } from './rooms.ts';
+import { tagPeer } from './password.ts';
 
 const port = Number(process.env.DF_PORT ?? 2567);
 const production = process.env.NODE_ENV === 'production';
@@ -17,8 +18,9 @@ if (!process.env.DF_TEACHER_PASSWORD) {
   console.warn('선생님 비밀번호(DF_TEACHER_PASSWORD)가 없어 방을 만들 수 없습니다. .env 파일에 넣고 다시 켭니다.');
 }
 
+const transport = new WebSocketTransport();
 const server = new Server({
-  transport: new WebSocketTransport(),
+  transport,
   greet: false,
   // 선생님 첫 화면의 열린 방 목록·닫기(server/rooms.ts). 수업용으로 켤 때는 빌드한 게임 화면(dist/)도 이 서버가 내어 준다.
   express: (app) => {
@@ -28,6 +30,8 @@ const server = new Server({
 });
 server.define(ROOM_NAME, ClassRoom);
 await server.listen(port);
+// 모든 HTTP 요청에 연결의 실제 주소를 붙인다(선생님 비밀번호 잦은 실패 막기의 IP, server/password.ts). Colyseus의 처리보다 먼저 돈다.
+transport.server?.prependListener('request', tagPeer);
 
 console.log(`Delta Field 서버를 켰습니다(포트 ${port}).`);
 if (production) {

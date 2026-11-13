@@ -14,7 +14,7 @@ import { AnnounceBanner } from './ui/announce';
 import { Dialog } from './ui/dialog';
 import { loadFonts } from './ui/fonts';
 import { isTouchDevice } from './ui/dom';
-import { askEntry } from './ui/start';
+import { askEntry, rememberEntry } from './ui/start';
 import './ui/ui.css';
 
 applyCssTheme();
@@ -27,11 +27,16 @@ const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
   goldenbell: loadRoom(goldenbell),
 };
 const net = await askEntry(connect, joinErrorText);
+// 끊겨서 첫 화면으로 돌아오면 다시 채워 두도록 방 코드·닉네임을 기억한다(비밀번호는 기억하지 않는다).
+rememberEntry(net.role, net.nickname, net.code);
+// 같은 닉네임으로 다시 들어와 하던 것을 이어 받았으면 짧게 알리고, 학교 맵이면 있던 자리에 선다.
+const resumed = await net.wasResumed();
 await fonts;
 const dialog = new Dialog();
 // 선생님 전체 공지. 학교 맵·골든벨 맵을 옮겨도 이어지게 장면 밖에 둔다.
 const announceBanner = new AnnounceBanner();
 net.onAnnounce((m) => announceBanner.show(m.text));
+if (resumed) announceBanner.show('하던 것을 이어서 합니다.', '다시 들어왔습니다');
 
 // 다시 붙기를 끝내 못 하면 처음 화면으로 돌아가게 한다. 선생님이 방을 닫았으면(다시 붙지 않음) 그 안내를 띄운다.
 net.onStatus((status) => {
@@ -56,6 +61,10 @@ const ctx: MapContext = {
   introVersion: -1,
   seen: { part: 0, gathering: false },
 };
+const mine = net.me();
+if (resumed && mine?.map === 'school') ctx.schoolPos = { col: mine.col, row: mine.row };
+// 이어 하기면 이미 본 이야기 카드(intro)는 다시 띄우지 않는다.
+if (resumed) ctx.introVersion = net.escape.version;
 
 // 화면을 그리는 방식은 src/render.ts(주소의 ?render=). 게임 크기를 화면(CSS) 크기×비율로 잡고,
 // Phaser의 zoom(1/비율)으로 캔버스를 화면 크기로 줄여 보인다. 그래서 장면 안의 픽셀은 캔버스 픽셀이다(MapScene.css()).

@@ -239,7 +239,7 @@ export const uiSize = {
   dangerGap: '18px', // 선생님 단추에서 되돌릴 수 없는 단추(2부 열기 등)를 떨어뜨리는 간격
   badgePad: '0 6px',
   badgeBorder: '3px', // 작은 표시(예시 문제, 문제 번호)의 외곽선(도트 1개 × 3배)
-  joystickZone: '50%', // 조이스틱 영역: 화면 왼쪽에서 이 너비(높이는 전체)
+  joystickZone: '100%', // 조이스틱 영역: 화면 왼쪽에서 이 너비(높이는 전체). 2026-11-13 교사 요청으로 화면 전체
   joystick: '132px',
   joystickKnob: '56px',
   joystickLine: '3px',

@@ -166,7 +166,7 @@ const inBell = async () => teacher.js(`__df.others().filter((o) => o.role === 's
 check(`골든벨: 학생 ${students}명 모두 골든벨 맵`, (await inBell()) === students, `${await inBell()}명`);
 const total = (await teacher.js(`__df.gb().total`)) ?? 0;
 const bellCpu = cpuMeter(pid);
-const next = () => teacher.js(`document.querySelector('.df-gb-panel .df-row > .df-button:not(.df-button-small)').click()`);
+const next = () => teacher.js(`document.querySelector('.df-gb-panel .df-row > .df-button:not(.df-button-small):not(.df-gb-close)').click()`);
 const judged = [];
 for (let i = 0; i < total; i++) {
   await next();
@@ -186,6 +186,9 @@ const ranks = await teacher.js(`document.querySelectorAll('.df-gb-panel .df-gb-r
 check(`골든벨 결과: 순위 ${students}줄`, ranks === students, `${ranks}줄`);
 await teacher.shot('gb-end');
 await teacher.js(`[...document.querySelectorAll('.df-gb-panel button')].find((b) => b.textContent === '골든벨 끝내기').click()`);
+await wait(400);
+// 끝내기는 확인 창을 거친다.
+await teacher.js(`[...document.querySelectorAll('.df-dialog .df-button')].find((b) => b.textContent === '끝내기')?.click()`);
 await wait(1500);
 const back = await teacher.js(`__df.others().filter((o) => o.role === 'student' && o.map === 'school').length`);
 check(`골든벨 끝: 학생 ${students}명 모두 학교 맵으로`, back === students, `${back}명`);

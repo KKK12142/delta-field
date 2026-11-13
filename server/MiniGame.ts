@@ -184,6 +184,15 @@ export class MiniGames {
     return Math.min(m.duration, Math.max(0, (Date.now() - m.startedAt) / 1000));
   }
 
+  /**
+   * 같은 닉네임으로 다시 들어와 접속 id가 바뀐 학생의 옛 id를 이번 판에서 뺀다(2026-11-13, 이어 하기).
+   * 그 판은 빠진 것으로 두고(점수는 ClassRoom이 0으로), 새 id는 늦게 들어온 학생과 같게 다룬다.
+   */
+  forget(id: string) {
+    this.roster.delete(id);
+    this.recent.delete(id);
+  }
+
   /** 보물을 줍는다. 서버가 아는 위치가 보물 가까이면 먼저 온 학생이 가진다. */
   pick(id: string, p: Player, treasureId: unknown) {
     const m = this.state.mini;

@@ -282,6 +282,15 @@ export class Net {
     this.room.send('miniTug');
   }
 
+  /** 같은 닉네임으로 다시 들어와 하던 것을 이어 받았는지(서버가 한 번만 true를 준다) */
+  async wasResumed(): Promise<boolean> {
+    try {
+      return (await this.room.request('resumed')) === true;
+    } catch {
+      return false;
+    }
+  }
+
   /** 선생님: 전체 공지를 보낸다. 서버가 받으면 보낸 선생님을 포함한 모두에게 공지가 온다(onAnnounce). */
   announce(text: string): Promise<GbReply> {
     const message: AnnounceMessage = { text };
@@ -370,10 +379,12 @@ export function joinErrorText(error: unknown, entry: Entry): string {
   switch (code) {
     case RejectCode.wrongPassword:
       return '선생님 비밀번호가 맞지 않습니다.';
+    case RejectCode.tooManyTries:
+      return '비밀번호를 여러 번 틀려 1분 동안 막았습니다. 잠시 뒤 다시 합니다.';
     case RejectCode.noTeacherPassword:
       return '서버에 선생님 비밀번호가 설정되어 있지 않습니다. 서버를 켠 컴퓨터의 .env 파일에 비밀번호를 넣어야 합니다.';
     case RejectCode.nicknameTaken:
-      return '같은 닉네임이 이미 있습니다. 다른 닉네임으로 들어갑니다.';
+      return '같은 닉네임이 지금 들어와 있습니다. 연결이 끊긴 것이라면 조금 뒤 다시 들어가고, 아니면 다른 닉네임으로 들어갑니다.';
     case RejectCode.badNickname:
       return '닉네임은 1~12자로 씁니다.';
     case 522: // Colyseus: 그런 방이 없음

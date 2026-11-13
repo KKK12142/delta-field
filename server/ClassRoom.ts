@@ -1,6 +1,6 @@
 // 수업 하나 = 방 하나. 선생님이 비밀번호로 만들고, 학생은 방 코드로 들어온다.
 // 학교(교실·복도·실험실·운동장이 이어진 방탈출) 맵과 골든벨 맵이 있고, 골든벨을 시작하면 모두 골든벨 맵으로 옮긴다.
-import { Room, ServerError, matchMaker, type Client } from '@colyseus/core';
+import { Room, ServerError, matchMaker, type AuthContext, type Client, type Deferred } from '@colyseus/core';
 import school from '../src/data/school.json' with { type: 'json' };
 import goldenbellMap from '../src/data/goldenbell.json' with { type: 'json' };
 import characters from '../src/data/characters.json' with { type: 'json' };
@@ -47,7 +47,7 @@ import { EscapeGame } from './EscapeGame.ts';
 import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
 import { MiniGames } from './MiniGame.ts';
-import { hasTeacherPassword, teacherPasswordMatches } from './password.ts';
+import { BLOCKED_TEXT, PEER_HEADER, checkTeacherAttempt, clientIp, hasTeacherPassword, teacherPasswordMatches } from './password.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../shared/escape.ts';
 
 /** 맵 id → 크기(칸) */
@@ -111,10 +111,41 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private beforeJudge = new Map<string, GbScore>();
   /** 전체 공지: 선생님 접속 id → 마지막으로 보낸 시각(ms). 너무 잦은 공지를 막는다. */
   private lastAnnounceAt = new Map<string, number>();
+  /**
+   * 이어 하기(2026-11-13 교사 요청): 방에서 나간 사람의 기록. 닉네임 → 나갈 때의 상태와, 그 뒤 방 전체에 일어난 일을 맞추는 데 쓰는 번호들.
+   * 같은 방에 같은 닉네임·같은 역할로 들어오면 이 기록을 이어 받는다.
+   */
+  private departed = new Map<string, { player: Player; sessionId: string; escapeVersion: number; gbGame: number; totalsEpoch: number }>();
+  /** 합계를 처음으로 돌린 횟수와 골든벨을 시작한 횟수(나간 사이에 일어났는지 보려고) */
+  private totalsEpoch = 0;
+  private gbGame = 0;
+  /** 다시 붙기를 기다리는 접속 id → 기다림. 같은 닉네임이 새로 들어오면 끝낸다. */
+  private reconnections = new Map<string, Deferred<Client>>();
+  /** 이어 받아 들어온 접속 id(화면이 한 번 물어 안내를 띄운다) */
+  private resumed = new Set<string>();
   /** 방을 만든 시각(ms). 선생님 첫 화면의 열린 방 목록에 쓴다. */
   readonly openedAt = Date.now();
   private readonly escape = new EscapeGame(this.state);
   private readonly mini = new MiniGames(this.state, this.clock);
+
+  /**
+   * 방 만들기·들어가기(matchmake) 때 먼저 불린다. 선생님(비밀번호를 넣음)이면 같은 IP의 잦은 실패를 막고 비밀번호를 본다.
+   * 학생은 막지 않는다. 비밀번호는 onCreate·onJoin에서도 한 번 더 본다(checkTeacher).
+   */
+  static async onAuth(_token: string | undefined, options: Partial<JoinOptions>, context: AuthContext) {
+    const password = options?.password;
+    if (typeof password !== 'string' || password === '') return true;
+    const ip = clientIp(context.headers.get(PEER_HEADER), context.headers.get('x-forwarded-for'));
+    switch (checkTeacherAttempt(ip, password, '방 만들기·들어가기')) {
+      case 'unset':
+        throw new ServerError(RejectCode.noTeacherPassword, '서버에 선생님 비밀번호가 설정되어 있지 않습니다.');
+      case 'blocked':
+        throw new ServerError(RejectCode.tooManyTries, BLOCKED_TEXT);
+      case 'wrong':
+        throw new ServerError(RejectCode.wrongPassword, '선생님 비밀번호가 맞지 않습니다.');
+    }
+    return true;
+  }
 
   onCreate(options: Partial<JoinOptions>) {
     checkTeacher(options?.password);
@@ -206,6 +237,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (p) this.mini.tug(client.sessionId, p);
     });
     this.onMessage('clock', (): number => Date.now());
+    // 이어 받아 들어왔는지(한 번만 true)
+    this.onMessage('resumed', (client: Client): boolean => this.resumed.delete(client.sessionId));
     this.onMessage('announce', (client: Client, message: AnnounceMessage) => this.announce(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
     this.onMessage('gbClose', (client: Client) => this.gbClose(client));
@@ -249,15 +282,35 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     if (!nickname) throw new ServerError(RejectCode.badNickname, '닉네임이 알맞지 않습니다.');
     const teacher = typeof options?.password === 'string' && options.password !== '';
     if (teacher) checkTeacher(options.password);
-    for (const p of this.state.players.values()) {
-      if (p.nickname === nickname) throw new ServerError(RejectCode.nicknameTaken, '같은 닉네임이 이미 있습니다.');
+    const role = teacher ? 'teacher' : 'student';
+    // 같은 닉네임이 다시 붙기를 기다리는 중이면 그 자리를 넘겨받는다. 지금 접속 중이거나 역할이 다르면 거절한다.
+    let waiting: { id: string; player: Player } | null = null;
+    for (const [id, p] of this.state.players) {
+      if (p.nickname !== nickname) continue;
+      if (p.online || p.role !== role) throw new ServerError(RejectCode.nicknameTaken, '같은 닉네임이 지금 들어와 있습니다.');
+      waiting = { id, player: p };
+    }
+    // 모르는 캐릭터면 기본 캐릭터로 받는다(거절하지 않는다). 이어 하기에서도 캐릭터는 새로 고른 것을 쓴다.
+    const character = options?.character;
+    const characterId = typeof character === 'string' && CHARACTER_IDS.has(character) ? character : DEFAULT_CHARACTER;
+    const record = waiting ? null : this.departed.get(nickname);
+    if (waiting || (record && record.player.role === role)) {
+      const player = waiting ? this.takeOver(waiting.id, waiting.player, client.sessionId) : this.restore(record!);
+      this.departed.delete(nickname);
+      player.character = characterId;
+      player.online = true;
+      player.activity = '';
+      player.activityObject = '';
+      player.lastProgressAt = this.state.now;
+      this.state.players.set(client.sessionId, player);
+      this.resumed.add(client.sessionId);
+      console.log(`방 ${this.roomId}: ${nickname} 다시 들어옴(이어 하기).`);
+      return;
     }
     const player = new Player();
     player.nickname = nickname;
-    player.role = teacher ? 'teacher' : 'student';
-    // 모르는 캐릭터면 기본 캐릭터로 받는다(거절하지 않는다).
-    const character = options?.character;
-    player.character = typeof character === 'string' && CHARACTER_IDS.has(character) ? character : DEFAULT_CHARACTER;
+    player.role = role;
+    player.character = characterId;
     // 반도 모르는 값이면 ''(반 없음)으로 받는다. 선생님은 반이 없다.
     player.classGroup = !teacher && classGroupName(String(options?.classGroup ?? '')) ? String(options.classGroup) : '';
     player.col = school.start.col;
@@ -268,21 +321,98 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.state.players.set(client.sessionId, player);
   }
 
+  /** 다시 붙기를 기다리던 자리를 새 접속이 넘겨받는다. 옛 접속의 기다림은 끝낸다(옛 접속의 onLeave는 아무것도 남기지 않는다). */
+  private takeOver(oldId: string, old: Player, newId: string): Player {
+    const player = old.clone();
+    this.state.players.delete(oldId);
+    const answer = this.shortAnswers.get(oldId);
+    this.shortAnswers.delete(oldId);
+    if (answer !== undefined) this.shortAnswers.set(newId, answer);
+    const before = this.beforeJudge.get(oldId);
+    this.beforeJudge.delete(oldId);
+    if (before) this.beforeJudge.set(newId, before);
+    this.lastAnnounceAt.delete(oldId);
+    this.leaveMiniRound(oldId, player);
+    this.reconnections.get(oldId)?.reject(false);
+    this.reconnections.delete(oldId);
+    return player;
+  }
+
+  /** 나간 사이에 방 전체에 일어난 일(방탈출 자료 바꾸기, 골든벨 시작·끝, 합계 처음으로)을 기록에 맞춘 뒤 돌려준다. */
+  private restore(record: { player: Player; sessionId: string; escapeVersion: number; gbGame: number; totalsEpoch: number }): Player {
+    const p = record.player;
+    if (record.escapeVersion !== this.state.escape.version) {
+      p.items.clear();
+      p.done.clear();
+      p.hints.clear();
+      p.pressed.clear();
+      p.wrongs.clear();
+      p.finished = false;
+      p.bonusHeart = false;
+    }
+    const playing = this.state.goldenbell.phase !== '';
+    const sameGame = record.gbGame === this.gbGame;
+    const wasIn = p.map === 'goldenbell';
+    // 나간 사이에 합계를 처음으로 돌렸으면 합계를 지운다. 같은 판을 하는 중이 아니면 이번 판 점수도(gbResetTotal과 같게).
+    const reset = record.totalsEpoch !== this.totalsEpoch;
+    if (reset) {
+      p.gbTotal = 0;
+      if (!(playing && sameGame)) p.gbScore = 0;
+    }
+    if (!sameGame) {
+      // 나간 사이에 새 골든벨이 시작됐다: 앞 판 점수를 합계에 넣는다(beginGoldenBell과 같게).
+      if (!reset) p.gbTotal += p.gbScore;
+      p.gbScore = 0;
+      if (playing) this.enterGoldenBell(p);
+      else p.map = 'school';
+    } else if (playing && !wasIn) this.enterGoldenBell(p);
+    else if (!playing) p.map = 'school';
+    // 골든벨 맵의 자리는 학교 맵에서 쓸 수 없으므로 시작 위치로 둔다.
+    if (wasIn && p.map === 'school') {
+      p.col = school.start.col;
+      p.row = school.start.row;
+    }
+    p.gbResult = playing && p.map === 'goldenbell' ? p.gbResult : '';
+    this.leaveMiniRound(record.sessionId, p);
+    return p;
+  }
+
+  /** 미니게임을 하는 중에 다시 들어오면 그 판은 빠진 것으로 둔다(점수 0, 탈락 표시 없음, 옛 id는 이번 판에서 뺌). */
+  private leaveMiniRound(oldId: string, p: Player) {
+    this.mini.forget(oldId);
+    p.miniScore = 0;
+    p.miniOut = false;
+  }
+
   onDrop(client: Client) {
     // 들어오다 거절된 접속(닉네임 겹침 등)에도 onDrop이 불린다. 그때 기다리기를 걸면 오류로 서버 전체가 꺼지므로,
     // 실제로 들어와 있던 접속만 다시 붙기를 기다린다.
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
     player.online = false;
-    this.allowReconnection(client, RECONNECT_SECONDS);
+    this.reconnections.set(client.sessionId, this.allowReconnection(client, RECONNECT_SECONDS));
   }
 
   onReconnect(client: Client) {
+    this.reconnections.delete(client.sessionId);
     const player = this.state.players.get(client.sessionId);
     if (player) player.online = true;
   }
 
   onLeave(client: Client) {
+    this.reconnections.delete(client.sessionId);
+    this.resumed.delete(client.sessionId);
+    const player = this.state.players.get(client.sessionId);
+    // 이어 하기: 나간 사람의 기록을 닉네임으로 남겨 둔다(방이 살아 있는 동안).
+    if (player) {
+      this.departed.set(player.nickname, {
+        player: player.clone(),
+        sessionId: client.sessionId,
+        escapeVersion: this.state.escape.version,
+        gbGame: this.gbGame,
+        totalsEpoch: this.totalsEpoch,
+      });
+    }
     this.state.players.delete(client.sessionId);
     if (this.shortAnswers.delete(client.sessionId)) this.state.goldenbell.submitted = this.shortAnswers.size;
     this.beforeJudge.delete(client.sessionId);
@@ -384,6 +514,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     // 앞 판의 점수를 합계에 넣고 새 판을 센다(합산 순위).
     for (const p of this.state.players.values()) p.gbTotal += p.gbScore;
     this.state.gbRounds += 1;
+    this.gbGame += 1;
     for (const p of this.state.players.values()) this.enterGoldenBell(p);
     console.log(`방 ${this.roomId}: 골든벨 "${set.title}"(${set.questions.length}문제)을 시작했습니다.`);
   }
@@ -589,6 +720,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (!playing) p.gbScore = 0;
     }
     this.state.gbRounds = playing ? 1 : 0;
+    this.totalsEpoch += 1;
     return ok;
   }
 

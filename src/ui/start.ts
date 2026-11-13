@@ -28,6 +28,38 @@ function rememberCharacter(id: string) {
   }
 }
 
+/** 이 기기에서 마지막으로 들어간 방(역할, 닉네임, 방 코드, 기억한 때). 끊겨서 첫 화면으로 돌아오면 다시 채운다. 비밀번호는 넣지 않는다. */
+const ENTRY_KEY = 'df-last-entry';
+/** 이보다 오래된 기억은 쓰지 않는다(다음 수업의 첫 화면에 지난 방 코드가 남지 않게). */
+const ENTRY_KEEP_MS = 3 * 60 * 60 * 1000;
+
+interface LastEntry {
+  role: 'student' | 'teacher';
+  nickname: string;
+  code: string;
+  at: number;
+}
+
+export function rememberEntry(role: 'student' | 'teacher', nickname: string, code: string) {
+  try {
+    const entry: LastEntry = { role, nickname, code, at: Date.now() };
+    localStorage.setItem(ENTRY_KEY, JSON.stringify(entry));
+  } catch {
+    // 기억하지 못해도 들어가는 데는 상관없다.
+  }
+}
+
+function rememberedEntry(): LastEntry | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(ENTRY_KEY) ?? 'null') as Partial<LastEntry> | null;
+    if (!v || (v.role !== 'student' && v.role !== 'teacher') || typeof v.nickname !== 'string' || typeof v.code !== 'string') return null;
+    if (typeof v.at !== 'number' || Date.now() - v.at > ENTRY_KEEP_MS) return null;
+    return { role: v.role, nickname: v.nickname.slice(0, MAX_NICKNAME), code: v.code.slice(0, CODE_LENGTH), at: v.at };
+  } catch {
+    return null;
+  }
+}
+
 /** 이 기기에서 마지막으로 고른 반 */
 const CLASS_KEY = 'df-class-group';
 
@@ -275,8 +307,15 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
       if (teacher && !nickname.value) nickname.value = '선생님';
       error.hidden = true;
     };
+    // 끊겨서 돌아왔으면 지난번 역할·닉네임·방 코드를 채워 둔다(반과 캐릭터는 따로 기억해 둔 것으로 골라져 있다).
+    const last = rememberedEntry();
+    if (last) {
+      teacher = last.role === 'teacher';
+      nickname.value = last.nickname;
+      code.value = last.code;
+    }
     render();
-    nickname.focus();
+    (teacher && last ? password : nickname).focus();
 
     switchRole.addEventListener('click', () => {
       teacher = !teacher;

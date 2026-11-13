@@ -1,44 +1,24 @@
 // 선생님 첫 화면의 열린 방 목록과 방 닫기(HTTP). 수업 서버는 인터넷에 열려 있으므로 둘 다 선생님 비밀번호가 맞아야 하고,
-// 같은 곳(IP)에서 비밀번호가 1분에 5번 넘게 틀리면 잠깐 받지 않는다. 비밀번호는 기록에 남기지 않는다.
+// 같은 곳(IP)에서 비밀번호가 1분에 5번 틀리면 잠깐 받지 않는다(방 만들기·들어가기와 합쳐 셈, server/password.ts). 비밀번호는 기록에 남기지 않는다.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { matchMaker } from '@colyseus/core';
 import { ROOMS_CLOSE_PATH, ROOMS_PATH, ROOM_NAME, type RoomsReply, type RoomsRequest } from '../shared/protocol.ts';
 import type { ClassRoom } from './ClassRoom.ts';
-import { hasTeacherPassword, teacherPasswordMatches } from './password.ts';
-
-const FAIL_WINDOW_MS = 60_000;
-const FAIL_LIMIT = 5;
-/** IP → 비밀번호가 틀린 시각들(최근 1분) */
-const failures = new Map<string, number[]>();
-
-/** 요청한 곳. Caddy·Tailscale serve·Vite가 앞에서 넘겨 주면(이 컴퓨터에서 온 연결) X-Forwarded-For의 마지막 값을 쓴다. */
-function clientIp(req: IncomingMessage): string {
-  const remote = req.socket.remoteAddress ?? '';
-  const local = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1';
-  const forwarded = req.headers['x-forwarded-for'];
-  const list = (Array.isArray(forwarded) ? forwarded.join(',') : (forwarded ?? '')).split(',').map((s) => s.trim()).filter(Boolean);
-  return local && list.length ? list[list.length - 1] : remote;
-}
-
-function recentFailures(ip: string, now: number): number[] {
-  const list = (failures.get(ip) ?? []).filter((t) => now - t < FAIL_WINDOW_MS);
-  if (list.length) failures.set(ip, list);
-  else failures.delete(ip);
-  return list;
-}
+import { BLOCKED_TEXT, checkTeacherAttempt, clientIp } from './password.ts';
 
 /** 비밀번호를 본다. 맞으면 null, 아니면 [응답 번호, 까닭] */
 function checkPassword(req: IncomingMessage, password: unknown): [number, string] | null {
-  if (!hasTeacherPassword()) return [503, '서버에 선생님 비밀번호가 설정되어 있지 않습니다.'];
-  const ip = clientIp(req);
-  const now = Date.now();
-  const recent = recentFailures(ip, now);
-  if (recent.length >= FAIL_LIMIT) return [429, '비밀번호가 여러 번 틀렸습니다. 1분 뒤 다시 합니다.'];
-  if (teacherPasswordMatches(password)) return null;
-  recent.push(now);
-  failures.set(ip, recent);
-  console.log(`열린 방 목록: 선생님 비밀번호가 틀렸습니다(${ip}, 1분 안에 ${recent.length}번).`);
-  return [403, '선생님 비밀번호가 맞지 않습니다.'];
+  const ip = clientIp(req.socket.remoteAddress, req.headers['x-forwarded-for']);
+  switch (checkTeacherAttempt(ip, password, '열린 방 목록')) {
+    case 'ok':
+      return null;
+    case 'unset':
+      return [503, '서버에 선생님 비밀번호가 설정되어 있지 않습니다.'];
+    case 'blocked':
+      return [429, BLOCKED_TEXT];
+    case 'wrong':
+      return [403, '선생님 비밀번호가 맞지 않습니다.'];
+  }
 }
 
 function send(res: ServerResponse, status: number, body: RoomsReply) {

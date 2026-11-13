@@ -74,7 +74,7 @@ const wrongCode = code === '0000' ? '0001' : '0000';
 await a.enter({ nickname: '가람', code: wrongCode });
 check('없는 방 코드면 안내', /인 방이 없습니다/.test((await a.error()) ?? ''), await a.error());
 await a.enter({ nickname: '선생님', code });
-check('겹치는 닉네임이면 안내', /같은 닉네임/.test((await a.error()) ?? ''), await a.error());
+check('겹치는 닉네임이면 안내(지금 들어와 있으면 거절, 조금 뒤 다시)', /같은 닉네임이 지금 들어와 있습니다/.test((await a.error()) ?? '') && /조금 뒤 다시/.test((await a.error()) ?? ''), await a.error());
 await a.shot('nickname-taken');
 await a.enter({ nickname: '가람', code, character: 'char-03', classGroup: 'aisw' });
 check('학생 A가 방 코드로 들어감', (await a.js(`window.__df?.code()`)) === code);
@@ -103,14 +103,14 @@ const drawnChars = await teacher.js(`__df.drawn().map((d) => d.character).sort()
 check('선생님 화면에 학생이 고른 캐릭터로 그려짐', drawnChars === 'char-03,char-05', drawnChars);
 check('학생 A가 선생님과 학생 B를 봄', (await a.js(`__df.others().map((o) => o.nickname).sort().join(',')`)) === '나래,선생님');
 
-// ---- 학생 B(태블릿): 화면 왼쪽 절반 아무 데나 누르면 그 자리에 조이스틱이 나타나고, 끌면 움직인다 ----
+// ---- 학생 B(태블릿): 화면 어디든(오른쪽 절반도) 누르면 그 자리에 조이스틱이 나타나고, 끌면 움직인다 ----
 const joy = () => b.js(`(() => {
   const z = document.querySelector('.df-joystick-zone');
   const j = document.querySelector('.df-joystick');
   const zr = z.getBoundingClientRect();
   const r = j.getBoundingClientRect();
   return {
-    zone: !z.hidden && zr.left === 0 && zr.top === 0 && Math.abs(zr.width - innerWidth / 2) < 1 && Math.abs(zr.height - innerHeight) < 1,
+    zone: !z.hidden && zr.left === 0 && zr.top === 0 && Math.abs(zr.width - innerWidth) < 1 && Math.abs(zr.height - innerHeight) < 1,
     shown: !j.hidden, x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2, left: r.left, bottom: r.bottom,
   };
 })()`);
@@ -119,13 +119,15 @@ await b.js(`__df.teleport(11.5, 8.5)`);
 await wait(200);
 const [vw, vh] = await b.js(`[innerWidth, innerHeight]`);
 let j = await joy();
-check('조이스틱: 영역은 화면 왼쪽 절반(높이 전체), 손대지 않으면 보이지 않음', j.zone && !j.shown);
-const at = { x: Math.round(vw * 0.3), y: Math.round(vh * 0.45) };
+check('조이스틱: 영역은 화면 전체, 손대지 않으면 보이지 않음', j.zone && !j.shown);
+const at = { x: Math.round(vw * 0.7), y: Math.round(vh * 0.45) };
+check('조이스틱: 오른쪽 절반의 누를 자리에 단추·창이 없음(조이스틱 영역이 받음)',
+  (await b.js(`document.elementFromPoint(${at.x}, ${at.y})?.className`)) === 'df-joystick-zone', await b.js(`document.elementFromPoint(${at.x}, ${at.y})?.className`));
 const bBefore = await b.js(`__df.pos()`);
 await b.touch('touchStart', [{ x: at.x, y: at.y }]);
 await wait(100);
 j = await joy();
-check('조이스틱: 왼쪽 절반을 누른 자리를 가운데로 나타남', j.shown && Math.abs(j.x - at.x) < 1 && Math.abs(j.y - at.y) < 1,
+check('조이스틱: 오른쪽 절반을 누른 자리를 가운데로 나타남', j.shown && Math.abs(j.x - at.x) < 1 && Math.abs(j.y - at.y) < 1,
   `누른 곳 ${at.x}, ${at.y} / 가운데 ${j.x.toFixed(0)}, ${j.y.toFixed(0)}`);
 await b.touch('touchMove', [{ x: at.x + j.r, y: at.y }]);
 await wait(100);
@@ -1209,6 +1211,7 @@ check('두 번째 판 끝: 모두 학교 맵으로', (await maps()) === 'school,
 // ---- 학생 B, C가 창을 닫으면 CCTV에 연결 끊김, 다시 붙기 시간(20초)이 지난 뒤 사라짐 ----
 await clickText(teacher, '.df-hud button', 'CCTV 보기');
 await wait(300);
+const bBeforeClose = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
 await b.close();
 await c.close();
 await wait(1000);
@@ -1219,6 +1222,36 @@ check('20초 뒤 선생님 화면에서 사라짐', (await teacher.js(`__df.othe
 check('CCTV: 학생 1명', /학생 1명/.test((await cctvText()) ?? '') && (await rowText('나래')) === null);
 await clickText(teacher, '.df-cctv button', 'CCTV 끄기');
 check('선생님 화면: 학생 1명 접속', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes('학생 1명 접속'));
+
+// ---- 이어 하기: 창을 닫고 20초가 지난 학생 B(나래)가 같은 닉네임으로 다시 들어오면 진행·점수·반·자리를 이어 받는다(캐릭터는 새로 고른 것) ----
+const progressOf = (p) => p && JSON.stringify({ done: [...p.done].sort(), items: [...p.items].sort(), finished: p.finished, gbScore: p.gbScore, gbTotal: p.gbTotal,
+  gbLives: p.gbLives, gbOut: p.gbOut, classGroup: p.classGroup });
+const b2 = await openPage('student-b2', touchUrl, { touch: true });
+await b2.enter({ nickname: '나래', code, character: 'char-02', classGroup: 'aisw' });
+for (let i = 0; i < 40 && (await b2.js(`typeof window.__df?.pos === 'function'`)) !== true; i++) await wait(250);
+await wait(600);
+const nb = await teacher.js(`__df.others().find((o) => o.nickname === '나래')`);
+check('이어 하기: 같은 닉네임으로 들어오면 마친 미션·물건·골든벨 점수·합계·목숨·반을 이어 받음', bBeforeClose.done.length > 0 &&
+  progressOf(nb) === progressOf(bBeforeClose) && nb.classGroup === 'science', `${progressOf(bBeforeClose)} → ${progressOf(nb)}`);
+check('이어 하기: 캐릭터는 새로 고른 것', nb?.character === 'char-02', nb?.character);
+const b2Pos = await b2.js(`__df.pos()`);
+check('이어 하기: 학교 맵의 있던 자리에 섬', (await b2.js(`__df.map()`)) === 'school' && Math.hypot(b2Pos.col - bBeforeClose.col, b2Pos.row - bBeforeClose.row) < 1,
+  `전 ${bBeforeClose.col.toFixed(1)},${bBeforeClose.row.toFixed(1)} → ${b2Pos.col.toFixed(1)},${b2Pos.row.toFixed(1)}`);
+const resumedNote = await b2.js(`__df.announcement()`);
+check('이어 하기: 화면에 "하던 것을 이어서 합니다." 안내, 이야기 카드는 다시 뜨지 않음', resumedNote?.title === '다시 들어왔습니다' && resumedNote?.text === '하던 것을 이어서 합니다.' &&
+  (await b2.dialogText()) === null, `${JSON.stringify(resumedNote)} | ${fmt(await b2.dialogText())}`);
+check('이어 하기: 선생님 화면에 나래는 한 명', (await teacher.js(`__df.others().filter((o) => o.nickname === '나래').length`)) === 1);
+// 창을 닫은 직후(다시 붙기를 기다리는 중)에 같은 닉네임으로 들어오면 그 자리를 넘겨받는다.
+await b2.close();
+await wait(1000);
+check('이어 하기: 창을 닫은 직후에는 연결 끊김으로 남아 있음', (await teacher.js(`__df.others().find((o) => o.nickname === '나래')?.online`)) === false);
+const b3 = await openPage('student-b3', touchUrl, { touch: true });
+await b3.enter({ nickname: '나래', code, character: 'char-04' });
+for (let i = 0; i < 40 && (await b3.js(`typeof window.__df?.pos === 'function'`)) !== true; i++) await wait(250);
+await wait(2000);
+const nb3 = await teacher.js(`__df.others().filter((o) => o.nickname === '나래')`);
+check('이어 하기: 다시 붙기를 기다리는 자리를 새 접속이 넘겨받음(한 명, 접속 중, 진행 그대로)', nb3.length === 1 && nb3[0].online === true &&
+  progressOf(nb3[0]) === progressOf(bBeforeClose) && nb3[0].character === 'char-04', JSON.stringify(nb3.map(progressOf)));
 
 // ---- 선생님이 방 코드로 다시 들어오기(새로고침) ----
 const teacher2 = await openPage('teacher2', touchUrl, { touch: true });
@@ -1333,16 +1366,28 @@ check('방 닫기: 목록에서 사라지고 다른 방은 그대로', (await ro
 await clickText(guest, '.df-dialog .df-button', '확인');
 await wait(2000);
 check('방 닫기: 학생이 확인을 누르면 첫 화면', (await guest.js(`!!document.querySelector('.df-start') && typeof window.__df === 'undefined'`)) === true);
+const prefill = await guest.js(`[document.getElementById('df-nickname').value, document.getElementById('df-code').value, document.getElementById('df-password').value]`);
+check('끊겨서 첫 화면으로 오면 닉네임·방 코드를 다시 채워 둠(비밀번호는 없음)', prefill[0] === '다래' && prefill[1] === closeCode && prefill[2] === '', JSON.stringify(prefill));
 await guest.enter({ nickname: '다래', code: closeCode });
 check('방 닫기: 서버에서 방이 사라져 그 코드로 들어갈 수 없음', /인 방이 없습니다/.test((await guest.error()) ?? ''), await guest.error());
 check('방 닫기: 닫은 방이 아닌 학생은 그대로', (await a.js(`__df.code()`)) === code && (await a.dialogText()) === null);
-// 비밀번호가 1분에 5번 넘게 틀리면 맞는 비밀번호도 잠깐 받지 않는다(이 확인 뒤에는 목록을 열지 않는다).
+// 같은 IP에서 선생님 비밀번호가 1분에 5번 틀리면(목록에서 2번 + 방 만들기에서 3번을 합쳐 셈) 맞는 비밀번호도 1분 동안 받지 않는다.
+// 학생 입장은 막지 않는다. 이 확인 뒤에는 선생님으로 들어가지 않는다.
 const post = (pw) => fetch(roomsApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) });
-const tries = [];
-for (let i = 0; i < 5; i++) tries.push((await post('wrong-' + i)).status);
+const wrongCreates = [];
+for (let i = 0; i < 3; i++) {
+  await admin.enter({ teacher: true, nickname: '선생님3', pw: 'wrong-' + i });
+  wrongCreates.push((await admin.error()) ?? '');
+}
+check('잦은 실패 막기: 틀린 비밀번호로 방 만들기는 "맞지 않습니다"', wrongCreates.every((t) => /비밀번호가 맞지 않습니다/.test(t)), wrongCreates.join(' | '));
+await admin.enter({ teacher: true, nickname: '선생님3', pw: password });
+check('잦은 실패 막기: 목록과 방 만들기에서 합쳐 5번 틀리면 맞는 비밀번호로 방 만들기도 막힘',
+  /여러 번 틀려 1분 동안 막았습니다/.test((await admin.error()) ?? '') && (await admin.js(`typeof window.__df`)) === 'undefined', await admin.error());
 const blocked = await post(password);
-check('열린 방 목록: 1분에 5번 넘게 틀리면 맞는 비밀번호도 잠깐 거절', tries.slice(0, 3).every((t) => t === 403) && tries.at(-1) === 429 && blocked.status === 429 &&
-  /1분 뒤/.test((await blocked.json()).error ?? ''), `${tries.join(',')} → ${blocked.status}`);
+check('잦은 실패 막기: 열린 방 목록도 막힘(429)', blocked.status === 429 && /1분 동안 막았습니다/.test((await blocked.json()).error ?? ''), String(blocked.status));
+await guest.enter({ nickname: '라온', code });
+for (let i = 0; i < 40 && (await guest.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
+check('잦은 실패 막기: 학생 입장은 막지 않음', (await guest.js(`__df.code()`)) === code);
 
 check('콘솔 오류 없음', consoleErrors.length === 0, consoleErrors.join(' | '));
 console.log(results.join('\n'));
