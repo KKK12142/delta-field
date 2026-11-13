@@ -293,6 +293,7 @@ export const uiSize = {
   cardImageWidth: '40px',
   cardImageHeight: '56px',
   rankMin: '220px',
+  gbMineMax: '240px', // 골든벨 학생 오른쪽 위(목숨·점수·힌트 수첩·순위)의 너비 상한
   // 보상 카드: 맞음 도장 24×24 2배, 반짝임 9×9 2배(4프레임 시트 36×9), 빛살 48×48 2배 위에 힌트 카드 40×56 1배
   stampSize: '48px',
   sparkleSize: '18px',

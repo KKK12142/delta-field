@@ -813,6 +813,34 @@
   flex: 1;
   min-width: 0;
 }
+/* 학생 오른쪽 위: 힌트 수첩 아래에 이번 판 순위(작은 얼굴, 작은 글). 너비를 묶어 지도를 덜 가린다. */
+.df-gb-mine {
+  max-width: var(--df-gb-mine-max);
+}
+.df-gb-live {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+}
+.df-gb-live .df-rank {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--df-hud-gap);
+}
+.df-gb-live .df-rank-face {
+  width: var(--df-board-face-width);
+  height: var(--df-board-face-height);
+}
+.df-gb-live .df-rank-medal {
+  width: var(--df-life-icon);
+  height: var(--df-life-icon);
+}
+.df-gb-live .df-rank-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: var(--df-hud-gap);
+}
 .df-gb-question {
   font-size: var(--df-font-title);
   line-height: 1.25;

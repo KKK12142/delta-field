@@ -952,31 +952,41 @@ await wait(500);
 check('골든벨 중에도 힌트 수첩을 봄(4/4)', /힌트 수첩 \(4\/4\)/.test((await a.dialogText()) ?? '') && /운동량/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));
 await a.press('Escape');
 await wait(300);
-// 골든벨 맵: 문제 카드 아래 끝에 내 몸통이 걸치게 세우면 카드에 구멍이 생긴다(지도는 카드 아래에 맞추므로 머리·목숨 글이 걸칠 때 쓰인다).
+// 골든벨 맵(학생은 학교 맵처럼 따라간다): A가 맨 아래에 서면 맵 위쪽은 문제 카드 뒤로 간다. 거기 선 B 자리에 카드 구멍이 생긴다.
 const gbFrom = await a.js(`__df.pos()`);
-await a.js(`(() => {
+const bFrom = await b.js(`__df.pos()`);
+await a.js(`__df.teleport(9.5, 15.5)`);
+await wait(2500);
+const bRow = await a.js(`(() => {
   const card = document.querySelector('.df-gb-card').getBoundingClientRect(), cam = __df.camera();
-  const tile = cam.zoom * ${size.tile};
-  const col = (card.left + card.width / 2 - cam.map.x) / tile;
-  const row = (card.bottom - 4 - cam.map.y) / tile + ${size.avatarHeight / 2 / size.tile};
-  __df.teleport(col, row);
+  return (card.top + card.height / 2 - cam.map.y) / (cam.zoom * ${size.tile}) + ${size.avatarHeight / 2 / size.tile};
 })()`);
-await wait(400);
-const gbHole = await holeOf('.df-gb-card');
-check('안내 뚫기: 골든벨 문제 카드 뒤에 들어가면 그 자리에 구멍이 생김', gbHole.under && /radial-gradient/.test(gbHole.mask),
-  `캐릭터가 카드 뒤 ${gbHole.under}, mask ${gbHole.mask.slice(0, 60)}`);
+await b.js(`__df.teleport(9.5, ${bRow})`);
+await wait(1500);
+const gbHole = await a.js(`(() => {
+  const n = document.querySelector('.df-gb-card'), r = n.getBoundingClientRect(), s = __df.screenOf('나래');
+  return { mask: getComputedStyle(n).maskImage || getComputedStyle(n).webkitMaskImage || 'none',
+    under: !!s && s.x > r.left && s.x < r.right && s.y > r.top && s.y < r.bottom };
+})()`);
+check('안내 뚫기: 골든벨 문제 카드 뒤에 다른 학생이 들어가면 그 자리에 구멍이 생김', gbHole.under && /radial-gradient/.test(gbHole.mask),
+  `나래가 카드 뒤 ${gbHole.under}(${bRow.toFixed(1)}행), mask ${gbHole.mask.slice(0, 60)}`);
 await a.shot('see-through-goldenbell');
+await b.js(`__df.teleport(${bFrom.col}, ${bFrom.row})`);
 await a.js(`__df.teleport(${gbFrom.col}, ${gbFrom.row})`);
-await wait(400);
+await wait(2500);
 check('안내 뚫기: 골든벨 카드 뒤에서 나오면 구멍이 사라짐', (await holeOf('.df-gb-card')).mask === 'none');
 const looks = (pg) => pg.js(`__df.looks()`);
 let la = await looks(a);
 check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 하트 5개, B는 3개)', la.me.tag === '♥♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
   JSON.stringify(la));
 await teacher.shot('gb-ready');
-const gm = (await a.js(`__df.camera()`)).map;
-check('골든벨 맵은 화면에 전체가 맞춰짐(따라가지 않음)', gm.x >= 0 && gm.y >= 0 && gm.x + gm.w <= aw && gm.y + gm.h <= ah,
+const [tw, th2] = await teacher.js(`[innerWidth, innerHeight]`);
+const gm = (await teacher.js(`__df.camera()`)).map;
+check('골든벨 선생님 화면은 맵 전체가 맞춰짐(따라가지 않음)', gm.x >= 0 && gm.y >= 0 && gm.x + gm.w <= tw && gm.y + gm.h <= th2,
   `맵 화면 ${gm.x.toFixed(0)},${gm.y.toFixed(0)} ${gm.w.toFixed(0)}×${gm.h.toFixed(0)}`);
+const ga = await a.js(`__df.camera()`);
+check('골든벨 학생 화면은 학교 맵처럼 화면 가득, 같은 배율로 나를 따라감', Math.abs(ga.zoom - zoomA) < 1e-6 && (ga.map.w > aw || ga.map.h > ah),
+  `배율 ${ga.zoom} (학교 ${zoomA}), 맵 화면 ${ga.map.w.toFixed(0)}×${ga.map.h.toFixed(0)}`);
 
 // 골든벨 맵의 답 구역 가운데쯤(구역은 4행부터, 가운데 9열은 통로)
 const ZONE = { O: [4.5, 6.5], X: [14.5, 6.5], 1: [4.5, 6.5], 2: [14.5, 6.5], 3: [4.5, 12.5], 4: [14.5, 12.5], 밖: [9.5, 6.5] };
@@ -1015,11 +1025,41 @@ la = await looks(a);
 check('골든벨 1번: 정답 공개 때 다시 모두 보이고 목숨이 줄어 보임', la.others['나래'].alpha === 1 && la.others['나래'].tag === '♥♥♡' && (await looks(b)).me.tag === '♥♥♡',
   JSON.stringify(la.others['나래']));
 await b.shot('gb-wrong');
+// 학생 화면: 힌트 수첩 아래에 이번 판 순위(문제를 푸는 중·정답 공개 때), 접고 펼 수 있다.
+const liveRank = (pg) => pg.js(`(() => { const l = document.querySelector('.df-gb-live'); return l && !l.hidden ? l.innerText : null; })()`);
+check('골든벨 학생 화면: 힌트 수첩 아래에 순위(가람 1점 1위, 나래 0점 2위)',
+  /1위\s*가람\s*1점[\s\S]*2위\s*나래\s*0점/.test((await liveRank(a)) ?? '') && /1위\s*가람\s*1점/.test((await liveRank(b)) ?? ''), fmt(await liveRank(a)));
+await clickText(a, '.df-gb button', '순위 접기');
+const folded = await liveRank(a);
+await clickText(a, '.df-gb button', '순위 펴기');
+check('골든벨 학생 화면: 순위 접기·펴기', folded === null && (await liveRank(a)) !== null);
 
 await gbRound(3, 1, async () => {
   check('골든벨 2번: 객관식 구역별 인원', /1 1명 · 2 0명 · 3 1명 · 4 0명 · 구역 밖 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
   await a.shot('gb-choice');
 });
+// 객관식 정답 공개(문제 카드가 길다): 학생 화면 배율은 학교 맵과 같고, 맨 윗줄로 가면 맵 위쪽이 카드 아래로 내려와 구역이 가리지 않는다.
+// 태블릿 크기(가로 1024×768, 세로 768×1024)에서도 본다.
+const gbTop = async (label) => {
+  await a.js(`__df.teleport(2.5, 3)`); // 맨 윗줄 바닥(2행, 무대 옆)
+  await wait(2500);
+  const v = await a.js(`(() => { const c = __df.camera(); return { zoom: c.zoom, dpr: c.dpr, mapY: c.map.y, card: document.querySelector('.df-gb').getBoundingClientRect().bottom, w: innerWidth, h: innerHeight }; })()`);
+  const ideal = (Math.min(v.w, v.h) * v.dpr) / (size.viewTiles * size.tile);
+  const want = (freeRender ? ideal : Math.max(1, Math.round(ideal * 2)) / 2) / v.dpr;
+  check(`골든벨 학생 화면(${label}): 객관식에도 학교 맵과 같은 배율, 맨 윗줄 구역이 카드에 가리지 않음`,
+    Math.abs(v.zoom - Math.min(size.zoomMax, want)) < 1e-6 && v.mapY >= v.card - 1, `배율 ${v.zoom} (기대 ${want}), 맵 위 끝 ${v.mapY.toFixed(0)}, 안내 아래 끝 ${v.card.toFixed(0)}`);
+  await a.shot(`gb-choice-${label}`);
+  await a.js(`__df.teleport(4.5, 6.5)`);
+  await wait(2500);
+  await a.shot(`gb-choice-${label}-zone`);
+};
+check('골든벨 학생 화면: 객관식 문제 카드에도 배율은 학교 맵과 같음', Math.abs((await a.js(`__df.camera().zoom`)) - zoomA) < 1e-6);
+await gbTop('기본창');
+await a.resize({ width: 1024, height: 768 });
+await gbTop('1024x768');
+await a.resize({ width: 768, height: 1024 });
+await gbTop('768x1024');
+await a.resize(null);
 check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.test((await gbCard(a)) ?? '') && /목숨이 1개 남았습니다/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
 
 await gbRound('X', 'O');

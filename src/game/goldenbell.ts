@@ -68,11 +68,13 @@ export interface CardView {
   choices: string[];
 }
 
-/** 학생 오른쪽 위: 내 목숨·점수·서 있는 곳 */
+/** 학생 오른쪽 위: 내 목숨·점수·서 있는 곳, 힌트 수첩 아래의 이번 판 순위(문제를 푸는 중·정답 공개 때) */
 export interface MineView {
   lives: string;
   score: string;
   where: string;
+  /** 위쪽 RANKING_LIVE명과, 그 안에 없으면 내 줄. 시작 전과 끝난 뒤(문제 카드에 순위가 있다)에는 비운다. */
+  ranking: RankRow[];
 }
 
 /** 선생님 오른쪽 창 */
@@ -114,8 +116,10 @@ export function livesTag(p: Player) {
   return `${'♥'.repeat(p.gbLives)}${'♡'.repeat(Math.max(0, GB_LIVES - p.gbLives))}`;
 }
 
-/** 학생에게 보이는 순위 수 */
+/** 학생에게 보이는 순위 수(끝났을 때 문제 카드) */
 const RANKING_FOR_STUDENTS = 10;
+/** 학생 오른쪽 위(힌트 수첩 아래)에 늘 보이는 순위 수(교사 요청 2026-11-13). 지도를 덜 가리게 적게 */
+const RANKING_LIVE = 3;
 
 const typeName = (type: string) => ({ ox: 'OX', choice: '객관식', short: '단답형' })[type] ?? type;
 
@@ -166,8 +170,8 @@ export function totalRanking(players: Player[], me?: Player): RankRow[] {
 }
 
 /** 학생 화면의 순위: 위쪽 몇 명과, 그 안에 없으면 내 줄 */
-function topAndMe(all: RankRow[]): RankRow[] {
-  const top = all.slice(0, RANKING_FOR_STUDENTS);
+function topAndMe(all: RankRow[], n = RANKING_FOR_STUDENTS): RankRow[] {
+  const top = all.slice(0, n);
   const mine = all.find((r) => r.me);
   return mine && !top.includes(mine) ? [...top, mine] : top;
 }
@@ -277,7 +281,7 @@ export function cardView(gb: GoldenBell, me: Player | undefined, players: Player
   return view;
 }
 
-export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
+export function mineView(gb: GoldenBell, me: Player, zones: Zones, players: Player[]): MineView {
   const lives = me.gbOut
     ? `탈락 ${livesTag(me)} · ${GB_REVIVE_CORRECT - me.gbRevive}문제를 맞히면 다시 살아납니다`
     : `목숨 ${livesTag(me)}`;
@@ -286,7 +290,8 @@ export function mineView(gb: GoldenBell, me: Player, zones: Zones): MineView {
     const zone = zoneAt(activeZones(zones, gb.type, gb.choices.length), me.col, me.row);
     where = `서 있는 곳: ${zone || '구역 밖'}`;
   }
-  return { lives, score: `점수 ${me.gbScore}점`, where };
+  const rows = gb.phase === 'question' || gb.phase === 'reveal' ? topAndMe(ranking(players, me), RANKING_LIVE) : [];
+  return { lives, score: `점수 ${me.gbScore}점`, where, ranking: rows };
 }
 
 /** 학생 현황: 이번 판 점수 순(같은 점수는 닉네임 순), reveal이면 이번 문제 맞음/틀림을 단다. */
