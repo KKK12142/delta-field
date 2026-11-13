@@ -1,4 +1,4 @@
-// 맵 위 이름표 판: 어두운 도트 판(ui/panel-dark, 내 것은 노란 안테 ui/tag-me) 9-slice 위에 Galmuri9 흰 글자.
+// 맵 위 이름표 판: 어두운 도트 판(ui/panel-dark, 내 것은 노란 안테 ui/tag-me) 9-slice 위에 Galmuri9 흰 글자(내 것은 강조색 글자).
 // 사물 "이름 · 살펴보기"와 캐릭터 닉네임에 쓴다. 판은 도트 단위로 만들고 dotScale배로 그린다(docs/art.md "UI 그림").
 // 묶음(Container)의 (0, 0)은 판의 가운데 아래다.
 import { GameObjects, type Scene } from 'phaser';
@@ -21,7 +21,7 @@ export class Plate extends GameObjects.Container {
       ? scene.add.nineslice(0, 0, TEXTURE[skin], undefined, 2 * s + 2, 2 * s + 2, s, s, s, s).setOrigin(0.5, 1).setScale(d)
       : scene.add.rectangle(0, 0, 10, 10, 0x000000, 0.6).setOrigin(0.5, 1);
     this.label = scene.add
-      .text(0, 0, text, { fontFamily: fontFamilySmall, fontSize: size.plateFont, color: color.plateText, resolution: size.textResolution })
+      .text(0, 0, text, { fontFamily: fontFamilySmall, fontSize: size.plateFont, color: skin === 'me' ? color.plateMeText : color.plateText, resolution: size.textResolution })
       .setOrigin(0.5, 1);
     this.add([this.bg, this.label]);
     this.fit();

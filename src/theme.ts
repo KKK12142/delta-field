@@ -22,6 +22,8 @@ export const color = {
     auditorium: { top: 0x6582a0, face: 0xa0624a }, // 강당 앞면 벽(그림이 없을 때)
   },
   avatarShadow: 0x000000,
+  meMark: 0xffd23f, // 내 캐릭터 표시(발밑 고리, 머리 위 ▼, 교사 요청 2026-11-13)
+  meMarkLine: 0x2e2a26, // ▼의 테두리
   highlight: 0xf2b134,
   label: '#3a3a3a',
   labelOnDark: '#ffffff',
@@ -47,6 +49,7 @@ export const color = {
   // 골든벨: 머리 위 목숨
   livesText: '#d23c4e',
   plateText: '#ffffff', // 이름표 판(어두운 판) 위 글자
+  plateMeText: '#ffd23f', // 내 이름표 글자(강조색, meMark와 같은 색)
   signText: '#ffffff', // 교실 이름판·현수막 글자
   objectShadow: 0x1d1531, // 사물 그림자
   // 미니게임(그림이 없을 때의 도형)
@@ -177,6 +180,16 @@ export const size = {
   tagPadX: 5,
   tagPadY: 2,
   tagGap: 3, // 닉네임과 지금 하는 일 표시 사이(픽셀)
+  // 내 캐릭터 표시(학생 화면의 나, 선생님 화면의 선생님 자신. 많이 모여도 내 캐릭터를 찾게)
+  meRingWidth: 56, // 발밑 고리(타원) 너비(픽셀)
+  meRingHeight: 22,
+  meRingLine: 3, // 고리 선 두께(픽셀)
+  meArrowWidth: 20, // 머리 위 ▼ 너비(픽셀)
+  meArrowHeight: 15,
+  meArrowLine: 2, // ▼ 테두리 두께
+  meArrowGap: 4, // 이름표(또는 목숨) 위 끝과 ▼ 사이(픽셀)
+  meArrowBob: 4, // ▼가 위아래로 움직이는 거리(픽셀)
+  meDepthBias: 120, // 내 캐릭터를 그리는 깊이에 더하는 값(캐릭터 키 avatarHeight만큼: 겹치는 다른 캐릭터보다 늘 앞)
   followLerp: 0.15, // 화면이 따라가는 아바타(나, CCTV로 고른 학생)를 쫓는 빠르기(0~1, 클수록 바로)
   // CCTV 전체 보기는 지도가 작아(배율 0.35쯤) 학생 캐릭터는 적어도 cctvAvatarZoom, 닉네임·표시는 적어도 cctvTextZoom 배율일 때만큼 크게 보인다.
   cctvAvatarZoom: 0.4,
@@ -379,6 +392,8 @@ export const alpha = {
   zoneCorrect: 0.6, // 정답 공개: 정답 구역
   zoneDim: 0.08, // 정답 공개: 나머지 구역
   outAvatar: 0.4, // 골든벨에서 탈락한 학생
+  meRingFill: 0.25, // 내 발밑 고리 안쪽
+  meRingLow: 0.45, // 고리가 숨 쉴 때 가장 흐린 투명도
   openDoor: 0.25, // 연 문(지나갈 수 있음)
   objectShadow: 0.28, // 사물 그림자
   pitchLine: 0.85, // 운동장 경기장 선
@@ -389,6 +404,9 @@ export const motion = {
   speed: 4.4, // 칸/초(2026-11-13 교사 요청으로 4에서 10% 빠르게)
   joystickDeadZone: 0.15,
   walkFps: 8, // 걷기 애니메이션 빠르기(프레임/초)
+  meRingMs: 900, // 내 발밑 고리가 커졌다 작아지는 반 주기(ms)
+  meRingScale: 1.18, // 그때 가장 큰 배율
+  meArrowMs: 600, // 머리 위 ▼가 오르내리는 반 주기(ms)
   facingKeep: 0.7, // 대각선으로 갈 때 지금 보는 쪽의 성분이 다른 쪽의 이 비율 이상이면 방향을 바꾸지 않는다(깜빡임 막기)
   remoteWalkGap: 3, // 다른 사람 아바타가 서버 위치와 이 거리(픽셀) 넘게 떨어져 있으면 걷는 중으로 본다
   remoteSmoothing: 90, // 다른 사람 아바타가 서버 위치를 따라가는 빠르기(ms, 작을수록 바로 따라감)

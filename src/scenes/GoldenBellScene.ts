@@ -100,7 +100,7 @@ export class GoldenBellScene extends MapScene {
       },
       /** 보이는 모습: 내 아바타와 다른 사람 아바타의 투명도와 머리 위 글 */
       looks: () => ({
-        me: { alpha: this.avatar.alpha, tag: this.avatar.tag?.visible ? this.avatar.tag.text : null },
+        me: { alpha: this.avatar.shownAlpha, tag: this.avatar.tag?.visible ? this.avatar.tag.text : null },
         others: Object.fromEntries(
           [...this.remotes].map(([id, r]) => [
             this.net.room.state.players.get(id)?.nickname ?? id,

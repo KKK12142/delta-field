@@ -5,7 +5,7 @@
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 사물 위치는 src/data/school.json에, 미션 답 번호는 escape/example.yaml에 맞춰 두었다. 맵이나 예시 자료를 바꾸면 함께 고친다.
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { seeThrough, size, uiSize } from '../src/theme.ts';
+import { color, seeThrough, size, uiSize } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
 import { startDelayProxy } from './lib/delay-proxy.mjs';
 
@@ -279,6 +279,11 @@ const wantDevice = freeRender ? idealDevice : Math.max(1, Math.round(idealDevice
 check(`카메라: 확대는 짧은 쪽 ${size.viewTiles}칸 배율에${freeRender ? ' 맞춤' : ' 가장 가까운 캔버스 픽셀 1/2 단위'}`, Math.abs(c1.deviceZoom - wantDevice) < 1e-6,
   `짧은 쪽 ${shortSide.toFixed(1)}칸, 확대 ${c1.zoom.toFixed(3)}(캔버스 ${c1.deviceZoom}, 비율 ${c1.dpr.toFixed(2)}, ${size.viewTiles}칸이면 ${(idealDevice / c1.dpr).toFixed(2)})`);
 await a.shot('camera-hall');
+// 내 캐릭터 표시(교사 요청 2026-11-13): 내 아바타에만 발밑 고리·머리 위 ▼·강조색 이름표, 깊이는 발 y + meDepthBias
+const marksOk = (m) => m.me.marked && m.me.plate === color.plateMeText && Math.abs(m.me.depth - m.me.y - size.meDepthBias) < 1e-6 &&
+  m.others.length > 0 && m.others.every((o) => !o.marked && o.plate === color.plateText && Math.abs(o.depth - o.y) < 1e-6);
+const marksA = await a.js(`__df.meMarks()`);
+check('내 캐릭터 표시(학교 맵): 내 아바타에만 고리·▼·강조 이름표, 앞에 그림', marksOk(marksA), JSON.stringify(marksA));
 const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽 빈 띠 없음)',
   Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
@@ -1044,6 +1049,22 @@ let la = await looks(a);
 check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 하트 5개, B는 3개)', la.me.tag === '♥♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
   JSON.stringify(la));
 await teacher.shot('gb-ready');
+// 내 캐릭터 표시(골든벨): 한 자리에 모여 겹쳐도 내 것만 표시. 선생님 화면은 선생님 자신만 표시한다.
+const gbMarkFrom = { a: await a.js(`__df.pos()`), b: await b.js(`__df.pos()`), t: await teacher.js(`__df.pos()`) };
+await a.js(`__df.teleport(4.5, 7)`);
+await b.js(`__df.teleport(4.7, 7.3)`);
+await teacher.js(`__df.teleport(4.3, 7.5)`);
+await wait(2500);
+const gbMarks = await a.js(`__df.meMarks()`);
+const tMarks = await teacher.js(`__df.meMarks()`);
+check('내 캐릭터 표시(골든벨, 겹침): 학생 화면은 나만, 선생님 화면은 선생님만 표시', marksOk(gbMarks) && marksOk(tMarks),
+  JSON.stringify({ a: gbMarks, t: tMarks }));
+await a.shot('me-mark-crowd');
+await b.shot('me-mark-crowd');
+await a.js(`__df.teleport(${gbMarkFrom.a.col}, ${gbMarkFrom.a.row})`);
+await b.js(`__df.teleport(${gbMarkFrom.b.col}, ${gbMarkFrom.b.row})`);
+await teacher.js(`__df.teleport(${gbMarkFrom.t.col}, ${gbMarkFrom.t.row})`);
+await wait(1500);
 const [tw, th2] = await teacher.js(`[innerWidth, innerHeight]`);
 const gm = (await teacher.js(`__df.camera()`)).map;
 check('골든벨 선생님 화면은 맵 전체가 맞춰짐(따라가지 않음)', gm.x >= 0 && gm.y >= 0 && gm.x + gm.w <= tw && gm.y + gm.h <= th2,

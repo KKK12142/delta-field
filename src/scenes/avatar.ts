@@ -97,6 +97,13 @@ export class Avatar extends GameObjects.Container {
   private walking = false;
   /** 캐릭터와 글을 키운 배율(CCTV 전체 보기) */
   private markScale = { sprite: 1, text: 1 };
+  /**
+   * 내 캐릭터 표시(skin 'me'만, 교사 요청 2026-11-13): 발밑에 숨 쉬듯 커졌다 작아지는 고리, 이름표 위에 오르내리는 ▼.
+   * 트윈은 이 둘에만 건다(다른 사람 아바타에는 만들지 않는다). holder는 자리·배율, 안쪽 도형은 트윈이 움직인다.
+   */
+  private readonly me: { ringHolder: GameObjects.Container; ring: GameObjects.Ellipse; arrowHolder: GameObjects.Container; arrow: GameObjects.Triangle } | null;
+  /** 몸(그림자·캐릭터·이름표·머리 위 표시)의 투명도. 내 아바타는 흐려져도(탈락) 내 표시는 그대로 보이게 묶음 전체가 아니라 몸에만 건다. */
+  private bodyAlpha = 1;
 
   /** skin: 'me'면 내 이름표(노란 안테), 'dark'면 다른 사람 */
   constructor(scene: Scene, character: string, nickname: string, skin: PlateSkin, tagStyle: TagStyle | null = null) {
@@ -108,9 +115,45 @@ export class Avatar extends GameObjects.Container {
     // CCTV 글은 이름표와 같은 어두운 판, 목숨은 하트·해골 아이콘
     this.tag = tagStyle === 'lives' ? new LivesRow(scene) : tagStyle === 'cctv' ? new Plate(scene, '') : null;
     this.tag?.setVisible(false);
-    this.add([this.shadow, this.sprite, this.namePlate, ...(this.tag ? [this.tag] : [])]);
+    this.me = skin === 'me' ? makeMeMark(scene) : null;
+    this.add([
+      this.shadow,
+      ...(this.me ? [this.me.ringHolder] : []),
+      this.sprite,
+      this.namePlate,
+      ...(this.tag ? [this.tag] : []),
+      ...(this.me ? [this.me.arrowHolder] : []),
+    ]);
     this.layout();
     scene.add.existing(this);
+  }
+
+  /** 내 아바타는 겹치는 다른 캐릭터보다 앞에 그린다(깊이 = 발 y + meDepthBias). */
+  override setDepth(value: number) {
+    return super.setDepth(value + (this.me ? size.meDepthBias : 0));
+  }
+
+  /** 투명도(탈락하면 흐리게). 내 아바타는 몸에만 걸고 내 표시(고리·▼)는 그대로 둔다. */
+  override setAlpha(value = 1) {
+    this.bodyAlpha = value;
+    if (!this.me) return super.setAlpha(value);
+    for (const part of [this.shadow, this.sprite, this.namePlate, this.tag]) part?.setAlpha(value);
+    return this;
+  }
+
+  /** 보이는 몸의 투명도(확인용, 내 아바타도 몸 기준) */
+  get shownAlpha() {
+    return this.me ? this.bodyAlpha : this.alpha;
+  }
+
+  /** 확인용: 내 표시(고리·▼)가 있고 보이는지 */
+  get meMarked() {
+    return !!this.me && this.me.ring.visible && this.me.arrow.visible;
+  }
+
+  override destroy(fromScene?: boolean) {
+    if (this.me) this.scene?.tweens.killTweensOf([this.me.ring, this.me.arrow]);
+    super.destroy(fromScene);
   }
 
   /** 발에서 몸통 가운데까지(픽셀, 키운 배율 포함) */
@@ -156,7 +199,30 @@ export class Avatar extends GameObjects.Container {
     this.sprite.setScale(size.charScale * s);
     this.namePlate.setScale(t).setY(-size.avatarHeight * s - size.nicknameGap * t);
     this.tag?.setScale(t).setY(this.namePlate.y - this.namePlate.plateHeight * t - size.tagGap * t);
+    if (this.me) {
+      this.me.ringHolder.setScale(s);
+      // ▼는 이름표 위, 머리 위 표시(골든벨 목숨)가 있으면 그 위
+      const top = this.tag ? this.tag.y - (this.tag instanceof Plate ? this.tag.plateHeight : this.tag.rowHeight) * t : this.namePlate.y - this.namePlate.plateHeight * t;
+      this.me.arrowHolder.setScale(t).setY(top - size.meArrowGap * t);
+    }
   }
+}
+
+/** 내 캐릭터 표시를 만들고 트윈을 건다(내 아바타 하나에만). */
+function makeMeMark(scene: Scene) {
+  const ring = scene.add
+    .ellipse(0, 0, size.meRingWidth, size.meRingHeight, color.meMark, alpha.meRingFill)
+    .setStrokeStyle(size.meRingLine, color.meMark, 1);
+  const w = size.meArrowWidth;
+  const h = size.meArrowHeight;
+  // ▼: 아래 꼭짓점이 holder의 (0, 0)에 오게
+  const arrow = scene.add
+    .triangle(0, 0, 0, 0, w, 0, w / 2, h, color.meMark)
+    .setOrigin(0.5, 1)
+    .setStrokeStyle(size.meArrowLine, color.meMarkLine, 1);
+  scene.tweens.add({ targets: ring, scale: motion.meRingScale, alpha: alpha.meRingLow, duration: motion.meRingMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  scene.tweens.add({ targets: arrow, y: -size.meArrowBob, duration: motion.meArrowMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  return { ringHolder: scene.add.container(0, 0, [ring]), ring, arrowHolder: scene.add.container(0, 0, [arrow]), arrow };
 }
 
 /** 움직인 방향으로 바라볼 쪽. 대각선에 가까우면 지금 보는 쪽을 지켜 깜빡이지 않게 한다. 움직이지 않으면 그대로 */
