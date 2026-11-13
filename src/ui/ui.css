@@ -845,6 +845,29 @@
   font-size: var(--df-font-title);
   line-height: 1.25;
 }
+/* 객관식 보기: 2행 2열(1 2 / 3 4, 바닥 구역 자리와 같은 순서). 보기 수가 달라도 2열로 채운다. 긴 보기는 칸 안에서 줄을 바꾼다. */
+.df-gb-choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--df-gap);
+  font-size: var(--df-gb-choice-font);
+  line-height: 1.25;
+}
+.df-gb-choice {
+  min-width: 0;
+  padding: var(--df-hud-gap) var(--df-hud-gap-wide);
+  border-bottom: var(--df-row-line) solid var(--df-line);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 정답 공개: 정답 보기 */
+.df-gb-choice.is-answer {
+  background: var(--df-row-me);
+  color: var(--df-correct);
+}
 /* 남은 시간: 막대와 초 */
 .df-gb-timer {
   display: flex;

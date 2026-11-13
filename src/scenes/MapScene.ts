@@ -384,17 +384,17 @@ export abstract class MapScene extends Scene {
     };
   }
 
-  /** 보이는 아바타(나와 다른 사람)의 화면 타원(창 기준 CSS 픽셀). 지도 위 안내를 그 자리만 뚫는 데 쓴다(src/ui/seeThrough.ts). */
-  protected avatarSpots(): Spot[] {
+  /**
+   * 내 아바타의 화면 타원(창 기준 CSS 픽셀). 지도 위 안내를 그 자리만 뚫는 데 쓴다(src/ui/seeThrough.ts).
+   * 다른 사람 자리는 뚫지 않는다(교사 결정 2026-11-13: 다른 학생이 뒤에 가도 안내는 그대로 보인다).
+   */
+  protected mySpot(): Spot[] {
+    const avatar = this.avatar;
+    if (!avatar.visible || avatar.alpha <= 0) return [];
     const canvas = this.game.canvas.getBoundingClientRect();
-    const spots: Spot[] = [];
-    for (const avatar of [this.avatar, ...[...this.remotes.values()].map((r) => r.avatar)]) {
-      if (!avatar.visible || avatar.alpha <= 0) continue;
-      const body = this.bodyOnScreen(avatar);
-      const tall = (avatar.sprite.displayHeight * this.cameras.main.zoom) / this.dpr;
-      spots.push({ x: canvas.left + body.x, y: canvas.top + body.y, rx: tall * seeThrough.rx, ry: tall * seeThrough.ry });
-    }
-    return spots;
+    const body = this.bodyOnScreen(avatar);
+    const tall = (avatar.sprite.displayHeight * this.cameras.main.zoom) / this.dpr;
+    return [{ x: canvas.left + body.x, y: canvas.top + body.y, rx: tall * seeThrough.rx, ry: tall * seeThrough.ry }];
   }
 
   // ---- 개발 중 자동 확인용(헤드리스 크롬). 빌드에는 들어가지 않는다. ----

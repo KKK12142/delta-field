@@ -83,6 +83,15 @@ function setList(list: HTMLElement, rows: string[]) {
   list.hidden = rows.length === 0;
 }
 
+/** 객관식 보기: 2열(1 2 / 3 4, 바닥 구역 자리와 같은 순서)로 놓는다. 정답 공개 때는 정답 보기를 강조한다. 달라졌을 때만 다시 만든다. */
+function setChoices(list: HTMLElement, rows: string[], answer: number) {
+  const key = `${answer}\n${rows.join('\n')}`;
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  list.replaceChildren(...rows.map((r, i) => el('li', i === answer ? 'df-gb-choice is-answer' : 'df-gb-choice', r)));
+  list.hidden = rows.length === 0;
+}
+
 /** 목숨 글(♥♥♡, 💀)의 하트·해골을 도트 그림으로. 글이 하트·해골이 아니면 null */
 function lifeIcons(text: string, className = 'df-life'): HTMLElement | null {
   const m = /^(.*?)((?:♥|♡|💀)+)(.*)$/su.exec(text);
@@ -259,7 +268,7 @@ export class GbHud {
     setText(this.line, v.line);
     setText(this.result, v.result);
     setText(this.explain, v.explain);
-    setList(this.choices, v.choices);
+    setChoices(this.choices, v.choices, v.choiceAnswer);
     this.result.classList.toggle('is-good', v.tone === 'good');
     this.result.classList.toggle('is-bad', v.tone === 'bad');
     setRanking(this.podium, this.ranking, v.ranking);

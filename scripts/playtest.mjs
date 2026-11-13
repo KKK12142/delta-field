@@ -4,8 +4,8 @@
 // DF_ESCAPE_DIR=scripts/playtest-escape(예시 방탈출 자료와 형식이 틀린 자료), DF_MINI_FAST=1(미니게임 한 판을 짧게)로 켠다.
 // 사용: DF_TEACHER_PASSWORD=... pnpm playtest [주소] [캡처 폴더]   기본값: http://localhost:5173/  .run/playtest
 // 사물 위치는 src/data/school.json에, 미션 답 번호는 escape/example.yaml에 맞춰 두었다. 맵이나 예시 자료를 바꾸면 함께 고친다.
-import { mkdirSync, rmSync } from 'node:fs';
-import { seeThrough, size } from '../src/theme.ts';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { seeThrough, size, uiSize } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
@@ -961,7 +961,8 @@ await wait(500);
 check('골든벨 중에도 힌트 수첩을 봄(4/4)', /힌트 수첩 \(4\/4\)/.test((await a.dialogText()) ?? '') && /운동량/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));
 await a.press('Escape');
 await wait(300);
-// 골든벨 맵(학생은 학교 맵처럼 따라간다): A가 맨 아래에 서면 맵 위쪽은 문제 카드 뒤로 간다. 거기 선 B 자리에 카드 구멍이 생긴다.
+// 골든벨 맵(학생은 학교 맵처럼 따라간다): A가 맨 아래에 서면 맵 위쪽은 문제 카드 뒤로 간다.
+// 거기 다른 학생(B)이 서도 A 화면의 카드는 뚫리지 않는다(안내 뚫기는 내 캐릭터만, 교사 결정 2026-11-13).
 const gbFrom = await a.js(`__df.pos()`);
 const bFrom = await b.js(`__df.pos()`);
 await a.js(`__df.teleport(9.5, 15.5)`);
@@ -977,13 +978,12 @@ const gbHole = await a.js(`(() => {
   return { mask: getComputedStyle(n).maskImage || getComputedStyle(n).webkitMaskImage || 'none',
     under: !!s && s.x > r.left && s.x < r.right && s.y > r.top && s.y < r.bottom };
 })()`);
-check('안내 뚫기: 골든벨 문제 카드 뒤에 다른 학생이 들어가면 그 자리에 구멍이 생김', gbHole.under && /radial-gradient/.test(gbHole.mask),
+check('안내 뚫기: 골든벨 문제 카드 뒤에 다른 학생이 들어가도 구멍이 없음(내 캐릭터만)', gbHole.under && gbHole.mask === 'none',
   `나래가 카드 뒤 ${gbHole.under}(${bRow.toFixed(1)}행), mask ${gbHole.mask.slice(0, 60)}`);
-await a.shot('see-through-goldenbell');
+await a.shot('see-through-goldenbell-other');
 await b.js(`__df.teleport(${bFrom.col}, ${bFrom.row})`);
 await a.js(`__df.teleport(${gbFrom.col}, ${gbFrom.row})`);
 await wait(2500);
-check('안내 뚫기: 골든벨 카드 뒤에서 나오면 구멍이 사라짐', (await holeOf('.df-gb-card')).mask === 'none');
 const looks = (pg) => pg.js(`__df.looks()`);
 let la = await looks(a);
 check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 하트 5개, B는 3개)', la.me.tag === '♥♥♥♥♥' && la.others['나래']?.tag === '♥♥♥' && la.others['선생님']?.tag === null,
@@ -1057,18 +1057,35 @@ const gbTop = async (label) => {
   const want = (freeRender ? ideal : Math.max(1, Math.round(ideal * 2)) / 2) / v.dpr;
   check(`골든벨 학생 화면(${label}): 객관식에도 학교 맵과 같은 배율, 맨 윗줄 구역이 카드에 가리지 않음`,
     Math.abs(v.zoom - Math.min(size.zoomMax, want)) < 1e-6 && v.mapY >= v.card - 1, `배율 ${v.zoom} (기대 ${want}), 맵 위 끝 ${v.mapY.toFixed(0)}, 안내 아래 끝 ${v.card.toFixed(0)}`);
+  // 객관식 보기는 2행 2열(1 2 / 3 4), 글자는 uiSize.gbChoiceFont, 정답 공개 때 정답 보기(3번)를 강조한다.
+  const ch = await a.js(`[...document.querySelectorAll('.df-gb-choice')].map((li) => { const r = li.getBoundingClientRect();
+    return { top: Math.round(r.top), left: Math.round(r.left), font: getComputedStyle(li).fontSize, answer: li.classList.contains('is-answer') }; })`);
+  check(`골든벨 객관식 보기(${label}): 2행 2열, 글자 ${uiSize.gbChoiceFont}, 정답 보기 강조`,
+    ch.length === 4 && ch[0].top === ch[1].top && ch[2].top === ch[3].top && ch[2].top > ch[0].top && ch[1].left > ch[0].left && ch[2].left === ch[0].left &&
+      ch.every((c) => c.font === uiSize.gbChoiceFont) && ch.map((c) => c.answer).join() === 'false,false,true,false',
+    JSON.stringify(ch));
   await a.shot(`gb-choice-${label}`);
-  await a.js(`__df.teleport(4.5, 6.5)`);
+  // 맵 가운데에 서면 구역이 몇 개 보이는지(다 보임 / 조금이라도 보임)
+  await a.js(`__df.teleport(9.5, 9.5)`);
   await wait(2500);
-  await a.shot(`gb-choice-${label}-zone`);
+  const seen = await a.js(`(() => { const c = __df.camera(), t = c.zoom * ${size.tile}, top = document.querySelector('.df-gb').getBoundingClientRect().bottom;
+    const zs = ${JSON.stringify(gbZones)}.map((z) => ({ y0: c.map.y + z.row * t, y1: c.map.y + (z.row + z.h) * t, x0: c.map.x + z.col * t, x1: c.map.x + (z.col + z.w) * t }));
+    return { full: zs.filter((z) => z.y0 >= top && z.y1 <= innerHeight && z.x0 >= 0 && z.x1 <= innerWidth).length,
+      some: zs.filter((z) => z.y1 > top && z.y0 < innerHeight && z.x1 > 0 && z.x0 < innerWidth).length, cardBottom: Math.round(top) }; })()`);
+  gbSeen.push(`${label}: 안내 아래 끝 ${seen.cardBottom}px, 구역 다 보임 ${seen.full}개·일부라도 ${seen.some}개`);
+  await a.shot(`gb-choice-${label}-middle`);
 };
+const gbZones = JSON.parse(readFileSync(new URL('../src/data/goldenbell.json', import.meta.url), 'utf8')).zones.choice;
+const gbSeen = [];
 check('골든벨 학생 화면: 객관식 문제 카드에도 배율은 학교 맵과 같음', Math.abs((await a.js(`__df.camera().zoom`)) - zoomA) < 1e-6);
-await gbTop('기본창');
+await a.resize({ width: 1280, height: 800 });
+await gbTop('1280x800');
 await a.resize({ width: 1024, height: 768 });
 await gbTop('1024x768');
 await a.resize({ width: 768, height: 1024 });
 await gbTop('768x1024');
 await a.resize(null);
+check('골든벨 학생 화면: 맵 가운데에서 보이는 객관식 구역 수(기록)', true, gbSeen.join(' / '));
 check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.test((await gbCard(a)) ?? '') && /목숨이 1개 남았습니다/.test((await gbCard(b)) ?? ''), fmt(await gbCard(b)));
 
 await gbRound('X', 'O');

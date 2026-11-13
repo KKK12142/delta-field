@@ -46,7 +46,7 @@ export class RoomScene extends MapScene {
   private hud!: Hud;
   /** 학생 화면의 미니맵(선생님은 CCTV가 있어 두지 않는다) */
   private minimap: Minimap | null = null;
-  /** 왼쪽 위 안내·미니맵 뒤에 들어간 캐릭터 자리를 뚫는다. */
+  /** 왼쪽 위·오른쪽 위 안내와 미니맵 뒤에 들어간 내 캐릭터 자리를 뚫는다. */
   private seeThrough!: SeeThrough;
   private highlight!: Phaser.GameObjects.Graphics;
   private target: RoomObject | null = null;
@@ -349,7 +349,8 @@ export class RoomScene extends MapScene {
     this.miniView?.update();
     if (this.net.role === 'teacher') this.hud.setMini(this.net.mini?.phase !== '' && this.net.mini?.phase !== undefined);
     this.minimap?.update(this.pos, this.net.part, this.mapMark());
-    this.seeThrough.update(this.avatarSpots());
+    // CCTV 모드(내 아바타를 따라가지 않음)에서는 뚫지 않는다.
+    this.seeThrough.update(this.cctv ? [] : this.mySpot());
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {
