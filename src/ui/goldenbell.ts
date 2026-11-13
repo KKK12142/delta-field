@@ -141,6 +141,8 @@ export class GbHud {
   private readonly totalsTitle = el('strong', 'df-gb-totals-title');
   private readonly totals = el('ol', 'df-gb-ranking df-gb-totals');
   private readonly classes = el('ol', 'df-gb-ranking df-gb-classes');
+  /** 문제 카드(왼쪽 위) */
+  private readonly card = el('div', 'df-hud-box df-gb-card');
   private readonly mine = el('div', 'df-hud-box df-gb-mine');
   private readonly lives = el('strong', 'df-gb-lives');
   private readonly score = el('span', 'df-text');
@@ -161,7 +163,7 @@ export class GbHud {
 
   /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다), onNotebook: 힌트 수첩 단추를 눌렀을 때 */
   constructor(teacher: boolean, onSubmit: (text: string) => void = () => {}, onNotebook: () => void = () => {}) {
-    const card = el('div', 'df-hud-box df-gb-card');
+    const card = this.card;
     this.answerInput.type = 'text';
     this.answerInput.maxLength = GB_MAX_ANSWER;
     this.answerInput.placeholder = '답을 씁니다';
@@ -216,6 +218,11 @@ export class GbHud {
     this.top.append(card, this.mine);
     this.status.hidden = true;
     uiRoot().append(this.top);
+  }
+
+  /** 지도 위에 겹친 안내(문제 카드, 내 상태). 캐릭터가 뒤에 들어가면 그 자리를 뚫는다(src/ui/seeThrough.ts). */
+  get overMap(): HTMLElement[] {
+    return [this.card, this.mine];
   }
 
   /** 안내 아래 끝의 화면 y 좌표(픽셀). 지도를 이 아래에 놓을 때 쓴다. */

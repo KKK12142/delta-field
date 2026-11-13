@@ -112,9 +112,12 @@ export class Hud {
     this.part.disabled = part >= 2;
   }
 
-  /** 지도 위에 겹친 왼쪽 위 안내(장소 안내와 그 아래 모으기 안내). 캐릭터가 뒤에 들어가면 그 자리를 뚫는다(src/ui/seeThrough.ts). */
-  get overMap(): HTMLElement {
-    return this.left;
+  /**
+   * 지도 위에 겹친 안내: 왼쪽 위(장소 안내와 그 아래 모으기 안내), 오른쪽 위(방 코드·가진 물건·단추).
+   * 캐릭터가 뒤에 들어가면 그 자리를 뚫는다(src/ui/seeThrough.ts). 뚫린 자리의 단추도 그대로 눌린다.
+   */
+  get overMap(): HTMLElement[] {
+    return [this.left, this.right];
   }
 
   /** 지금 서 있는 장소 이름(교실, 복도 등)과 그 장소의 미션 수(예: "과학실 · 미션 1/4") */
