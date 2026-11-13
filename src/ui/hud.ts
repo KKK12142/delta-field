@@ -110,6 +110,11 @@ export class Hud {
     this.part.disabled = part >= 2;
   }
 
+  /** 지도 위에 겹친 왼쪽 위 안내(장소 안내와 그 아래 모으기 안내). 캐릭터가 뒤에 들어가면 그 자리를 뚫는다(src/ui/seeThrough.ts). */
+  get overMap(): HTMLElement {
+    return this.left;
+  }
+
   /** 지금 서 있는 장소 이름(교실, 복도 등)과 그 장소의 미션 수(예: "과학실 · 미션 1/4") */
   setPlace(text: string) {
     if (this.place.textContent !== text) this.place.textContent = text;

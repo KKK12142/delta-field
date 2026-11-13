@@ -216,7 +216,20 @@ await a.shot('camera-hall');
 const c3 = await camAt(1.5, 2.5);
 check('카메라: 맵 구석에서는 맵 밖을 비추지 않음(위쪽 빈 띠 없음)',
   Math.abs(c3.view.col) < 0.01 && Math.abs(c3.view.row) < 0.01, `비추는 곳 왼쪽 위 ${c3.view.col.toFixed(2)}, ${c3.view.row.toFixed(2)}`);
+// 맵 왼쪽 위 구석에서는 내 아바타가 왼쪽 위 안내 뒤에 들어간다. 그 자리만 안내를 뚫어(mask) 캐릭터가 보인다.
+const holeOf = () => a.js(`(() => {
+  const n = document.querySelector('.df-hud-column');
+  const r = n.getBoundingClientRect(), me = __df.camera().me;
+  return { mask: getComputedStyle(n).maskImage || getComputedStyle(n).webkitMaskImage || 'none',
+    under: me.x > r.left && me.x < r.right && me.y > r.top && me.y < r.bottom };
+})()`);
+const hole = await holeOf();
+check('안내 뚫기: 캐릭터가 왼쪽 위 안내 뒤에 들어가면 그 자리에 구멍(mask)이 생김',
+  hole.under && /radial-gradient/.test(hole.mask), `캐릭터가 안내 뒤 ${hole.under}, mask ${hole.mask.slice(0, 60)}`);
+await a.shot('see-through-hud');
 const c4 = await camAt(119.5, 35.5);
+const noHole = await holeOf();
+check('안내 뚫기: 안내 뒤에서 나오면 구멍이 사라짐', !noHole.under && noHole.mask === 'none', `mask ${noHole.mask.slice(0, 60)}`);
 check('카메라: 반대쪽 구석도 맵 밖을 비추지 않음', Math.abs(c4.view.col + c4.view.w - 121) < 0.01 && Math.abs(c4.view.row + c4.view.h - 37) < 0.01,
   `비추는 곳 오른쪽 아래 ${(c4.view.col + c4.view.w).toFixed(2)}, ${(c4.view.row + c4.view.h).toFixed(2)}`);
 await a.js(`__df.teleport(46.5, 35.5)`);

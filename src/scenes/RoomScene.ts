@@ -9,6 +9,7 @@ import { CctvPanel, type CctvSort } from '../ui/cctv';
 import { objectParticle } from '../ui/dom';
 import { Hud } from '../ui/hud';
 import { Minimap, drawMinimap } from '../ui/minimap';
+import { SeeThrough } from '../ui/seeThrough';
 import { alpha, color, minimap, motion, size } from '../theme';
 import { MapScene, type MapContext, type Remote, type Reserved } from './MapScene';
 import { MiniGameView, loadMiniSprites, prepareMiniSprites } from './minigame';
@@ -44,6 +45,8 @@ export class RoomScene extends MapScene {
   private hud!: Hud;
   /** 학생 화면의 미니맵(선생님은 CCTV가 있어 두지 않는다) */
   private minimap: Minimap | null = null;
+  /** 왼쪽 위 안내·미니맵 뒤에 들어간 캐릭터 자리를 뚫는다. */
+  private seeThrough!: SeeThrough;
   private highlight!: Phaser.GameObjects.Graphics;
   private target: RoomObject | null = null;
   private busy = false;
@@ -97,6 +100,7 @@ export class RoomScene extends MapScene {
     this.syncEscape();
     this.hud.onAction(this.onActionButton);
     this.minimap = teacher ? null : new Minimap(this.room, () => void this.openMap());
+    this.seeThrough = new SeeThrough(() => (this.minimap ? [this.hud.overMap, this.minimap.element] : [this.hud.overMap]));
     this.hud.notebook.addEventListener('click', this.onNotebookButton);
     this.hud.escapeFile.addEventListener('click', this.onEscapeFileButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
@@ -343,6 +347,7 @@ export class RoomScene extends MapScene {
     this.miniView?.update();
     if (this.net.role === 'teacher') this.hud.setMini(this.net.mini?.phase !== '' && this.net.mini?.phase !== undefined);
     this.minimap?.update(this.pos, this.net.part, this.mapMark());
+    this.seeThrough.update(this.avatarSpots());
     if (this.net.role === 'teacher') {
       const n = this.net.studentCount();
       if (n !== this.studentCount) {

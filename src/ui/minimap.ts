@@ -160,6 +160,11 @@ export class Minimap {
     drawMinimap(this.canvas, this.room, M.smallWidth / this.room.layout[0].length, part, me, false, mark);
   }
 
+  /** 작은 지도 단추(캐릭터가 뒤에 들어가면 그 자리를 뚫는다) */
+  get element(): HTMLElement {
+    return this.node;
+  }
+
   setHidden(hidden: boolean) {
     this.node.hidden = hidden;
   }
