@@ -500,6 +500,76 @@ export class Dialog {
     });
   }
 
+  /**
+   * 글 한 줄을 받는다(선생님 전체 공지). send가 null을 돌려주면 닫고 true를, 까닭(글)을 돌려주면 창에 적고 기다린다.
+   * 빈 글은 보내지 않는다. 취소·Esc면 false.
+   */
+  write(
+    title: string,
+    text: string,
+    maxLength: number,
+    okText: string,
+    send: (value: string) => Promise<string | null>,
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const panel = this.panel(title);
+      panel.append(el('p', 'df-text', text));
+      const form = el('form', 'df-row df-quiz-answer');
+      const input = el('input', 'df-input');
+      input.type = 'text';
+      input.maxLength = maxLength;
+      input.placeholder = `${maxLength}자까지 씁니다`;
+      input.autocomplete = 'off';
+      input.setAttribute('aria-label', title);
+      // 글을 쓰는 동안 빈칸·방향키를 게임이 가로채지 않게 누름만 막는다(quiz와 같음).
+      input.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') e.stopPropagation();
+      });
+      const feedback = el('p', 'df-text df-feedback');
+      const row = el('div', 'df-row');
+      const cancel = el('button', 'df-button df-button-secondary', '취소');
+      cancel.type = 'button';
+      const ok = el('button', 'df-button', okText);
+      ok.type = 'submit';
+      ok.disabled = true;
+      let busy = false;
+      const refresh = () => {
+        ok.disabled = busy || input.value.trim() === '';
+      };
+      input.addEventListener('input', refresh);
+      const finish = (sent: boolean) => {
+        this.close();
+        resolve(sent);
+      };
+      cancel.addEventListener('click', () => finish(false));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const value = input.value.trim();
+        if (!value || busy) return;
+        busy = true;
+        refresh();
+        feedback.textContent = '';
+        void send(value).then((error) => {
+          if (error === null) return finish(true);
+          busy = false;
+          refresh();
+          feedback.textContent = error;
+          input.focus();
+        });
+      });
+      form.append(input);
+      row.append(cancel, ok);
+      // 보내기 단추가 form 밖에 있어도 그 form을 보내게 한다.
+      form.id = `df-write-${Date.now()}`;
+      ok.setAttribute('form', form.id);
+      panel.append(form, feedback, row);
+      this.open(panel, (e) => {
+        if (e.key === 'Escape') finish(false);
+      });
+      queueMicrotask(() => input.focus());
+    });
+  }
+
   /** 여러 가지 가운데 하나를 고른다. 고른 번호를 돌려주고, 닫으면 null */
   choose(title: string, text: string, options: ChoiceOption[], closeText = '닫기'): Promise<number | null> {
     return new Promise((resolve) => {

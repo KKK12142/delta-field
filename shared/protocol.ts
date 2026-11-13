@@ -77,10 +77,33 @@ export interface GatherMessage {
   seconds: number;
 }
 
+/** 전체 공지(2026-11-13 교사 결정): 선생님이 보낸 글이 모두의 화면 가운데에 잠깐 뜬다. 상태에 남기지 않는다(나중에 들어온 사람은 보지 않음). */
+export const MAX_ANNOUNCE = 100;
+/** 같은 선생님이 이 시간(ms) 안에 다시 보내면 받지 않는다. */
+export const ANNOUNCE_INTERVAL_MS = 2000;
+
+/** 선생님이 서버로 보내는 공지(요청 'announce', 답은 GbReply) */
+export interface AnnounceMessage {
+  text: string;
+}
+
+/** 서버가 방의 모두에게 보내는 공지(메시지 'announce') */
+export interface AnnounceBroadcast {
+  text: string;
+  /** 보낸 선생님의 닉네임 */
+  from: string;
+}
+
+/** 앞뒤 빈칸을 지우고 MAX_ANNOUNCE자로 자른다. 글이 아니거나 비면 '' */
+export function cleanAnnounce(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, MAX_ANNOUNCE).trim();
+}
+
 /** 방탈출 부. 1부 장소로 시작하고, 선생님이 "2부 열기"를 누르면 2가 된다(2부 장소의 문 잇기는 맵을 넓힐 때 한다). */
 export const PARTS = [1, 2] as const;
 
-/** 골든벨 요청(gbStart, gbGather, gbGatherCancel, gbNext, gbEnd, gbSubmit, gbAccept, openPart)의 답. 할 수 없으면 error에 까닭을 적는다. */
+/** 골든벨 요청(gbStart, gbGather, gbGatherCancel, gbNext, gbEnd, gbSubmit, gbAccept, openPart)과 announce의 답. 할 수 없으면 error에 까닭을 적는다. */
 export interface GbReply {
   error: string | null;
 }

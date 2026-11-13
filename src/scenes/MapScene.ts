@@ -399,6 +399,15 @@ export abstract class MapScene extends Scene {
         /** 사물 하나의 보이는 모습(확인용) */
         objectLook: (id: string) => this.objectViews.get(id)?.look() ?? null,
         part: () => this.net.part,
+        /** 전체 공지를 서버로 바로 보낸다(학생이 보내도 막히는지 확인용). 서버의 답(error)을 돌려준다. */
+        announce: async (text: string) => (await this.net.announce(text)).error,
+        /** 떠 있는 전체 공지 {title, text}, 없으면 null */
+        announcement: () => {
+          const n = document.querySelector<HTMLElement>('.df-announce');
+          return n && !n.hidden
+            ? { title: n.querySelector('.df-banner-title')?.textContent ?? '', text: n.querySelector('.df-banner-text')?.textContent ?? '', html: n.innerHTML }
+            : null;
+        },
         others: () =>
           this.net.others().map(([, p]) => ({
             nickname: p.nickname,

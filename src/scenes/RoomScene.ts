@@ -5,6 +5,7 @@ import { areaAt, partOf, type RoomObject } from '../data/room';
 import { byClassAndNickname, byProgress, classCounts, describeStudent, summaryLine } from '../game/cctv';
 import { areaMissions, hintSummary } from '../game/progress';
 import { formatDuration, RunState } from '../game/state';
+import { askAnnounce } from '../ui/announce';
 import { CctvPanel, type CctvSort } from '../ui/cctv';
 import { objectParticle } from '../ui/dom';
 import { Hud } from '../ui/hud';
@@ -101,6 +102,7 @@ export class RoomScene extends MapScene {
     this.hud.escapeFile.addEventListener('click', this.onEscapeFileButton);
     this.hud.cctv.addEventListener('click', this.onCctvButton);
     this.hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
+    this.hud.announce.addEventListener('click', this.onAnnounceButton);
     this.hud.part.addEventListener('click', this.onPartButton);
     this.hud.mini.addEventListener('click', this.onMiniButton);
     this.miniView = new MiniGameView({
@@ -460,6 +462,16 @@ export class RoomScene extends MapScene {
         : null,
     );
   }
+
+  /** 선생님: 전체 공지를 쓰고 보낸다. 보내면 내 화면에도 같은 알림이 뜬다. */
+  private onAnnounceButton = () => {
+    this.hud.announce.blur();
+    if (this.dialog.isOpen() || this.busy || this.cctv) return;
+    this.busy = true;
+    void askAnnounce(this.dialog, this.net).finally(() => {
+      this.busy = false;
+    });
+  };
 
   private onGoldenBellButton = () => {
     this.hud.goldenbell.blur();

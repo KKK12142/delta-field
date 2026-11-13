@@ -18,6 +18,7 @@ import {
   type Zones,
 } from '../shared/goldenbell.ts';
 import {
+  ANNOUNCE_INTERVAL_MS,
   CODE_LENGTH,
   DEFAULT_CHARACTER,
   GATHER_SECONDS,
@@ -25,7 +26,10 @@ import {
   RECONNECT_SECONDS,
   RejectCode,
   classGroupName,
+  cleanAnnounce,
   cleanNickname,
+  type AnnounceBroadcast,
+  type AnnounceMessage,
   type GbAcceptMessage,
   type GbFileInfo,
   type GbReply,
@@ -103,6 +107,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   private shortAnswers = new Map<string, string>();
   /** 이번 문제를 채점하기 전의 목숨·점수(선생님이 단답형 답을 정답으로 인정하거나 거둘 때 다시 채점한다) */
   private beforeJudge = new Map<string, GbScore>();
+  /** 전체 공지: 선생님 접속 id → 마지막으로 보낸 시각(ms). 너무 잦은 공지를 막는다. */
+  private lastAnnounceAt = new Map<string, number>();
   private readonly escape = new EscapeGame(this.state);
   private readonly mini = new MiniGames(this.state, this.clock);
 
@@ -196,6 +202,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
       if (p) this.mini.tug(client.sessionId, p);
     });
     this.onMessage('clock', (): number => Date.now());
+    this.onMessage('announce', (client: Client, message: AnnounceMessage) => this.announce(client, message));
     this.onMessage('gbNext', (client: Client) => this.gbNext(client));
     this.onMessage('gbClose', (client: Client) => this.gbClose(client));
     this.onMessage('gbResetTotal', (client: Client) => this.gbResetTotal(client));
@@ -248,11 +255,30 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.state.players.delete(client.sessionId);
     if (this.shortAnswers.delete(client.sessionId)) this.state.goldenbell.submitted = this.shortAnswers.size;
     this.beforeJudge.delete(client.sessionId);
+    this.lastAnnounceAt.delete(client.sessionId);
   }
 
   onDispose() {
     this.mini.dispose();
     console.log(`방 ${this.roomId}을 닫았습니다.`);
+  }
+
+  /**
+   * 전체 공지: 선생님이 보낸 글을 방의 모두(학교 맵·골든벨 맵·미니게임 중 모두, 보낸 선생님 포함)에게 한 번 보낸다.
+   * 상태에 남기지 않으므로 나중에 들어온 사람은 보지 않는다.
+   */
+  private announce(client: Client, message: AnnounceMessage): GbReply {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || player.role !== 'teacher') return refuse('선생님만 전체 공지를 보낼 수 있습니다.');
+    const text = cleanAnnounce(message?.text);
+    if (!text) return refuse('보낼 글을 씁니다.');
+    const now = Date.now();
+    if (now - (this.lastAnnounceAt.get(client.sessionId) ?? -Infinity) < ANNOUNCE_INTERVAL_MS) return refuse('방금 공지를 보냈습니다. 잠시 뒤 다시 보냅니다.');
+    this.lastAnnounceAt.set(client.sessionId, now);
+    const out: AnnounceBroadcast = { text, from: player.nickname };
+    this.broadcast('announce', out);
+    console.log(`방 ${this.roomId}: 전체 공지를 보냈습니다(${text.length}자).`);
+    return ok;
   }
 
   // ---- 골든벨 ----

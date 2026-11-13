@@ -678,7 +678,7 @@ await clickText(teacher, '.df-hud button', '2부 열기');
 await wait(400);
 await clickText(teacher, '.df-dialog .df-button', '2부 열기');
 await wait(500);
-const banner = (pg) => pg.js(`(() => { const n = document.querySelector('.df-banner'); return n && !n.hidden ? n.innerText : null; })()`);
+const banner = (pg) => pg.js(`(() => { const n = document.querySelector('.df-banner:not(.df-announce)'); return n && !n.hidden ? n.innerText : null; })()`);
 check('2부 열기: 학생 화면 가운데 큰 알림과 미니맵의 2부 문 표시', /2부가 열렸습니다/.test((await banner(a)) ?? '') && (await a.js(`__df.mapMark()`)) === 'part2-door',
   `${fmt(await banner(a))} | ${await a.js(`__df.mapMark()`)}`);
 await a.shot('part2-banner');
@@ -806,6 +806,57 @@ await wait(300);
 await a.js(`__df.teleport(${aBefore.col}, ${aBefore.row})`);
 await wait(300);
 
+// ---- 선생님 전체 공지: 모두의 화면 가운데에 "선생님 공지"로 뜨고, 누르면 닫힌다 ----
+const shout = (pg) => pg.js(`__df.announcement()`);
+const closeShout = (pg) => pg.js(`document.querySelector('.df-announce:not([hidden])')?.click()`);
+/** 열린 전체 공지 창에 글을 쓴다(input 이벤트까지). */
+const writeShout = (pg, text) => pg.js(`(() => { const i = document.querySelector('.df-dialog .df-input'); i.value = ${JSON.stringify(text)};
+  i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+const shoutSendDisabled = (pg) => pg.js(`[...document.querySelectorAll('.df-dialog .df-button')].find((b) => b.textContent === '보내기')?.disabled ?? null`);
+check('전체 공지: 학생 화면에는 단추가 없음', (await a.js(`[...document.querySelectorAll('.df-hud button')].find((b) => b.textContent === '전체 공지').hidden`)) === true);
+await clickText(teacher, '.df-hud button', '전체 공지');
+await wait(400);
+check('전체 공지: 선생님이 누르면 글 칸(100자)이 있는 창, 빈 글이면 보내기가 잠김',
+  /전체 공지/.test((await teacher.dialogText()) ?? '') && (await teacher.js(`document.querySelector('.df-dialog .df-input')?.maxLength`)) === 100 &&
+    (await shoutSendDisabled(teacher)) === true, fmt(await teacher.dialogText()));
+await writeShout(teacher, '   ');
+await teacher.js(`document.querySelector('.df-dialog form').requestSubmit()`);
+await wait(500);
+check('전체 공지: 빈칸만 쓴 글은 보내지 않음(창은 그대로, 아무에게도 뜨지 않음)',
+  (await shoutSendDisabled(teacher)) === true && (await teacher.dialogText()) !== null && (await shout(a)) === null && (await shout(teacher)) === null);
+const SHOUT = '모두 강당 앞으로 모입니다';
+await writeShout(teacher, `  ${SHOUT}  `);
+await clickText(teacher, '.df-dialog .df-button', '보내기');
+await wait(600);
+const shouts = [await shout(a), await shout(b), await shout(teacher)];
+check('전체 공지: 학생 A·B와 보낸 선생님 화면 가운데에 "선생님 공지"와 같은 글(앞뒤 빈칸 자름), 창은 닫힘',
+  shouts.every((s) => s?.title === '선생님 공지' && s?.text === SHOUT) && (await teacher.dialogText()) === null, JSON.stringify(shouts));
+await a.shot('announce');
+await closeShout(a);
+await wait(200);
+check('전체 공지: 누르면 바로 닫힘(다른 사람 화면은 그대로)', (await shout(a)) === null && (await shout(b))?.text === SHOUT);
+check('전체 공지: 2초 안에 다시 보내면 막힘', /방금 공지를 보냈습니다/.test((await teacher.js(`__df.announce('한 번 더')`)) ?? ''));
+await closeShout(b);
+await closeShout(teacher);
+const studentShout = await a.js(`__df.announce('학생이 보낸 공지')`);
+await wait(600);
+check('전체 공지: 학생이 보내면 거절되고 아무에게도 가지 않음', /선생님만/.test(studentShout ?? '') &&
+  (await shout(a)) === null && (await shout(b)) === null && (await shout(teacher)) === null, studentShout);
+await wait(1600);
+check('전체 공지: 빈칸만 보내면 서버도 막음', /보낼 글/.test((await teacher.js(`__df.announce('  \\n ')`)) ?? ''));
+const HTML_SHOUT = '<b>굵게</b> <img src=x onerror="window.__xss=1">';
+check('전체 공지: 태그가 든 글도 보냄', (await teacher.js(`__df.announce(${JSON.stringify(HTML_SHOUT)})`)) === null);
+await wait(600);
+const htmlShout = await shout(b);
+check('전체 공지: 태그가 든 글은 글자 그대로 보임(HTML로 읽지 않음)', htmlShout?.text === HTML_SHOUT && !/<img/.test(htmlShout?.html ?? '') &&
+  (await b.js(`window.__xss ?? null`)) === null, htmlShout?.html);
+await wait(2100);
+check('전체 공지: 100자가 넘으면 100자로 자름', (await teacher.js(`__df.announce('가'.repeat(150))`)) === null);
+await wait(600);
+check('전체 공지: 100자로 잘린 글이 뜸', (await shout(a))?.text === '가'.repeat(100), String((await shout(a))?.text.length));
+for (const pg of [a, b, teacher]) await closeShout(pg);
+await wait(200);
+
 // ---- 강당으로 모으기: 문제 파일과 시간을 고르면 남은 시간이 모두에게 보이고, 0이 되면 골든벨 맵으로 ----
 /** 선생님이 강당으로 모으기를 누르고 확인용 골든벨 파일을 고른 뒤 시간(단추 글)을 고른다. */
 async function gather(when, file = '확인용 골든벨') {
@@ -851,6 +902,16 @@ const gbCard = (pg) => pg.js(`document.querySelector('.df-gb')?.innerText ?? nul
 const gbPanel = () => teacher.js(`document.querySelector('.df-gb-panel')?.innerText ?? null`);
 check('골든벨: 시작 안내와 목숨 3개', /선생님이 첫 문제를 내면/.test((await gbCard(a)) ?? '') && /목숨 ♥♥♥/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
 check('골든벨: 선생님 창에 학생 2명, 첫 문제 단추', /학생 2명/.test((await gbPanel()) ?? '') && /첫 문제/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+// 골든벨 맵에서도 전체 공지(선생님 창의 단추)
+await teacher.js(`[...document.querySelectorAll('.df-gb-panel button')].find((x) => x.textContent === '전체 공지').click()`);
+await wait(400);
+await writeShout(teacher, '골든벨 곧 시작합니다');
+await clickText(teacher, '.df-dialog .df-button', '보내기');
+await wait(600);
+check('전체 공지: 골든벨 맵에서도 선생님 창 단추로 보내고 모두에게 뜸',
+  [await shout(a), await shout(b), await shout(teacher)].every((s) => s?.text === '골든벨 곧 시작합니다'), JSON.stringify(await shout(b)));
+await wait(10000);
+check('전체 공지: 10초 뒤 사라짐', (await shout(a)) === null && (await shout(b)) === null);
 await a.js(`[...document.querySelectorAll('.df-gb button')].find((x) => x.textContent.startsWith('힌트 수첩')).click()`);
 await wait(500);
 check('골든벨 중에도 힌트 수첩을 봄(4/4)', /힌트 수첩 \(4\/4\)/.test((await a.dialogText()) ?? '') && /운동량/.test((await a.dialogText()) ?? ''), fmt(await a.dialogText()));

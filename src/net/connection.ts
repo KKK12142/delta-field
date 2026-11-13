@@ -4,6 +4,8 @@ import {
   MOVE_INTERVAL_MS,
   ROOM_NAME,
   RejectCode,
+  type AnnounceBroadcast,
+  type AnnounceMessage,
   type GbFileInfo,
   type GbAcceptMessage,
   type GbReply,
@@ -35,6 +37,7 @@ export class Net {
   private lastSent = { col: NaN, row: NaN, map: '' };
   private lastStatus = '';
   private readonly statusListeners = new Set<(status: ConnectionStatus) => void>();
+  private readonly announceListeners = new Set<(message: AnnounceBroadcast) => void>();
 
   constructor(
     readonly room: Room<any, ClassState>,
@@ -46,6 +49,10 @@ export class Net {
     room.onDrop(() => this.emit('reconnecting'));
     room.onReconnect(() => this.emit('connected'));
     room.onLeave(() => this.emit('closed'));
+    room.onMessage('announce', (message: AnnounceBroadcast) => {
+      if (typeof message?.text !== 'string') return;
+      for (const l of this.announceListeners) l(message);
+    });
   }
 
   /** 방 코드(= 서버의 방 id) */
@@ -263,6 +270,18 @@ export class Net {
   /** 줄다리기: 한 번 당긴다 */
   miniTug() {
     this.room.send('miniTug');
+  }
+
+  /** 선생님: 전체 공지를 보낸다. 서버가 받으면 보낸 선생님을 포함한 모두에게 공지가 온다(onAnnounce). */
+  announce(text: string): Promise<GbReply> {
+    const message: AnnounceMessage = { text };
+    return this.room.request('announce', message);
+  }
+
+  /** 전체 공지가 오면 listener를 부른다. 장면을 옮겨도 이어지게 main.ts에서 한 번 건다. */
+  onAnnounce(listener: (message: AnnounceBroadcast) => void) {
+    this.announceListeners.add(listener);
+    return () => this.announceListeners.delete(listener);
   }
 
   onStatus(listener: (status: ConnectionStatus) => void) {

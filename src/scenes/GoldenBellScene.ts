@@ -2,6 +2,7 @@ import { activeZones, type Zone, type Zones } from '../../shared/goldenbell.ts';
 import type { Player } from '../../shared/schema.ts';
 import { cardView, livesTag, mineView, panelView } from '../game/goldenbell';
 import { hintSummary } from '../game/progress';
+import { askAnnounce } from '../ui/announce';
 import { GbHud, GbPanel } from '../ui/goldenbell';
 import { alpha, color, fontFamily, motion, size } from '../theme';
 import type { TagStyle } from './avatar';
@@ -65,6 +66,9 @@ export class GoldenBellScene extends MapScene {
         accept: (key, accept) => void this.ask(() => this.net.gbAccept(key, accept)),
         close: () => void this.ask(() => this.net.gbClose()),
         resetTotal: () => void this.confirmResetTotal(),
+        announce: () => {
+          if (!this.dialog.isOpen()) void askAnnounce(this.dialog, this.net);
+        },
       });
     }
     this.events.once('shutdown', () => {

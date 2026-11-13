@@ -1113,6 +1113,11 @@ span.df-rank-medal {
   color: var(--df-button-light-text);
   pointer-events: none;
 }
+/* 선생님 전체 공지: 같은 판, 누르면 닫힌다 */
+#ui > .df-banner.df-announce {
+  pointer-events: auto;
+  cursor: pointer;
+}
 #ui > .df-banner::before {
   left: var(--df-gap-small);
   width: calc(var(--df-icon-size) * 2);
@@ -1198,6 +1203,11 @@ span.df-rank-medal {
 }
 .df-gb-classes .df-emblem {
   margin-right: var(--df-hud-gap);
+}
+/* 골든벨 선생님 창의 전체 공지 단추: 줄 하나를 다 차지하지 않게 */
+.df-button.df-gb-announce {
+  align-self: flex-start;
+  flex: none;
 }
 .df-button.df-gb-reset {
   align-self: flex-start;

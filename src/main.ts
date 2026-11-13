@@ -10,6 +10,7 @@ import type { MapContext } from './scenes/MapScene';
 import { RoomScene } from './scenes/RoomScene';
 import { renderRatio, showRenderInfo } from './render';
 import { applyCssTheme, color } from './theme';
+import { AnnounceBanner } from './ui/announce';
 import { Dialog } from './ui/dialog';
 import { loadFonts } from './ui/fonts';
 import { isTouchDevice } from './ui/dom';
@@ -28,6 +29,9 @@ const rooms: Record<MapId, ReturnType<typeof loadRoom>> = {
 const net = await askEntry(connect, joinErrorText);
 await fonts;
 const dialog = new Dialog();
+// 선생님 전체 공지. 학교 맵·골든벨 맵을 옮겨도 이어지게 장면 밖에 둔다.
+const announceBanner = new AnnounceBanner();
+net.onAnnounce((m) => announceBanner.show(m.text));
 
 // 다시 붙기를 끝내 못 하면 처음 화면으로 돌아가게 한다.
 net.onStatus((status) => {
