@@ -7,6 +7,7 @@
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { color, seeThrough, size, uiSize } from '../src/theme.ts';
 import { launchChrome, wait } from './lib/chrome.mjs';
+import qrcode from 'qrcode-generator';
 import { startDelayProxy } from './lib/delay-proxy.mjs';
 
 const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
@@ -23,6 +24,49 @@ const { openPage, consoleErrors } = chrome;
 const results = [];
 function check(name, ok, detail = '') { results.push(`${ok ? '통과' : '실패'}  ${name}${detail ? '  (' + detail + ')' : ''}`); }
 const fmt = (s) => s?.replace(/\n+/g, ' / ');
+
+// ---- 첫 화면 접속 QR 코드(교사 요청 2026-11-13): 제목 오른쪽(휴대폰은 아래), 내용은 이 페이지 주소 ----
+{
+  const qrPage = await openPage('qr', baseUrl);
+  const out = [];
+  for (const s of [{ width: 1280, height: 800 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+    await qrPage.resize(s);
+    await qrPage.js(`location.reload()`);
+    await wait(2000);
+    const v = await qrPage.js(`(async () => {
+      const c = document.querySelector('.df-qr-code');
+      if (!c) return null;
+      const m = Number(c.dataset.margin), n = c.width - 2 * m, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let rows = '';
+      for (let r = 0; r < n; r++) { for (let k = 0; k < n; k++) rows += d[((r + m) * c.width + (k + m)) * 4] < 128 ? '1' : '0'; rows += '/'; }
+      const q = c.getBoundingClientRect(), l = document.querySelector('.df-logo-img').getBoundingClientRect();
+      let read = 'BarcodeDetector 없음';
+      if ('BarcodeDetector' in window) {
+        try { read = (await new BarcodeDetector({ formats: ['qr_code'] }).detect(c))[0]?.rawValue ?? '읽지 못함'; } catch (e) { read = 'BarcodeDetector 오류 ' + e; }
+      }
+      return { text: c.dataset.text, origin: location.origin + '/', rows, css: q.width, cell: q.width / c.width, right: q.left >= l.right, below: q.top >= l.bottom,
+        caption: document.querySelector('.df-qr-caption')?.innerText ?? '', read };
+    })()`);
+    await qrPage.shot(`start-qr-${s.width}x${s.height}`);
+    out.push({ size: s, ...v });
+  }
+  await qrPage.resize(null);
+  const same = (v) => {
+    const q = qrcode(0, 'M');
+    q.addData(v.text);
+    q.make();
+    let rows = '';
+    for (let r = 0; r < q.getModuleCount(); r++) { for (let k = 0; k < q.getModuleCount(); k++) rows += q.isDark(r, k) ? '1' : '0'; rows += '/'; }
+    return rows === v.rows;
+  };
+  check('첫 화면 QR: 내용이 이 페이지 주소이고, 같은 글로 다시 만든 QR과 칸이 같음(오류 정정 M)',
+    out.every((v) => v && v.text === v.origin && same(v)), out.map((v) => v && `${v.size.width}×${v.size.height} ${v.text}`).join(', '));
+  check('첫 화면 QR: 정수 배율, PC·태블릿은 제목 오른쪽에 크게(160px 이상), 휴대폰은 제목 아래, 주소와 안내 글',
+    out.every((v) => v && Number.isInteger(v.cell)) && out[0].right && out[0].css >= 160 && out[1].right && out[1].css >= 160 && out[2].below &&
+      out.every((v) => v.caption.includes(new URL(baseUrl).host) && v.caption.includes('휴대폰 카메라로 찍으면 들어옵니다.')),
+    out.map((v) => v && `${v.size.width}×${v.size.height} ${v.css}px(칸 ${v.cell}px) 오른쪽 ${v.right} 아래 ${v.below}`).join(', '));
+  check('첫 화면 QR: 크롬 BarcodeDetector로 읽기(기록)', true, out.map((v) => v?.read).join(', '));
+}
 
 // ---- 느린 연결(지연 프록시, 400ms씩): 걷는 중에 공 피하기가 시작돼도 운동장 안에 서고 움직인다(옮김 번호, 2026-11-13 버그) ----
 // 다른 창이 많이 열리기 전에(무거우면 늦은 화면이 더 느려진다) 따로 만든 방에서 한다. 화면 파일은 늦추지 않고 연 뒤, 게임 연결만 늦춘다.
@@ -92,6 +136,7 @@ const code = await teacher.js(`window.__df?.code()`);
 check('선생님이 방을 만들고 방 코드를 받음', /^\d{4}$/.test(code ?? ''), code);
 check('첫 화면: 선생님에게는 반 고르기가 없음', (await teacher.js(`document.querySelector('.df-classes')`)) === null);
 check('선생님 화면에 방 코드가 보임', (await teacher.js(`document.querySelector('.df-hud').innerText`))?.includes(`방 코드 ${code}`));
+check('첫 화면 QR: 방에 들어간 뒤에는 보이지 않음', (await teacher.js(`!!document.querySelector('.df-qr')`)) === false);
 await teacher.shot('room-created');
 
 // ---- 선생님: 방을 만들면 방탈출 자료를 고르는 창이 바로 뜬다 ----

@@ -5,6 +5,7 @@ import { Dialog } from './dialog';
 import { characterSheet } from '../scenes/avatar';
 import { el, uiRoot } from './dom';
 import { emblem, uiIcon } from './pictures';
+import { accessQr } from './qr';
 
 /** 이 기기에서 마지막으로 고른 캐릭터를 기억해 두는 곳(다음에 들어올 때 미리 골라 둔다) */
 const CHARACTER_KEY = 'df-character';
@@ -231,7 +232,8 @@ export function askEntry<T>(tryEnter: (entry: Entry) => Promise<T>, describeErro
     // 로고(public/sprites/ui/logo.png). 제목 글은 읽어 주기용으로 남긴다.
     const logo = el('header', 'df-logo');
     const title = el('h1', 'df-sr', 'Delta Field');
-    logo.append(uiIcon('ui', 'logo', 'df-logo-img'), title);
+    // 제목 오른쪽에 접속 QR 코드(휴대폰처럼 좁으면 제목 아래로)
+    logo.append(uiIcon('ui', 'logo', 'df-logo-img'), title, accessQr());
     const intro = el('p', 'df-text');
 
     const nickLabel = el('label', 'df-muted', '닉네임');

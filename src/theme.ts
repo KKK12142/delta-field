@@ -141,6 +141,15 @@ export const uiColor = {
   renderInfoText: '#ffffff',
 } as const;
 
+/** 첫 화면 접속 QR 코드(src/ui/qr.ts, 교사 요청 2026-11-13). 칸 하나는 정수 CSS 픽셀로 그려 흐려지지 않게 한다. */
+export const qr = {
+  size: 200, // 한 변의 목표 크기(CSS 픽셀, 교실 앞 화면에서 멀리서도 찍히게). 칸 수로 나눠 내림한 정수 배율로 그린다
+  sizePhone: 120, // 휴대폰(screen.phoneShort 이하)에서는 작게, 제목 아래에
+  margin: 4, // 여백(quiet zone) 칸 수
+  dark: '#000000',
+  light: '#ffffff',
+} as const;
+
 /** 화면 종류 판정(CSS 픽셀) */
 export const screen = {
   phoneShort: 500, // 화면 짧은 쪽이 이 값 이하면 휴대폰 모양(세로·가로 모두, src/ui/phone.ts)
