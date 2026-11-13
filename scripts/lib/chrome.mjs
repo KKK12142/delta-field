@@ -89,6 +89,13 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
         await wait(300);
       },
       touch: (type, points) => page.send('Input.dispatchTouchEvent', { type, touchPoints: points }),
+      /** 화면(CSS) 크기를 바꾼다(태블릿 크기 캡처). size가 null이면 처음 크기로 되돌린다. */
+      resize: async (size) => {
+        if (size) await page.send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: dpr || 1, mobile: false });
+        else if (dpr) await page.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: dpr, mobile: false });
+        else await page.send('Emulation.clearDeviceMetricsOverride');
+        await wait(800);
+      },
       /** 화면 좌표를 마우스로 누른다. */
       click: async (x, y) => {
         for (const type of ['mousePressed', 'mouseReleased']) {

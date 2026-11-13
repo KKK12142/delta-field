@@ -125,7 +125,7 @@ export class GoldenBellScene extends MapScene {
   protected tick(delta: number) {
     if (!this.dialog.isOpen()) this.moveByInput(delta);
     this.syncView();
-    // 문제 카드의 높이가 바뀌면(문제 글 길이) 지도를 그 아래로 다시 맞춘다.
+    // 문제 카드의 높이가 바뀌면(문제 글 길이) 화면 맞추기를 다시 한다(선생님: 지도를 카드 아래에, 학생: 따라가는 자리와 범위).
     const bottom = this.hud.bottom;
     if (Math.abs(bottom - this.hudBottom) > 1) {
       this.hudBottom = bottom;
@@ -160,6 +160,17 @@ export class GoldenBellScene extends MapScene {
     return Math.max(0, 1 - (performance.now() - this.fade.startedAt) / motion.gbFadeMs);
   }
 
+  /**
+   * 학생(교사 요청 2026-11-13): 학교 맵처럼 지도를 화면 가득 그리고 내 아바타를 같은 배율(viewZoom)로 따라간다.
+   * 문제 카드·내 상태는 지도 위에 얹고(뒤의 캐릭터는 안내 뚫기), 아바타는 카드 아래 빈 자리의 가운데에 둔다.
+   * 따라가는 범위는 맵 위쪽을 카드 높이만큼 더 내려 보일 수 있게 해(reserved().top), 맨 윗줄 구역도 카드에 가리지 않고 보인다.
+   * 선생님(프로젝터)은 지금처럼 맵 전체를 카드 아래·창 왼쪽에 맞춘다.
+   */
+  protected fitCamera() {
+    if (this.net.role === 'teacher') super.fitCamera();
+    else this.followCamera(this.avatar, true);
+  }
+
   protected reserved(): Reserved {
     const cam = this.cameras.main;
     return {
@@ -183,7 +194,7 @@ export class GoldenBellScene extends MapScene {
       this.hud.focusAnswer();
     }
     if (me && !teacher) {
-      this.hud.showMine(mineView(gb, me, this.zones));
+      this.hud.showMine(mineView(gb, me, this.zones, players));
       this.hud.setHints(hintSummary(this.net.escape, [...me.hints]));
     }
     this.panel?.show(panelView(gb, players, this.zones, rounds), this.waiting);

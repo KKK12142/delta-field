@@ -5,6 +5,9 @@ import { el, uiRoot } from './dom';
 import { CLASS_GROUPS } from '../../shared/protocol.ts';
 import { MEDAL, emblem, face, uiIcon } from './pictures';
 
+/** 학생 화면 순위를 접어 두었는지(골든벨 맵을 다시 열어도 이어진다) */
+let rankingFolded = false;
+
 /** 목숨 글자를 그림으로(public/sprites/ui): ♥ 남은 목숨, ♡ 잃은 목숨, 💀 탈락 */
 const LIFE_ICON: Record<string, string> = { '♥': 'heart', '♡': 'heart-empty', '💀': 'skull' };
 
@@ -159,6 +162,10 @@ export class GbHud {
   private readonly choices = el('ol', 'df-gb-choices');
   /** 힌트 수첩(학생): 방탈출에서 얻은 힌트 카드를 골든벨 중에도 본다. */
   readonly notebook = el('button', 'df-button df-button-small df-button-light', '힌트 수첩');
+  /** 힌트 수첩 아래 이번 판 순위(학생, 문제를 푸는 중·정답 공개 때)와 그 접기·펴기 단추 */
+  private readonly liveRanking = el('ol', 'df-gb-ranking df-gb-live');
+  private readonly rankToggle = el('button', 'df-button df-button-small df-button-light df-gb-rank-toggle');
+  private liveRows = 0;
   private answerShown = false;
 
   /** onSubmit: 학생이 단답형 답을 냈을 때(빈 글은 부르지 않는다), onNotebook: 힌트 수첩 단추를 눌렀을 때 */
@@ -210,7 +217,14 @@ export class GbHud {
       this.notebook.blur();
       onNotebook();
     });
-    this.mine.append(this.lives, this.score, this.where, this.notebook);
+    this.rankToggle.type = 'button';
+    this.rankToggle.addEventListener('click', () => {
+      this.rankToggle.blur();
+      rankingFolded = !rankingFolded;
+      this.showLiveRanking();
+    });
+    this.mine.append(this.lives, this.score, this.where, this.notebook, this.rankToggle, this.liveRanking);
+    this.showLiveRanking();
     this.mine.hidden = teacher;
     // 선생님은 오른쪽을 골든벨 창이 쓴다. 선생님 화면은 프로젝터에 띄우므로 문제와 남은 시간을 크게 보인다.
     this.top.classList.toggle('has-panel', teacher);
@@ -273,6 +287,21 @@ export class GbHud {
     this.showLives(v.lives);
     setText(this.score, v.score);
     setText(this.where, v.where);
+    setRankList(this.liveRanking, v.ranking);
+    this.liveRows = v.ranking.length;
+    this.showLiveRanking();
+  }
+
+  /** 순위가 있으면 접기·펴기 단추를 보이고, 펴 두었으면 순위를 보인다(매 프레임 불러도 바뀐 것만 고친다). */
+  private showLiveRanking() {
+    const none = this.liveRows === 0;
+    if (this.rankToggle.hidden !== none) this.rankToggle.hidden = none;
+    if (this.liveRanking.hidden !== (none || rankingFolded)) this.liveRanking.hidden = none || rankingFolded;
+    const label = rankingFolded ? '순위 펴기' : '순위 접기';
+    if (this.rankToggle.textContent !== label) {
+      this.rankToggle.textContent = label;
+      this.rankToggle.setAttribute('aria-expanded', String(!rankingFolded));
+    }
   }
 
   setStatus(text: string | null) {
