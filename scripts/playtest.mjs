@@ -912,26 +912,25 @@ check('골든벨 2번: 객관식 정답은 번호와 보기', /정답: 3\. 다/.
 await gbRound('X', 'O');
 check('골든벨 3번: 목숨을 다 잃으면 탈락', /탈락했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === true, fmt(await gbCard(b)));
 la = await looks(a);
-check('골든벨 3번: 탈락한 학생은 머리 위에 해골 3개, 흐리게 보임', la.others['나래'].tag === '💀💀💀' && la.others['나래'].alpha < 1, JSON.stringify(la.others['나래']));
+check('골든벨 3번: 탈락한 학생은 머리 위에 해골 2개, 흐리게 보임', la.others['나래'].tag === '💀💀' && la.others['나래'].alpha < 1, JSON.stringify(la.others['나래']));
 
 await gbRound('O', 'O');
 check('골든벨 4번: 탈락 중 맞히면 부활까지 남은 수, 점수는 그대로',
-  /2문제를 더 맞히면 다시 살아납니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbScore === 0, fmt(await gbCard(b)));
-check('골든벨 4번: 맞히면 해골이 하나 없어짐', (await looks(b)).me.tag === '💀💀' && (await looks(a)).others['나래'].tag === '💀💀', JSON.stringify((await looks(b)).me));
+  /1문제를 더 맞히면 다시 살아납니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbScore === 0, fmt(await gbCard(b)));
+check('골든벨 4번: 맞히면 해골이 하나 없어짐', (await looks(b)).me.tag === '💀' && (await looks(a)).others['나래'].tag === '💀', JSON.stringify((await looks(b)).me));
 
 await gbRound(2, 2, async () => {
   check('골든벨 5번: 보기가 3개면 구역도 3개', /1 0명 · 2 2명 · 3 0명 · 구역 밖 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
 });
-check('골든벨 5번: 부활까지 1문제, 해골 1개', /1문제를 더 맞히면/.test((await gbCard(b)) ?? '') && (await looks(b)).me.tag === '💀', fmt(await gbCard(b)));
-
-await gbRound('X', 'X');
-check('골든벨 6번: 3문제를 맞혀 목숨 1개로 다시 살아남',
+check('골든벨 5번: 2문제를 맞혀 목숨 1개로 다시 살아남',
   /목숨 1개로 다시 살아났습니다/.test((await gbCard(b)) ?? '') && /목숨 ♥♡♡/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === false &&
     (await looks(b)).me.tag === '♥♡♡',
   fmt(await gbCard(b)));
 
+await gbRound('X', 'X');
+check('골든벨 6번: 부활 뒤 맞힌 문제는 점수에 들어감', (await gbOf('나래')).gbScore === 1, JSON.stringify(await gbOf('나래')));
 await gbRound('O', 'O');
-check('골든벨 7번: 부활 뒤 맞힌 문제는 점수에 들어감', (await gbOf('나래')).gbScore === 1 && (await gbOf('가람')).gbScore === 7,
+check('골든벨 7번: 살아 있는 동안 맞힌 문제는 계속 점수에 들어감', (await gbOf('나래')).gbScore === 2 && (await gbOf('가람')).gbScore === 7,
   `가람 ${(await gbOf('가람')).gbScore}점, 나래 ${(await gbOf('나래')).gbScore}점`);
 // ---- 골든벨 단답형(8·9번) ----
 const answerBox = (pg) => pg.js(`(() => { const i = document.querySelector('.df-gb-answer-input'); return i && !i.closest('form').hidden; })()`);
@@ -979,13 +978,13 @@ check('골든벨 8번: 선생님 창에 낸 답 묶음과 인정 단추',
   /10 m\/s\s*1명 · 정답/.test((await answersPanel()) ?? '') && /십\s*1명 · 오답\s*나래\s*정답으로 인정/.test((await answersPanel()) ?? ''), fmt(await answersPanel()));
 await teacher.shot('gb-short-answers');
 await clickPanel('정답으로 인정');
-check('골든벨 8번: 선생님이 인정하면 다시 채점(살아남, 점수 2점)',
-  /선생님이 정답으로 인정했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === false && (await gbOf('나래')).gbScore === 2 &&
+check('골든벨 8번: 선생님이 인정하면 다시 채점(살아남, 점수 3점)',
+  /선생님이 정답으로 인정했습니다/.test((await gbCard(b)) ?? '') && (await gbOf('나래')).gbOut === false && (await gbOf('나래')).gbScore === 3 &&
     (await gbOf('나래')).gbLives === 1 && /인정 거두기/.test((await answersPanel()) ?? ''),
   `${fmt(await gbCard(b))} | ${JSON.stringify(await gbOf('나래'))}`);
 check('골든벨 8번: 인정하면 맞힌 학생 수도 바뀜', /맞힌 학생 2명 · 틀린 학생 0명/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
 await clickPanel('인정 거두기');
-check('골든벨 8번: 인정을 거두면 처음 채점으로(탈락, 1점)', (await gbOf('나래')).gbOut === true && (await gbOf('나래')).gbScore === 1 && /틀렸습니다/.test((await gbCard(b)) ?? ''),
+check('골든벨 8번: 인정을 거두면 처음 채점으로(탈락, 2점)', (await gbOf('나래')).gbOut === true && (await gbOf('나래')).gbScore === 2 && /틀렸습니다/.test((await gbCard(b)) ?? ''),
   JSON.stringify(await gbOf('나래')));
 await clickPanel('정답으로 인정');
 
@@ -1000,8 +999,8 @@ check('골든벨 9번: 답을 내지 않으면 틀림', /답을 내지 않아 �
 check('골든벨 9번: 목숨을 다 잃은 B는 탈락', (await gbOf('나래')).gbOut === true, JSON.stringify(await gbOf('나래')));
 
 // ---- 넌센스(11·12번) ----
-await gbRound('X', 'O');
-check('골든벨 10번: A는 틀려 목숨 4개(보너스·미니게임 하트), 탈락한 B는 맞혀 해골 2개', (await gbOf('가람')).gbLives === 4 && (await looks(b)).me.tag === '💀💀',
+await gbRound('X', 'X');
+check('골든벨 10번: A는 틀려 목숨 4개(보너스·미니게임 하트), 탈락한 B는 틀려 해골 2개 그대로', (await gbOf('가람')).gbLives === 4 && (await looks(b)).me.tag === '💀💀',
   `${JSON.stringify(await gbOf('가람'))} | ${(await looks(b)).me.tag}`);
 await nextButton();
 await wait(500);
@@ -1015,7 +1014,7 @@ check('골든벨 11번: 말끝을 붙인 답도 맞음, 살아 있는 A는 하�
   /내 답: 관성이요 · 맞았습니다\. 하트 \+1 · 목숨 4개/.test((await gbCard(a)) ?? '') && (await gbOf('가람')).gbLives === 4 && (await gbOf('가람')).gbScore === 9,
   `${fmt(await gbCard(a))} | ${JSON.stringify(await gbOf('가람'))}`);
 check('골든벨 11번: 탈락한 B는 부활 1개로 셈(해골 1개, 점수 그대로)',
-  (await looks(b)).me.tag === '💀' && (await gbOf('나래')).gbScore === 2 && /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''),
+  (await looks(b)).me.tag === '💀' && (await gbOf('나래')).gbScore === 3 && /1문제를 더 맞히면/.test((await gbCard(b)) ?? ''),
   `${fmt(await gbCard(b))} | ${JSON.stringify(await gbOf('나래'))}`);
 await gbRound('O', '밖');
 check('골든벨 12번: 넌센스는 틀려도 목숨을 잃지 않음',
@@ -1024,7 +1023,7 @@ check('골든벨 12번: 넌센스는 틀려도 목숨을 잃지 않음',
 check('골든벨 12번: 마지막 문제 뒤 단추는 결과 보기', /결과 보기/.test((await gbPanel()) ?? ''));
 await nextButton();
 await wait(500);
-check('골든벨 결과: 선생님 창에 순위', /1위 가람 9점/.test((await gbPanel()) ?? '') && /2위 나래 2점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
+check('골든벨 결과: 선생님 창에 순위', /1위 가람 9점/.test((await gbPanel()) ?? '') && /2위 나래 3점/.test((await gbPanel()) ?? ''), fmt(await gbPanel()));
 check('골든벨 결과: 학생 화면에 내 점수와 순위', /내 점수 9점/.test((await gbCard(a)) ?? '') && /1위 가람 9점/.test((await gbCard(a)) ?? ''), fmt(await gbCard(a)));
 await teacher.shot('gb-end');
 

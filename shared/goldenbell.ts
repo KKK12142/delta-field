@@ -5,7 +5,7 @@ export const GB_LIVES = 3;
 /** 보너스 미션 하트와 미니게임(줄다리기) 하트까지 더한 가장 많은 목숨(시작 때만 GB_LIVES를 넘는다) */
 export const GB_MAX_LIVES = 5;
 /** 탈락한 뒤 이만큼 맞히면(연속이 아니어도) 다시 살아난다. */
-export const GB_REVIVE_CORRECT = 3;
+export const GB_REVIVE_CORRECT = 2;
 /** 다시 살아날 때 받는 목숨 */
 export const GB_REVIVE_LIVES = 1;
 

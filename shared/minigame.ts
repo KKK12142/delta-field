@@ -37,9 +37,14 @@ export const DODGE_STANDS = { row: 19.5, col: 3, w: 42 } as const;
 /** 공 반지름(칸). 학생 발 반지름(size.avatarFeet 0.3)과 더해 맞음을 본다. */
 export const BALL_RADIUS = 0.35;
 /** 공이 나오는 간격(초): 처음과 끝. 판이 지날수록 줄어든다. */
-export const BALL_GAP = { start: 1.3, end: 0.22 } as const;
-/** 공 빠르기(칸/초): 처음과 끝 */
-export const BALL_SPEED = { start: 3, end: 8.5 } as const;
+export const BALL_GAP = { start: 1.1, end: 0.14 } as const;
+/** 공 빠르기(칸/초): 처음과 끝. 학생 걷기는 4칸/초. */
+export const BALL_SPEED = { start: 3, end: 10 } as const;
+/**
+ * 공 줄(2026-11-13 교사 요청 "시간이 갈수록 어렵게"): 판의 from(0~1) 뒤부터 한 가장자리에서 여러 공이 나란히 한꺼번에 굴러온다.
+ * 나올 확률은 chance.start에서 chance.end로 늘고, 공 수는 count.start에서 count.end로 는다. 공 줄 뒤에는 간격을 rest배로 쉰다.
+ */
+export const BALL_VOLLEY = { from: 0.15, chance: { start: 0.1, end: 0.5 }, count: { start: 3, end: 9 }, rest: 1.8 } as const;
 
 // ---- 줄다리기 ----
 /** 줄 위치가 이 값(반 평균 누른 수의 차이)에 닿으면 그 반이 이긴다 */
@@ -81,39 +86,48 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * Math.min(1, Math
 
 /**
  * 공 일정: 판 시작부터 duration초 동안 운동장 네 가장자리 가운데 하나에서 나와 맞은편 가장자리의 아무 데로 굴러간다.
- * 판이 지날수록 나오는 간격이 줄고(BALL_GAP) 빨라진다(BALL_SPEED).
+ * 판이 지날수록 나오는 간격이 줄고(BALL_GAP) 빨라지며(BALL_SPEED), 공 줄(BALL_VOLLEY)이 잦아지고 길어진다.
  */
 export function ballSchedule(seed: number, duration: number): Ball[] {
   const rnd = random(seed);
   const a = DODGE_ARENA;
   const balls: Ball[] = [];
-  let t = 0.5;
-  while (t < duration) {
-    const k = t / duration;
-    const side = Math.floor(rnd() * 4);
-    const along = (n: number) => rnd() * n;
-    // 나오는 자리와 가는 자리(맞은편 가장자리)
-    let from: [number, number];
-    let to: [number, number];
-    if (side === 0) {
-      from = [a.col + along(a.w), a.row - BALL_RADIUS];
-      to = [a.col + along(a.w), a.row + a.h + BALL_RADIUS];
-    } else if (side === 1) {
-      from = [a.col + along(a.w), a.row + a.h + BALL_RADIUS];
-      to = [a.col + along(a.w), a.row - BALL_RADIUS];
-    } else if (side === 2) {
-      from = [a.col - BALL_RADIUS, a.row + along(a.h)];
-      to = [a.col + a.w + BALL_RADIUS, a.row + along(a.h)];
-    } else {
-      from = [a.col + a.w + BALL_RADIUS, a.row + along(a.h)];
-      to = [a.col - BALL_RADIUS, a.row + along(a.h)];
-    }
-    const speed = lerp(BALL_SPEED.start, BALL_SPEED.end, k) * (0.85 + rnd() * 0.3);
+  const push = (t: number, from: [number, number], to: [number, number], speed: number) => {
     const dx = to[0] - from[0];
     const dy = to[1] - from[1];
     const d = Math.hypot(dx, dy);
     balls.push({ t, x0: from[0], y0: from[1], vx: (dx / d) * speed, vy: (dy / d) * speed, life: d / speed });
-    t += lerp(BALL_GAP.start, BALL_GAP.end, k) * (0.7 + rnd() * 0.6);
+  };
+  /** side 가장자리의 u(0~1) 자리와 맞은편 가장자리의 v(0~1) 자리 */
+  const ends = (side: number, u: number, v: number): [[number, number], [number, number]] => {
+    if (side === 0) return [[a.col + u * a.w, a.row - BALL_RADIUS], [a.col + v * a.w, a.row + a.h + BALL_RADIUS]];
+    if (side === 1) return [[a.col + u * a.w, a.row + a.h + BALL_RADIUS], [a.col + v * a.w, a.row - BALL_RADIUS]];
+    if (side === 2) return [[a.col - BALL_RADIUS, a.row + u * a.h], [a.col + a.w + BALL_RADIUS, a.row + v * a.h]];
+    return [[a.col + a.w + BALL_RADIUS, a.row + u * a.h], [a.col - BALL_RADIUS, a.row + v * a.h]];
+  };
+  const V = BALL_VOLLEY;
+  let t = 0.5;
+  while (t < duration) {
+    const k = t / duration;
+    const side = Math.floor(rnd() * 4);
+    const speed = lerp(BALL_SPEED.start, BALL_SPEED.end, k) * (0.85 + rnd() * 0.3);
+    const gap = lerp(BALL_GAP.start, BALL_GAP.end, k) * (0.7 + rnd() * 0.6);
+    const vk = (k - V.from) / (1 - V.from);
+    if (k >= V.from && rnd() < lerp(V.chance.start, V.chance.end, vk)) {
+      // 공 줄: 한 가장자리를 고르게 나눈 자리에서 나란히 곧게 굴러온다(사이사이 빈틈으로 피한다).
+      const n = Math.round(lerp(V.count.start, V.count.end, vk));
+      const shift = rnd();
+      for (let i = 0; i < n; i++) {
+        const u = (i + 0.25 + shift * 0.5) / n;
+        const [from, to] = ends(side, u, u);
+        push(t, from, to, speed * 0.8);
+      }
+      t += gap * V.rest;
+      continue;
+    }
+    const [from, to] = ends(side, rnd(), rnd());
+    push(t, from, to, speed);
+    t += gap;
   }
   return balls;
 }

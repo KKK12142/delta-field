@@ -108,7 +108,7 @@ export interface AnswerGroup {
   mark: 'correct' | 'accepted' | 'wrong' | 'none';
 }
 
-/** 머리 위에 띄우는 목숨: ♥♥♡. 탈락하면 해골 3개가 되고, 맞힐 때마다 하나씩 없어져 다 없어지면 다시 살아난다. */
+/** 머리 위에 띄우는 목숨: ♥♥♡. 탈락하면 해골 2개(GB_REVIVE_CORRECT)가 되고, 맞힐 때마다 하나씩 없어져 다 없어지면 다시 살아난다. */
 export function livesTag(p: Player) {
   if (p.gbOut) return '💀'.repeat(Math.max(0, GB_REVIVE_CORRECT - p.gbRevive));
   return `${'♥'.repeat(p.gbLives)}${'♡'.repeat(Math.max(0, GB_LIVES - p.gbLives))}`;
