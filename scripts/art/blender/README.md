@@ -19,10 +19,18 @@ blender -b --factory-startup --python scripts/art/blender/animal.py -- scripts/a
 
 ## JSON 형식(좌표는 Blender, 단위는 키 1.0 기준)
 - `colors`: 이름 → `#rrggbb`(sRGB). 아래 `color`는 여기 이름을 쓴다.
+- `material`: `roughness`(거칠기), `sheen`·`sheenRoughness`·`sheenColor`(가장자리가 밝아지는 시트, 짧은 털 느낌. glTF KHR_materials_sheen → three.js MeshPhysicalMaterial).
+- `shade`: 꼭짓점 색 그라데이션. 아래를 향한 면을 `bottom`배까지 어둡게 한다. `skip`의 색(눈·크림 등)은 그대로.
 - `head`·`muzzle`·`body`·`belly`: 타원체 `center`, `radius`(x,y,z), `color`. muzzle(입 둘레)은 head에, belly(배)는 body에 겹쳐 앞으로 튀어나온 부분만 보인다.
-- `ears`: `shape`(지금은 `cone`), 오른쪽 귀의 밑면 `base`, 방향 `axis`, `radius`·`height`·`tip`(끝 반지름), `flat`(앞뒤 납작함), `inner`(안쪽 귀: `color`, `scale`, `forward`, `down`). 왼쪽은 x를 뒤집는다.
-- `arms`: 오른쪽 어깨 `shoulder`(회전 중심), 어깨에서 팔 가운데까지 `offset`, `radius`, 벌림 `spread`(도).
+- `extras`: 더 붙이는 타원체(볼살 등). `part`, `center`, `radius`, `color`, `mirror`(x를 뒤집어 하나 더), `seg`.
+- `masks`: 메시의 `base` 색 꼭짓점 가운데 앞(y < `front`)에서 본 타원(`center`(x,z), `radius`(x,z)) 안을 `color`로 칠한다. `soft`는 가장자리 흐림(얼굴 아래 크림색).
+- `ears`: `shape`(지금은 `cone`), 오른쪽 귀의 밑면 `base`, 방향 `axis`, `radius`·`height`·`tip`(끝 반지름), `flat`(앞뒤 납작함),
+  `inner`(안쪽 귀: `color`, `scale`, `tall`, `flat`, `forward`, `down`). 왼쪽은 x를 뒤집는다.
+- `arms`: 오른쪽 어깨 `shoulder`(회전 중심), 어깨에서 팔 가운데까지 `offset`, `radius`, 벌림 `spread`(도), 손끝 색 `tip`(`color`, `below`: 지역 z가 이보다 낮은 곳).
 - `legs`: 오른쪽 엉덩이 `hip`, `offset`, `radius`, 발 `foot`(`offset`, `radius`, `color`).
 - `tail`: 밑동 `base`(회전 중심), 베지어 조절점 4개 `points`, 굵기 `radius`(밑동, 끝), `rings`·`sides`, 길이 비율 구간 색 `bands`.
-- `decals`: 눈·코·입·볼·줄무늬. `part`(붙일 메시: head·body), `on`(표면을 잴 타원체), `u`(앞에서 오른쪽(+x)으로 도), `v`(위로 도),
-  `size`(가로, 세로, 두께), `roll`(법선을 축으로 돌림, 도), `lift`(표면에서 띄움: 눈 위 반짝임 등), `color`.
+- `decals`: 눈·코·입·줄무늬. `part`(붙일 메시: head·body), `on`(표면을 잴 타원체), `u`(앞에서 오른쪽(+x)으로 도), `v`(위로 도),
+  `size`(가로, 세로, 두께), `roll`(법선을 축으로 돌림, 도), `tilt`(지역 x축으로 기울임: 입 윗부분을 묻어 D자로), `lift`(표면에서 띄움),
+  `face`(0~1, 법선을 정면으로 돌림: 눈이 앞을 보게), `mirror`(x를 뒤집어 하나 더, roll도 뒤집음), `under`(가장자리를 이 색으로 흐리게),
+  `paint`(법선을 아래 표면 것으로 바꿔 튀어나온 띠가 아니라 칠한 무늬처럼), `shine`(눈 위 반짝임 점: `at`(무늬 안 비율 좌표), `size`), `color`.
+- 확인 렌더를 빨리 볼 때는 `--quick`(앞·3/4·옆만 렌더).
