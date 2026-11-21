@@ -486,3 +486,9 @@ frame down            프레임 이름. 다음 줄부터 60줄, 한 줄 30글자
 ## 정하지 않은 것
 - BAZE: 몇 장까지 만들지(예산). 모델·품질은 정했다(2.6-sunburst medium).
 - 캐릭터 8가지 구상, 화면에 보일 이름, 피부색
+
+## 3D 모델(2026-11-21, 교사 결정: CC0 묶음과 생성 모델 둘 다)
+- public/models/mini-characters/: Kenney "Mini Characters" 2.0(https://kenney.nl/assets/mini-characters-1), CC0(License.txt 함께 둠).
+  캐릭터 20개(character-*.glb, 하나 약 250 KB, 텍스처 Textures/colormap.png를 함께 씀). 동작: idle, walk, sprint, jump, fall, die, emote-yes, emote-no, sit, pick-up 등.
+  보조기구·휠체어·무기 같은 소품 GLB는 묶음에 있지만 넣지 않았다(필요할 때 대장이 받는다).
+- 출처 표기는 필요 없지만 남긴다: Kenney(www.kenney.nl).
