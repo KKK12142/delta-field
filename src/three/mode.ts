@@ -14,6 +14,8 @@ export interface ModeContext {
   touch: boolean;
   room: Room;
   scene: Scene;
+  /** 내 캐릭터: 발 위치(칸)를 읽고, 옮겨 서버에 알린다(미니게임이 시작 전 자리로 되돌릴 때) */
+  me: { pos(): { col: number; row: number }; teleport(col: number, row: number): void };
 }
 
 /** 바닥 네모(칸) */
@@ -39,6 +41,10 @@ export interface MapMode {
   viewTiles(): number | null;
   /** 연결 상태 글(끊겨 다시 연결하는 중) */
   setStatus(text: string | null): void;
+  /** 내 발이 (col, row)에 설 수 있는지(벽·사물 말고 맵 부분이 더 막는 것, 예: 공 피하기 운동장 밖). 없으면 막지 않는다 */
+  allows?(col: number, row: number): boolean;
+  /** 지금 걷지 못하게 막는지(예: 줄다리기 중). 없으면 막지 않는다 */
+  frozen?(): boolean;
   /** 개발 확인용으로 window.__df에 더할 함수 */
   devHooks(): Record<string, unknown>;
   dispose(): void;

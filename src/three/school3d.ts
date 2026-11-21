@@ -1,12 +1,13 @@
 // 3D 학교 맵의 안내와 선생님 단추. 2D(RoomScene)의 위쪽 안내(Hud)를 그대로 쓰고, 3D에서 되는 것만 보인다.
-// 되는 것: 장소 이름, 방 코드, 강당으로 모으기(남은 시간 안내 포함), 전체 공지. 방 닫기는 첫 화면(선생님 방 목록)에 있다.
-// 3D에 아직 없는 것(감춤): 살펴보기·힌트 수첩·방탈출 자료·2부 열기·CCTV·미니게임 시작. 2D(?view=2d)에서 한다.
+// 되는 것: 장소 이름, 방 코드, 강당으로 모으기(남은 시간 안내 포함), 전체 공지, 미니게임 시작·그만두기(minigame3d.ts). 방 닫기는 첫 화면(선생님 방 목록)에 있다.
+// 3D에 아직 없는 것(감춤): 살펴보기·힌트 수첩·방탈출 자료·2부 열기·CCTV. 2D(?view=2d)에서 한다.
 import { GATHER_SECONDS } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
 import { formatDuration } from '../game/state';
 import { askAnnounce } from '../ui/announce';
 import { Hud } from '../ui/hud';
 import type { Character } from './characters';
+import { askMiniStart, askMiniStop, MiniGame3D } from './minigame3d';
 import type { MapMode, ModeContext } from './mode';
 
 export class SchoolMode implements MapMode {
@@ -14,35 +15,62 @@ export class SchoolMode implements MapMode {
   private busy = false;
   private gatherShown = -1;
   private place = '';
+  private readonly mini: MiniGame3D;
 
   constructor(private readonly ctx: ModeContext) {
     const teacher = ctx.net.role === 'teacher';
     const hud = new Hud(ctx.room.goal, ctx.touch, teacher);
-    for (const b of [hud.action, hud.notebook, hud.cctv, hud.mini, hud.part, hud.escapeFile]) b.hidden = true;
+    for (const b of [hud.action, hud.notebook, hud.cctv, hud.part, hud.escapeFile]) b.hidden = true;
     hud.setHelp(ctx.touch ? '화면을 누른 채 끌어 움직입니다.' : '방향키나 WASD로 움직입니다.');
     hud.setRoomCode(ctx.net.code);
     if (teacher) {
       hud.goldenbell.addEventListener('click', this.onGoldenBellButton);
       hud.announce.addEventListener('click', this.onAnnounceButton);
+      hud.mini.addEventListener('click', this.onMiniButton);
     }
     this.hud = hud;
+    this.mini = new MiniGame3D({
+      net: ctx.net,
+      dialog: ctx.dialog,
+      scene: ctx.scene,
+      pos: () => ctx.me.pos(),
+      teleport: (col, row) => ctx.me.teleport(col, row),
+      // 미니게임이 시작되면 떠 있던 창을 거둔다(답을 기다리던 일은 버린다).
+      onStart: () => {
+        if (ctx.dialog.isOpen()) ctx.dialog.abandon();
+        this.busy = false;
+      },
+    });
   }
 
   get overMap() {
     return this.hud.overMap;
   }
 
-  update(_time: number, place: string) {
-    if (place !== this.place) {
-      this.place = place;
-      this.hud.setPlace(place);
+  update(time: number, place: string) {
+    this.mini.update(time);
+    const playing = this.mini.playing;
+    const key = `${place}|${playing}`;
+    if (key !== this.place) {
+      this.place = key;
+      this.hud.setPlace(playing ? `${place} · 미니게임 중` : place);
     }
+    if (this.ctx.net.role === 'teacher') this.hud.setMini(!!this.ctx.net.mini?.phase);
     this.updateGather();
   }
 
-  decorate(ch: Character, _p: Player, _id: string, _me: boolean) {
+  decorate(ch: Character, p: Player, _id: string, _me: boolean) {
     ch.setLives(null);
-    ch.setOpacity(1);
+    // 공 피하기에서 맞아 구경하는 학생은 흐리게
+    ch.setOpacity(this.mini.opacityOf(p));
+  }
+
+  allows(col: number, row: number) {
+    return this.mini.allows(col, row);
+  }
+
+  frozen() {
+    return this.mini.frozen;
   }
 
   reserved() {
@@ -62,10 +90,11 @@ export class SchoolMode implements MapMode {
   }
 
   devHooks() {
-    return {};
+    return this.mini.devHooks();
   }
 
   dispose() {
+    this.mini.dispose();
     this.hud.destroy();
   }
 
@@ -87,6 +116,16 @@ export class SchoolMode implements MapMode {
     if (this.ctx.dialog.isOpen() || this.busy) return;
     this.busy = true;
     void askAnnounce(this.ctx.dialog, this.ctx.net).finally(() => {
+      this.busy = false;
+    });
+  };
+
+  private readonly onMiniButton = () => {
+    this.hud.mini.blur();
+    const { dialog, net } = this.ctx;
+    if (dialog.isOpen() || this.busy) return;
+    this.busy = true;
+    void (net.mini?.phase ? askMiniStop(dialog, net) : askMiniStart(dialog, net)).finally(() => {
       this.busy = false;
     });
   };

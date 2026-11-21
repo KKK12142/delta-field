@@ -2,7 +2,7 @@
 // 서버가 알려 준 지금 맵을 src/data의 맵 데이터로 그리고(world.ts), 고정 시점 카메라가 나를 따라간다.
 // 움직임·충돌·서버에 보내는 move(moveSeq 규칙 포함)는 2D(MapScene)와 같다. 다른 사람은 서버 위치로 부드럽게 따라간다.
 // 맵마다 안내·선생님 단추·맵에만 있는 그림은 mode.ts의 MapMode(학교 맵 school3d.ts, 골든벨 goldenbell3d.ts)가 맡는다.
-// 미니게임의 3D 화면, CCTV, 사물 살펴보기·방탈출은 아직 없다(2D에서 한다).
+// 미니게임은 school3d.ts → minigame3d.ts. CCTV, 사물 살펴보기·방탈출은 아직 없다(2D에서 한다).
 import { Box3, Color, DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import type { MapId } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
@@ -168,7 +168,7 @@ class View3D {
     this.world.setLooks(this.looks);
     this.scene.add(this.world.group);
 
-    const ctx = { net: this.net, dialog: this.dialog, touch: this.touch, room: this.room, scene: this.scene };
+    const ctx = { net: this.net, dialog: this.dialog, touch: this.touch, room: this.room, scene: this.scene, me: this.meHandle };
     this.mode = mapId === 'goldenbell' ? new GoldenBellMode(ctx) : new SchoolMode(ctx);
     this.mode.setStatus(this.status);
     this.place = '';
@@ -213,7 +213,7 @@ class View3D {
 
     this.updatePlace();
     this.mode?.update(time, this.place);
-    if (!this.dialog.isOpen()) this.moveByInput(dt);
+    if (!this.dialog.isOpen() && !this.mode?.frozen?.()) this.moveByInput(dt);
     else this.me.setMotion(0, 0, false);
     this.syncRemotes(dt, time);
     if (me) this.mode?.decorate(this.me, me, this.net.sessionId, true, time);
@@ -261,15 +261,31 @@ class View3D {
       // 가로, 세로를 따로 옮겨 벽에 닿으면 벽을 따라 미끄러지게 한다.
       const step = (motion.speed * dt) / 1000;
       const nextCol = this.pos.col + dx * step;
-      if (this.rules.free(nextCol, this.pos.row, this.looks)) this.pos.col = nextCol;
+      if (this.canStand(nextCol, this.pos.row)) this.pos.col = nextCol;
       const nextRow = this.pos.row + dy * step;
-      if (this.rules.free(this.pos.col, nextRow, this.looks)) this.pos.row = nextRow;
+      if (this.canStand(this.pos.col, nextRow)) this.pos.row = nextRow;
       this.placeMe();
     }
     // 누른 쪽을 보고, 실제로 움직였을 때만 걷는다(벽을 밀면 그쪽을 보고 선다).
     this.me.setMotion(dx, dy, this.pos.col !== col0 || this.pos.row !== row0);
     this.net.sendMove(this.mapId, this.pos.col, this.pos.row);
   }
+
+  /** 벽·사물에 막히지 않고 맵 부분(미니게임 운동장 울타리 등)도 막지 않는 자리인지 */
+  private canStand(col: number, row: number) {
+    return this.rules.free(col, row, this.looks) && (this.mode?.allows?.(col, row) ?? true);
+  }
+
+  /** 맵 부분(ModeContext.me)에 넘기는 내 캐릭터: 자리 읽기, 옮기고 지금 서버의 옮김 번호로 알리기 */
+  private readonly meHandle = {
+    pos: () => ({ ...this.pos }),
+    teleport: (col: number, row: number) => {
+      this.pos = { col, row };
+      this.placeMe();
+      this.net.moveSeq = this.net.me()?.moveSeq ?? this.net.moveSeq;
+      this.net.sendMove(this.mapId, col, row, true);
+    },
+  };
 
   private placeMe() {
     this.me.root.position.set(this.pos.col, 0, this.pos.row);
