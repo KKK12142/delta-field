@@ -9,9 +9,11 @@
 import { execSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { Bot, bytesIn, runBots } from './lib/bots.mjs';
-import { launchChrome, wait } from './lib/chrome.mjs';
+import { launchChrome, wait, withView } from './lib/chrome.mjs';
 
-const [baseUrl = 'http://localhost:5173/', gameUrl = 'http://localhost:2567', countArg = '35'] = process.argv.slice(2);
+const [baseArg = 'http://localhost:5173/', gameUrl = 'http://localhost:2567', countArg = '35'] = process.argv.slice(2);
+// 2D 화면을 확인한다(기본 화면은 3D라 ?view=2d를 붙인다).
+const baseUrl = withView(baseArg, '2d');
 const students = Number(countArg);
 const password = process.env.DF_TEACHER_PASSWORD;
 if (!password) {

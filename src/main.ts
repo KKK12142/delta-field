@@ -11,11 +11,11 @@ applyCssTheme();
 // 도트 글꼴을 읽기 시작한다. 첫 화면은 기다리지 않고 띄우고(글꼴이 오면 바뀐다),
 // 게임 화면은 다 읽은 뒤 시작한다(Phaser 글자는 만들 때의 글꼴로 그려진다).
 const fonts = loadFonts();
-// 주소 끝에 ?view=3d를 붙이면 three.js 3D 화면(시제품, src/three/), 없으면 Phaser 2D 화면(src/view2d.ts).
+// 기본은 three.js 3D 화면(src/three/, 2026-11-22 교사 결정). 주소 끝에 ?view=2d를 붙일 때만 Phaser 2D 화면(src/view2d.ts).
 // 두 화면은 따로 나눠 읽어, 한쪽 화면이 다른 쪽 라이브러리를 받지 않게 한다.
 // 첫 화면을 띄우는 동안 고른 화면의 코드를 미리 받아 둔다(들어가기를 누른 뒤 기다리지 않게).
-const view3d = new URLSearchParams(location.search).get('view') === '3d';
-const view = view3d ? import('./three/view3d') : import('./view2d');
+const view2d = new URLSearchParams(location.search).get('view') === '2d';
+const view = view2d ? import('./view2d') : import('./three/view3d');
 
 const net = await askEntry(connect, joinErrorText);
 // 끊겨서 첫 화면으로 돌아오면 다시 채워 두도록 방 코드·닉네임을 기억한다(비밀번호는 기억하지 않는다).
@@ -42,5 +42,5 @@ net.onStatus((status) => {
 });
 
 const loaded = await view;
-if ('start3d' in loaded) await loaded.start3d({ net, touch: isTouchDevice(), resumed });
+if ('start3d' in loaded) await loaded.start3d({ net, dialog, touch: isTouchDevice(), resumed });
 else loaded.start2d({ net, dialog, resumed });

@@ -5,6 +5,16 @@ import { writeFileSync } from 'node:fs';
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * 주소에 화면 종류(?view=)를 붙인다. 이미 있으면 그대로 둔다.
+ * 기본 화면이 3D가 되어(2026-11-22) 2D를 확인하는 스크립트(playtest·loadtest)는 '2d'를 붙여 연다.
+ */
+export function withView(url, view) {
+  const u = new URL(url);
+  if (!u.searchParams.has('view')) u.searchParams.set('view', view);
+  return u.href;
+}
+
 /** CDP 연결 하나 */
 async function cdp(wsUrl) {
   const ws = new WebSocket(wsUrl);

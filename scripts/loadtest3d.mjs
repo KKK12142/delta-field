@@ -11,7 +11,7 @@
 // 결과와 캡처는 .run/loadtest3d/에 남긴다.
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { Bot, runBots } from './lib/bots.mjs';
-import { launchChrome, wait } from './lib/chrome.mjs';
+import { launchChrome, wait, withView } from './lib/chrome.mjs';
 
 const [baseUrl = 'http://localhost:5173/', gameUrl = 'http://localhost:2567', countArg = '35'] = process.argv.slice(2);
 const students = Number(countArg);
@@ -55,7 +55,7 @@ const SIZES = [
 const THROTTLES = [1, 4];
 
 const chrome = await launchChrome(outDir);
-const teacher = await chrome.openPage('teacher', baseUrl);
+const teacher = await chrome.openPage('teacher', withQuery('view=2d'));
 await enter(teacher, { teacher: true, nickname: '선생님', pw: password });
 const code = await teacher.js(`window.__df?.code()`);
 check('선생님 화면이 방을 만듦', /^\d{4}$/.test(code ?? ''), code);
@@ -64,7 +64,8 @@ await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((
 await wait(500);
 
 // ---- 3D 화면에 혼자 들어가 걸어 보기 ----
-const s3 = await chrome.openPage('student3d', withQuery('view=3d&act=1'));
+// 주소에 view를 붙이지 않는다(기본이 3D인지 함께 본다).
+const s3 = await chrome.openPage('student3d', withQuery('act=1'));
 await enter(s3, { nickname: '삼디학생', code, character: 'char-03' });
 await wait(2500);
 const gl = await s3.js(`(() => {
@@ -74,14 +75,14 @@ const gl = await s3.js(`(() => {
   return ext ? g.getParameter(ext.UNMASKED_RENDERER_WEBGL) : (g ? g.getParameter(g.RENDERER) : null);
 })()`);
 measure('WebGL 렌더러(헤드리스 크롬)', String(gl));
-check('3D 화면으로 들어감', (await s3.js(`__df.view()`)) === '3d' && (await s3.js(`__df.map()`)) === 'school');
+check('3D 화면으로 들어감(주소에 view 없음 = 기본 3D)', (await s3.js(`__df.view()`)) === '3d' && (await s3.js(`__df.map()`)) === 'school');
 const info0 = await s3.js(`__df.three()`);
 check('3D: 캐릭터를 동물 모델로 그림', info0?.set === 'animal', info0?.set);
 check('3D: 맵과 캐릭터를 그림', info0?.calls > 3, `그리기 ${info0?.calls}번, 삼각형 ${info0?.triangles}개`);
 const me0 = info0?.me;
 check('3D: 내 캐릭터가 화면 가운데쯤', me0 && Math.abs(me0.x - 640) < 80 && Math.abs(me0.y - 400) < 120, JSON.stringify(me0));
 const tag = await s3.js(`document.querySelector('.df-hud-place')?.textContent`);
-check('3D: 위쪽 안내에 장소', !!tag?.includes('3D'), tag);
+check('3D: 위쪽 안내에 장소', !!tag && tag.length > 0, tag);
 await s3.shot('enter');
 // 흩어 선 자리에 따라 책상에 막힐 수 있어, 오른쪽·아래가 트인 시작 위치(학교 맵 start)에서 걷는다.
 await s3.js(`__df.teleport(11.5, 9.5)`);
@@ -151,7 +152,7 @@ await s3.js(`__df.zoom(null)`);
 await wait(500);
 
 // 조이스틱(터치 화면): 화면 전체 어디든 누르고 끌면 걷는다.
-const t3 = await chrome.openPage('touch3d', withQuery('view=3d&touch=1'), { touch: true, size: { width: 390, height: 844 } });
+const t3 = await chrome.openPage('touch3d', withQuery('touch=1'), { touch: true, size: { width: 390, height: 844 } });
 await enter(t3, { nickname: '터치삼디', code, character: 'char-05' });
 await wait(2500);
 const q0 = await t3.js(`__df.pos()`);
@@ -229,7 +230,7 @@ await wait(1500);
 await fpsMatrix(sk, '3D Kenney', '모임');
 await sk.shot('crowd-kenney');
 await sk.close();
-const s2 = await chrome.openPage('student2d', baseUrl);
+const s2 = await chrome.openPage('student2d', withQuery('view=2d'));
 await enter(s2, { nickname: '이디학생', code, character: 'char-03' });
 await wait(2500);
 // 2D 학생도 시작 위치 둘레에 서므로 모인 봇이 화면 안에 있다.

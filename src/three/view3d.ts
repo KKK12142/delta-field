@@ -1,7 +1,8 @@
-// three.js 3D 화면(시제품, 주소의 ?view=3d). 첫 화면과 서버 연결(src/net/connection.ts)은 2D와 같고, 화면만 3D로 그린다.
+// three.js 3D 화면(기본 화면, 2026-11-22 교사 결정. 2D는 주소의 ?view=2d). 첫 화면과 서버 연결(src/net/connection.ts)은 2D와 같고, 화면만 3D로 그린다.
 // 서버가 알려 준 지금 맵을 src/data의 맵 데이터로 그리고(world.ts), 고정 시점 카메라가 나를 따라간다.
 // 움직임·충돌·서버에 보내는 move(moveSeq 규칙 포함)는 2D(MapScene)와 같다. 다른 사람은 서버 위치로 부드럽게 따라간다.
-// 골든벨·미니게임의 3D 화면, CCTV, 사물 살펴보기는 아직 없다(다음 단계).
+// 맵마다 안내·선생님 단추·맵에만 있는 그림은 mode.ts의 MapMode(학교 맵 school3d.ts, 골든벨 goldenbell3d.ts)가 맡는다.
+// 미니게임의 3D 화면, CCTV, 사물 살펴보기·방탈출은 아직 없다(2D에서 한다).
 import { Box3, Color, DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import type { MapId } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
@@ -10,11 +11,15 @@ import goldenbell from '../data/goldenbell.json';
 import { areaAt, loadRoom, type Room } from '../data/room';
 import type { Net } from '../net/connection';
 import { motion, three } from '../theme';
+import type { Dialog } from '../ui/dialog';
 import { el, uiRoot } from '../ui/dom';
-import { Hud } from '../ui/hud';
 import { Joystick } from '../ui/joystick';
+import { SeeThrough } from '../ui/seeThrough';
 import { Character, characterSet, ModelBank } from './characters';
+import { GoldenBellMode } from './goldenbell3d';
+import type { MapMode, TileRect } from './mode';
 import { MapRules, type ObjectLook } from './rules';
+import { SchoolMode } from './school3d';
 import { World } from './world';
 
 /** 방향키·WASD(KeyboardEvent.code) → (dx, dy) */
@@ -32,6 +37,8 @@ const KEY_DIRS: Record<string, [number, number]> = {
 const LOOK_INTERVAL = 200;
 /** 주소에 ?act=1을 붙이면 이 키로 한 번 하는 동작을 틀어 본다(내 캐릭터만, 서버에 보내지 않음. 동작 시험용) */
 const ACT_KEYS: Record<string, string> = { KeyJ: 'jump', KeyH: 'wave' };
+/** 느린 기기 설정(주소의 ?lite=1): 픽셀 비율 상한을 낮춘다(효과 끄기는 goldenbell3d.ts) */
+const LITE = new URLSearchParams(location.search).get('lite') === '1';
 
 interface Remote {
   ch: Character;
@@ -41,8 +48,8 @@ interface Remote {
   seen: number;
 }
 
-export async function start3d(options: { net: Net; touch: boolean; resumed: boolean }) {
-  new View3D(options.net, options.touch, options.resumed);
+export async function start3d(options: { net: Net; dialog: Dialog; touch: boolean; resumed: boolean }) {
+  new View3D(options.net, options.dialog, options.touch, options.resumed);
 }
 
 class View3D {
@@ -62,7 +69,14 @@ class View3D {
   private room!: Room;
   private rules!: MapRules;
   private world: World | null = null;
-  private hud: Hud | null = null;
+  private mode: MapMode | null = null;
+  private readonly seeThrough: SeeThrough;
+  /** 캔버스 크기(CSS 픽셀)와 창 안의 자리 */
+  private view = { w: 1, h: 1, left: 0, top: 0 };
+  /** 카메라 틀(지도로 쓰는 자리·전체 보기)을 마지막으로 맞춘 값(바뀌었을 때만 다시 맞춘다) */
+  private frameKey = '';
+  /** 선생님 전체 보기면 true(나를 따라가지 않는다) */
+  private overview = false;
   private looks: ObjectLook[] = [];
   private lookAt = 0;
   private place = '';
@@ -83,7 +97,8 @@ class View3D {
 
   constructor(
     private readonly net: Net,
-    touch: boolean,
+    private readonly dialog: Dialog,
+    private readonly touch: boolean,
     resumed: boolean,
   ) {
     const parent = document.getElementById('game');
@@ -116,8 +131,9 @@ class View3D {
     window.addEventListener('blur', () => this.keys.clear());
     net.onStatus((s) => {
       this.status = s === 'reconnecting' ? '연결이 끊겨 다시 연결하는 중입니다.' : null;
-      this.hud?.setStatus(this.status);
+      this.mode?.setStatus(this.status);
     });
+    this.seeThrough = new SeeThrough(() => this.mode?.overMap ?? []);
 
     this.info = new URLSearchParams(location.search).get('fps') === '1' ? el('div', 'df-render-info') : null;
     if (this.info) uiRoot().append(this.info);
@@ -129,6 +145,7 @@ class View3D {
     window.addEventListener('resize', () => this.fit());
     this.fit();
     this.exposeDevHooks();
+    this.exposeModeHooks();
     this.renderer.setAnimationLoop((t) => this.tick(t));
   }
 
@@ -138,7 +155,8 @@ class View3D {
   private enterMap(mapId: MapId, resumed: boolean) {
     if (this.world && this.mapId === 'school') this.schoolPos = { ...this.pos };
     this.world?.dispose();
-    this.hud?.destroy();
+    this.mode?.dispose();
+    this.seeThrough.clear();
     for (const r of this.remotes.values()) r.ch.dispose();
     this.remotes.clear();
 
@@ -150,14 +168,12 @@ class View3D {
     this.world.setLooks(this.looks);
     this.scene.add(this.world.group);
 
-    const hud = new Hud(this.room.goal, this.joystick !== null, false);
-    // 3D 시제품에는 살펴보기·힌트 수첩이 아직 없다.
-    hud.action.hidden = true;
-    hud.notebook.hidden = true;
-    hud.setRoomCode(this.net.code);
-    hud.setStatus(this.status);
-    this.hud = hud;
+    const ctx = { net: this.net, dialog: this.dialog, touch: this.touch, room: this.room, scene: this.scene };
+    this.mode = mapId === 'goldenbell' ? new GoldenBellMode(ctx) : new SchoolMode(ctx);
+    this.mode.setStatus(this.status);
     this.place = '';
+    this.frameKey = '';
+    this.exposeModeHooks();
 
     this.pos = this.startPoint(resumed);
     // 처음 자리를 서버에 알린다. 지금 서버의 옮김 번호를 붙인다(맵을 옮긴 뒤의 자리).
@@ -195,12 +211,17 @@ class View3D {
       this.world?.setLooks(this.looks);
     }
 
-    this.moveByInput(dt);
-    this.syncRemotes(dt);
+    this.updatePlace();
+    this.mode?.update(time, this.place);
+    if (!this.dialog.isOpen()) this.moveByInput(dt);
+    else this.me.setMotion(0, 0, false);
+    this.syncRemotes(dt, time);
+    if (me) this.mode?.decorate(this.me, me, this.net.sessionId, true, time);
     this.me.update(dt);
+    this.frameCamera();
     this.follow(dt);
     this.renderer.render(this.scene, this.camera);
-    this.updatePlace();
+    this.seeThrough.update(this.overview ? [] : [this.mySpot()]);
     this.countFps(time);
     this.work[this.frame % this.work.length] = performance.now() - started;
   }
@@ -258,11 +279,13 @@ class View3D {
 
   private smoothK = 0;
   private dtNow = 0;
+  private timeNow = 0;
 
-  private syncRemotes(dt: number) {
+  private syncRemotes(dt: number, time: number) {
     // 프레임 빠르기와 상관없이 같은 정도로 따라가게 한다.
     this.smoothK = 1 - Math.exp(-dt / motion.remoteSmoothing);
     this.dtNow = dt;
+    this.timeNow = time;
     this.net.room.state.players.forEach(this.syncOne);
     for (const [id, r] of this.remotes) {
       if (r.seen === this.frame) continue;
@@ -293,33 +316,122 @@ class View3D {
     r.x += dx * this.smoothK;
     r.z += dz * this.smoothK;
     r.ch.root.position.set(r.x, 0, r.z);
+    this.mode?.decorate(r.ch, p, id, false, this.timeNow);
     r.ch.update(this.dtNow);
   };
 
   // ---- 카메라 ----
 
-  /** 화면 크기가 바뀌면 캔버스와 카메라 거리를 맞춘다: 화면 짧은 쪽에 viewTilesMin~Max칸이 보이게 한다. */
+  /** 화면 크기가 바뀌면 캔버스를 맞춘다. 카메라 틀은 frameCamera가 맞춘다. */
   private fit() {
     const w = Math.max(1, this.parent.clientWidth);
     const h = Math.max(1, this.parent.clientHeight);
     // 기기 픽셀 비율은 상한을 둔다(브라우저 확대나 다른 화면으로 옮기면 바뀌므로 여기서 맞춘다).
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, three.pixelRatioMax));
+    const cap = LITE ? three.lite.pixelRatioMax : three.pixelRatioMax;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
     this.renderer.setSize(w, h);
+    const r = this.parent.getBoundingClientRect();
+    this.view = { w, h, left: r.left, top: r.top };
+    this.frameKey = '';
+    this.frameCamera();
+  }
+
+  /**
+   * 카메라 틀: 지도로 쓰는 자리(위쪽 안내 카드·오른쪽 선생님 창을 뺀 곳)의 가운데가 카메라가 보는 점이 되게 투영 중심을 옮기고(setViewOffset),
+   * 학생은 그 자리의 짧은 쪽에 보이는 칸 수로 거리를 정한다(나를 따라간다). 선생님 전체 보기면 경기장 전체가 그 자리에 들게 맞춘다.
+   * 안내 카드 높이는 문제마다 바뀌므로 매 프레임 보고, 바뀌었을 때만 다시 맞춘다.
+   */
+  private frameCamera() {
+    const { w, h } = this.view;
+    const res = this.mode?.reserved() ?? { top: 0, right: 0 };
+    const top = Math.min(h * 0.8, Math.max(0, res.top));
+    const right = Math.min(w * 0.8, Math.max(0, res.right));
+    const box = this.mode?.overview() ?? null;
+    const tiles = this.devTiles ?? this.mode?.viewTiles() ?? null;
+    const key = `${w}|${h}|${Math.round(top)}|${Math.round(right)}|${box ? `${box.col},${box.row},${box.w},${box.h}` : ''}|${tiles}`;
+    if (key === this.frameKey) return;
+    this.frameKey = key;
+    const availW = w - right;
+    const availH = h - top;
     this.camera.aspect = w / h;
+    this.camera.setViewOffset(w, h, w / 2 - availW / 2, h / 2 - (top + availH / 2), w, h);
     this.camera.updateProjectionMatrix();
-    const tiles = this.devTiles ?? Math.min(three.viewTilesMax, Math.max(three.viewTilesMin, Math.min(w, h) / three.tilePx));
     const half = Math.tan((three.fov * Math.PI) / 360);
-    const distance = tiles / (2 * half * Math.min(1, this.camera.aspect));
+    this.overview = box !== null;
+    if (box) {
+      this.fitOverview(box, { left: 0, top, right: availW, bottom: h });
+      return;
+    }
+    const shown = tiles ?? Math.min(three.viewTilesMax, Math.max(three.viewTilesMin, Math.min(availW, availH) / three.tilePx));
+    // 화면 세로(h)에 2·d·tan(fov/2)칸이 보이므로, 지도 자리의 짧은 쪽에 shown칸이 보이는 거리
+    const distance = (shown * h) / (2 * half * Math.min(availW, availH));
+    this.setOffset(distance);
+  }
+
+  private setOffset(distance: number) {
     const pitch = (three.pitch * Math.PI) / 180;
     this.offset.set(0, Math.sin(pitch) * distance, Math.cos(pitch) * distance);
   }
 
+  /** 바닥 네모 box가 화면의 rect(CSS 픽셀) 안에 들도록 카메라 거리와 보는 점을 몇 번 고쳐 맞춘다. */
+  private fitOverview(box: TileRect, rect: { left: number; top: number; right: number; bottom: number }) {
+    const { w, h } = this.view;
+    const corners = [0, 1].flatMap((i) => [0, 1].map((j) => new Vector3(box.col + box.w * i, 0, box.row + box.h * j)));
+    // 뒤쪽 벽 위 끝도 들게
+    corners.push(new Vector3(box.col, three.wallHeight.wall, box.row), new Vector3(box.col + box.w, three.wallHeight.wall, box.row));
+    const rw = rect.right - rect.left;
+    const rh = rect.bottom - rect.top;
+    const pitch = (three.pitch * Math.PI) / 180;
+    this.focus.set(box.col + box.w / 2, three.lookHeight, box.row + box.h / 2);
+    let distance = Math.max(box.w, box.h) * 1.5;
+    const v = new Vector3();
+    for (let i = 0; i < 8; i++) {
+      this.setOffset(distance);
+      this.camera.position.copy(this.focus).add(this.offset);
+      this.camera.updateMatrixWorld();
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const c of corners) {
+        v.copy(c).project(this.camera);
+        const x = ((v.x + 1) / 2) * w;
+        const y = ((1 - v.y) / 2) * h;
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+      // 화면 픽셀 하나의 바닥 길이(보는 점 둘레, 칸)
+      const perPx = (2 * distance * Math.tan((three.fov * Math.PI) / 360)) / h;
+      this.focus.x += ((x0 + x1) / 2 - (rect.left + rw / 2)) * perPx;
+      this.focus.z += (((y0 + y1) / 2 - (rect.top + rh / 2)) * perPx) / Math.sin(pitch);
+      distance *= Math.max((x1 - x0) / rw, (y1 - y0) / rh);
+    }
+    this.setOffset(distance);
+  }
+
   private follow(dt: number) {
+    if (this.overview) {
+      this.camera.position.copy(this.focus).add(this.offset);
+      return;
+    }
     const k = 1 - Math.exp(-dt / three.followSmoothing);
     this.focus.x += (this.pos.col - this.focus.x) * k;
     this.focus.z += (this.pos.row - this.focus.z) * k;
     this.focus.y = three.lookHeight;
     this.camera.position.copy(this.focus).add(this.offset);
+  }
+
+  /** 내 캐릭터가 화면(창 기준 CSS 픽셀)에서 차지하는 타원: 안내 뚫기(SeeThrough)에 쓴다. */
+  private readonly spotV = new Vector3();
+  private mySpot() {
+    const { w, h, left, top } = this.view;
+    const v = this.spotV;
+    v.set(this.pos.col, 0, this.pos.row).project(this.camera);
+    const fx = ((v.x + 1) / 2) * w;
+    const fy = ((1 - v.y) / 2) * h;
+    v.set(this.pos.col, three.charHeight + three.tagGap + three.tagHeight, this.pos.row).project(this.camera);
+    const hy = ((1 - v.y) / 2) * h;
+    const ry = Math.max(1, (fy - hy) / 2);
+    return { x: left + fx, y: top + (fy + hy) / 2, rx: ry * 0.8, ry };
   }
 
   // ---- 안내 ----
@@ -329,7 +441,7 @@ class View3D {
     const place = areaAt(this.room, this.pos.col, this.pos.row)?.name ?? this.room.name;
     if (place === this.place) return;
     this.place = place;
-    this.hud?.setPlace(`${place} · 3D 시제품`);
+
   }
 
   private countFps(time: number) {
@@ -348,6 +460,18 @@ class View3D {
 
   // ---- 개발 중 자동 확인용(헤드리스 크롬). 빌드에는 들어가지 않는다. ----
 
+  private modeHookNames: string[] = [];
+  /** 맵 부분(골든벨 등)의 확인용 함수를 window.__df에 더한다(맵을 옮기면 앞 맵의 것은 지운다). */
+  private exposeModeHooks() {
+    if (!import.meta.env.DEV || !this.mode) return;
+    const df = (window as unknown as { __df?: Record<string, unknown> }).__df;
+    if (!df) return;
+    for (const k of this.modeHookNames) delete df[k];
+    const hooks = this.mode.devHooks();
+    this.modeHookNames = Object.keys(hooks);
+    Object.assign(df, hooks);
+  }
+
   private exposeDevHooks() {
     if (!import.meta.env.DEV) return;
     const screenOf = (x: number, z: number) => {
@@ -365,7 +489,51 @@ class View3D {
           this.pos = { col, row };
           this.placeMe();
         },
-        others: () => this.net.others().map(([, p]) => ({ nickname: p.nickname, role: p.role, map: p.map, col: p.col, row: p.row, character: p.character })),
+        others: () =>
+          this.net.others().map(([, p]) => ({
+            nickname: p.nickname,
+            role: p.role,
+            character: p.character,
+            map: p.map,
+            col: p.col,
+            row: p.row,
+            online: p.online,
+            gbLives: p.gbLives,
+            gbScore: p.gbScore,
+            gbTotal: p.gbTotal,
+            gbOut: p.gbOut,
+            gbRevive: p.gbRevive,
+            gbResult: p.gbResult,
+            gbAnswer: p.gbAnswer,
+          })),
+        /** 내 서버 상태(골든벨 목숨·점수 등) */
+        mine: () => {
+          const p = this.net.me();
+          return p ? { map: p.map, gbLives: p.gbLives, gbScore: p.gbScore, gbOut: p.gbOut, gbRevive: p.gbRevive, gbResult: p.gbResult, gbAnswer: p.gbAnswer } : null;
+        },
+        /** 보이는 모습: 나와 다른 사람의 투명도, 머리 위 목숨 글, 지금 동작 */
+        looks: () => ({
+          me: { alpha: this.me.shownOpacity, tag: this.me.livesText, action: this.me.action() },
+          others: Object.fromEntries(
+            [...this.remotes].map(([id, r]) => [
+              this.net.room.state.players.get(id)?.nickname ?? id,
+              { alpha: r.ch.shownOpacity, tag: r.ch.livesText, action: r.ch.action() },
+            ]),
+          ),
+        }),
+        /** 카메라: 선생님 전체 보기인지, 경기장 네 귀퉁이의 화면 좌표(CSS 픽셀) */
+        camera: () => ({
+          overview: this.overview,
+          corners: [
+            [0, 0],
+            [this.room.layout[0].length, 0],
+            [0, this.room.layout.length],
+            [this.room.layout[0].length, this.room.layout.length],
+          ].map(([x, z]) => {
+            const v = new Vector3(x, 0, z).project(this.camera);
+            return { x: Math.round(((v.x + 1) / 2) * this.view.w), y: Math.round(((1 - v.y) / 2) * this.view.h) };
+          }),
+        }),
         /** 이 자리에 설 수 있는지(벽·사물에 막히지 않는지) */
         free: (col: number, row: number) => this.rules.free(col, row, this.looks),
         /** 내 캐릭터가 한 번 하는 동작(jump·wave)을 튼다 */

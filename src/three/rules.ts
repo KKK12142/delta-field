@@ -24,6 +24,8 @@ export class MapRules {
 
   /** 학교 맵만 방탈출 진행에 따라 문이 열리고 사물이 감춰진다. 다른 맵의 사물은 늘 서 있다. */
   look(o: RoomObject): ObjectLook {
+    // 골든벨 구역 판(pad-*)은 goldenbell3d.ts가 구역 이름 그림으로 그린다(문제마다 보이고 감춘다).
+    if (this.mapId === 'goldenbell' && o.id.startsWith('pad-')) return 'hidden';
     if (this.mapId !== 'school') return 'shown';
     const part = this.net.part;
     if (isDoor(o)) {
