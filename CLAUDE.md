@@ -1,4 +1,85 @@
-# Delta Field
+# Delta Field (Claude Code Game Studios 방식)
+
+수업에서 쓰는 웹 게임 공간이다(2D 학교 맵, 3D로 옮기는 중). 교사(고등학교 물리)와 직접 대화하며 기획, 개발, 확인을 한다.
+2026-11-21 교사 결정: Claude Code Game Studios(CCGS 1.3.0, MIT, https://github.com/Donchitos/Claude-Code-Game-Studios)를 통째로 들이고 그 방식을 더 많이 따른다.
+원본 안내는 docs/ccgs/(README·UPGRADING 등), 원본 CLAUDE.md는 docs/ccgs/CLAUDE.original.md, 라이선스는 LICENSE-claude-game-studios.
+
+## 기술 스택
+- **Engine**: Web(TypeScript). 2D는 Phaser 4, 3D는 three.js(src/three/), 서버는 Colyseus(server/)
+- **Language**: TypeScript(엄격 모드), 서버는 Node가 그대로 실행
+- **Version Control**: Git, main에 바로 합침(trunk-based)
+- **Build System**: Vite, pnpm(아래 "환경"의 명령)
+- **Asset Pipeline**: 2D는 BAZE 생성 그림 → scripts/art, 3D는 CC0 모델 묶음·생성 모델 → public/models (docs/art.md)
+
+## Project Structure
+
+@.claude/docs/directory-structure.md
+
+## Engine Version Reference
+
+<!-- ENGINE-REFERENCE-IMPORT: the line under this comment is engine-specific,
+     and there is none until an engine is set. /setup-engine, the grow's record
+     step and /project-settings (engine.name) write
+     @docs/engine-reference/<engine>/VERSION.md here for the chosen engine. Skills
+     that need the pinned version read that file on demand either way. -->
+
+
+## Technical Preferences
+
+`project.yaml` at the repo root is the primary config store — engine, specialists,
+naming, platform, performance, modes. Skills resolve it via `resolve_config`
+(see `.claude/docs/config-resolution.md`).
+
+## Coordination Rules
+
+@.claude/docs/coordination-rules.md
+
+## Collaboration Protocol
+
+**User-driven collaboration, not autonomous execution.**
+Every task follows: **Question -> Options -> Decision -> Draft -> Approval**
+
+- Agents MUST ask "May I write this to [filepath]?" before using Write/Edit tools
+  (exempt: `active.md` appends, agent memory, a subagent's new file at the path
+  its orchestrating skill named; see `.claude/rules/agent-memory.md`)
+- Agents MUST show drafts or summaries before requesting approval
+- Multi-file changes require explicit approval for the full changeset
+- A skipped or dismissed question is not an answer: act on nothing, re-ask in
+  plain text and wait
+- Started outside this file's folder? Warn first: hooks, deny rules and the
+  ask-first mode load only when Claude Code starts here
+
+See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for full protocol and examples.
+
+### CCGS와 delta-field 규칙이 겹칠 때(2026-11-21 대장 정리, 교사 확인 전)
+- 교사는 대장하고만 대화한다(아래 "여러 세션으로 일할 때"). 대장이 Orca로 보낸 작업 지시서의 범위 안에서는 지시서가 곧 교사 승인이다.
+  담당은 지시서 밖의 파일을 고치거나 지시서에 없는 결정을 할 때만 대장에게 ask로 묻는다("May I write"를 대장에게 묻는 것으로 본다).
+- 커밋: 지금까지의 교사 결정(확인을 통과하면 대장이 커밋하고 푸시, 담당은 자기 브랜치에 커밋만)을 그대로 쓴다. CCGS의 "No commits without user instruction"보다 앞선다.
+- 말: 교사에게는 한국어 "~습니다"체(아래 "일하는 방식").
+- 처음 쓰는 CCGS 기능(/start, /adopt, /setup-engine 등)은 대장이 교사와 함께 돌린다.
+
+> **First session?** 이미 있는 게임이므로 `/start`에서 "existing work"를 고르거나 `/adopt`로 점검한다.
+
+## Coding Standards
+
+@.claude/docs/coding-standards.md
+
+## Context Management
+
+Read `.claude/docs/context-management.md` on demand — it is a reference, not
+session context. Two of its conventions are load-bearing and cited by name
+elsewhere in the repo, so they are restated here rather than lost:
+
+- **`production/session-state/active.md` is the session checkpoint.** The file is
+  the memory, not the conversation. Read it first after any compaction, crash, or
+  `/clear`.
+- **Helpers in `.claude/scripts/` emit observations, never verdicts.** A script
+  that scores or judges will eventually contradict a mode or override it cannot
+  see. (Cited by `artifact-check.sh` and `adr-dep-graph.sh`.)
+
+---
+
+# Delta Field 프로젝트 규칙(전부터 쓰던 것, 그대로 유효)
 
 수업에서 쓰는 2D 탑다운 화면의 웹 공간이다. 학생이 캐릭터를 움직여 장소를 돌아다닌다.
 보편적인 장르의 프로그램을 새로 만든다. 교사(고등학교 물리)와 직접 대화하며 기획, 개발, 확인을 한다.
