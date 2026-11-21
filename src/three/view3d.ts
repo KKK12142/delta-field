@@ -2,7 +2,7 @@
 // 서버가 알려 준 지금 맵을 src/data의 맵 데이터로 그리고(world.ts), 고정 시점 카메라가 나를 따라간다.
 // 움직임·충돌·서버에 보내는 move(moveSeq 규칙 포함)는 2D(MapScene)와 같다. 다른 사람은 서버 위치로 부드럽게 따라간다.
 // 골든벨·미니게임의 3D 화면, CCTV, 사물 살펴보기는 아직 없다(다음 단계).
-import { Color, DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
+import { Box3, Color, DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import type { MapId } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
 import school from '../data/school.json';
@@ -13,7 +13,7 @@ import { motion, three } from '../theme';
 import { el, uiRoot } from '../ui/dom';
 import { Hud } from '../ui/hud';
 import { Joystick } from '../ui/joystick';
-import { Character, ModelBank } from './characters';
+import { Character, characterSet, ModelBank } from './characters';
 import { MapRules, type ObjectLook } from './rules';
 import { World } from './world';
 
@@ -30,6 +30,8 @@ const KEY_DIRS: Record<string, [number, number]> = {
 };
 /** 사물 모습(문 열림 등)을 다시 따지는 간격(ms) */
 const LOOK_INTERVAL = 200;
+/** 주소에 ?act=1을 붙이면 이 키로 한 번 하는 동작을 틀어 본다(내 캐릭터만, 서버에 보내지 않음. 동작 시험용) */
+const ACT_KEYS: Record<string, string> = { KeyJ: 'jump', KeyH: 'wave' };
 
 interface Remote {
   ch: Character;
@@ -50,6 +52,8 @@ class View3D {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(three.fov, 1, 0.5, 300);
   private readonly bank = new ModelBank();
+  /** 개발 확인용: 화면 짧은 쪽에 보일 칸 수를 정해 가까이 본다(null이면 theme대로) */
+  private devTiles: number | null = null;
   private readonly me: Character;
   private readonly remotes = new Map<string, Remote>();
   private readonly keys = new Set<string>();
@@ -101,7 +105,9 @@ class View3D {
     this.scene.add(this.me.root);
 
     this.joystick = touch ? new Joystick() : null;
+    const actKeys = new URLSearchParams(location.search).get('act') === '1';
     window.addEventListener('keydown', (e) => {
+      if (actKeys && e.code in ACT_KEYS && !isTyping(e.target) && !e.repeat) this.me.act(ACT_KEYS[e.code]);
       if (!(e.code in KEY_DIRS) || isTyping(e.target)) return;
       this.keys.add(e.code);
       e.preventDefault();
@@ -301,7 +307,7 @@ class View3D {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    const tiles = Math.min(three.viewTilesMax, Math.max(three.viewTilesMin, Math.min(w, h) / three.tilePx));
+    const tiles = this.devTiles ?? Math.min(three.viewTilesMax, Math.max(three.viewTilesMin, Math.min(w, h) / three.tilePx));
     const half = Math.tan((three.fov * Math.PI) / 360);
     const distance = tiles / (2 * half * Math.min(1, this.camera.aspect));
     const pitch = (three.pitch * Math.PI) / 180;
@@ -360,6 +366,15 @@ class View3D {
           this.placeMe();
         },
         others: () => this.net.others().map(([, p]) => ({ nickname: p.nickname, role: p.role, map: p.map, col: p.col, row: p.row, character: p.character })),
+        /** 이 자리에 설 수 있는지(벽·사물에 막히지 않는지) */
+        free: (col: number, row: number) => this.rules.free(col, row, this.looks),
+        /** 내 캐릭터가 한 번 하는 동작(jump·wave)을 튼다 */
+        act: (name: string) => this.me.act(name),
+        /** 화면 짧은 쪽에 tiles칸만 보이게 가까이 본다(캡처용, null이면 되돌림) */
+        zoom: (tiles: number | null) => {
+          this.devTiles = tiles;
+          this.fit();
+        },
         /** 3D: 그리기 호출 수, 삼각형 수, 그린 다른 사람 수, 내 캐릭터·다른 사람의 화면 좌표(CSS 픽셀) */
         three: () => ({
           onScreen: [...this.remotes.values()].filter((r) => {
@@ -377,6 +392,11 @@ class View3D {
           })(),
           remotes: this.remotes.size,
           me: screenOf(this.pos.col, this.pos.row),
+          /** 모델 묶음, 내 캐릭터의 지금 동작, 보는 쪽(도, 0 = +Z 아래, 90 = +X 오른쪽), 몸의 가장 낮은 점 높이(발바닥, 칸) */
+          set: characterSet,
+          action: this.me.action(),
+          facing: (this.me.facing() * 180) / Math.PI,
+          feetY: new Box3().setFromObject(this.me.body, true).min.y,
           others: [...this.remotes.values()].map((r) => screenOf(r.x, r.z)),
         }),
       },

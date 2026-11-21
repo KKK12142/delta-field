@@ -450,6 +450,9 @@ export const three = {
   flatHeight: 0.04, // 지나갈 수 있는 사물(walk)·벽에 거는 사물(flat)·연 문의 높이
   objectInset: 0.08, // 사물 상자를 차지 칸보다 사방으로 이만큼 줄인다(칸 사이가 보이게)
   charHeight: 1.3, // 캐릭터 키(발~머리 꼭대기). 모델 키를 재서 이 키로 맞춘다
+  // 캐릭터 모델 묶음: 'animal'은 동물(characters.json의 animal → public/models/animals/<animal>.glb, 뼈대 없음),
+  // 'kenney'는 Kenney Mini Characters(characters.json의 model, 뼈대 있음). 주소에 ?chars=kenney를 붙이면 그때만 Kenney로 그린다.
+  characterSet: 'animal' as 'animal' | 'kenney',
   // 카메라: 고정 시점(비스듬히 내려다봄, 돌리기 없음). 화면 짧은 쪽에 보이는 칸 수 = 짧은 쪽 CSS 픽셀 / tilePx를 viewTilesMin~Max로 자른 값
   fov: 40, // 세로 화각(도)
   pitch: 55, // 내려다보는 각도(도, 90이면 바로 위)
@@ -485,7 +488,9 @@ export const three = {
   tagMeText: color.plateMeText,
   // 동작
   walkFade: 0.15, // 서기·걷기 바꿀 때 섞는 시간(초)
-  walkTimeScale: 1.4, // 걷기 동작 빠르기(motion.speed 4.4칸/초에 발이 미끄러져 보이지 않게)
+  walkTimeScale: { kenney: 1.4, animal: 1.6 } as Record<string, number>, // 걷기 동작 빠르기(motion.speed 4.4칸/초에 발이 미끄러져 보이지 않게, 모델 묶음별)
+  actFade: 0.12, // 한 번 하는 동작(jump·wave)으로 바꿀 때와 끝나고 돌아올 때 섞는 시간(초)
+  glossShininess: 60, // 동물 모델의 반짝이는 재질(눈·코, GLB 재질에 clearcoat가 있음)의 반짝임(Phong)
   turnSmoothing: 60, // 도는 빠르기(ms)
   remoteWalkGap: 0.04, // 다른 사람이 서버 위치와 이 거리(칸) 넘게 떨어져 있으면 걷는 중으로 본다
 } as const;

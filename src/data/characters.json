@@ -1,10 +1,10 @@
 [
-  { "id": "char-01", "name": "실험실", "model": "male-e" },
-  { "id": "char-02", "name": "전자기", "model": "male-f" },
-  { "id": "char-03", "name": "탐험", "model": "female-b" },
-  { "id": "char-04", "name": "관찰", "model": "female-a" },
-  { "id": "char-05", "name": "운동", "model": "male-b" },
-  { "id": "char-06", "name": "교복", "model": "male-d" },
-  { "id": "char-07", "name": "천문", "model": "female-c" },
-  { "id": "char-08", "name": "메이커", "model": "female-f" }
+  { "id": "char-01", "name": "실험실", "model": "male-e", "animal": "cat-astra" },
+  { "id": "char-02", "name": "전자기", "model": "male-f", "animal": "cat-astra" },
+  { "id": "char-03", "name": "탐험", "model": "female-b", "animal": "cat-astra" },
+  { "id": "char-04", "name": "관찰", "model": "female-a", "animal": "cat-astra" },
+  { "id": "char-05", "name": "운동", "model": "male-b", "animal": "cat-astra" },
+  { "id": "char-06", "name": "교복", "model": "male-d", "animal": "cat-astra" },
+  { "id": "char-07", "name": "천문", "model": "female-c", "animal": "cat-astra" },
+  { "id": "char-08", "name": "메이커", "model": "female-f", "animal": "cat-astra" }
 ]

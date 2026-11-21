@@ -94,7 +94,7 @@
 | art/work/ | 다듬는 중간 그림과 미리보기 | 넣지 않음 |
 | art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본. tiles/<id>.txt, objects/<kind>.txt. 캐릭터는 char-0N.txt(네 방향 서기), char-0N.sheet.txt(걷기 12프레임), rig.json(걷기 뼈대 고침), palette.txt(공용 색표) | 넣음 |
 | public/sprites/characters/char-01.png | 캐릭터 시트 | 넣음 |
-| src/data/characters.json | 캐릭터 목록 `[{ id, name, model }]`. model은 3D 화면의 Kenney 모델 이름(character-<model>.glb). name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
+| src/data/characters.json | 캐릭터 목록 `[{ id, name, model, animal }]`. 3D 화면에서 model은 Kenney 모델 이름(mini-characters/character-<model>.glb), animal은 동물 모델 이름(animals/<animal>.glb). 어느 쪽을 쓸지는 theme.three.characterSet(지금 animal, 주소 ?chars=kenney로 Kenney를 볼 수 있음). 지금은 모두 cat-astra(임시). name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
@@ -538,3 +538,11 @@ frame down            프레임 이름. 다음 줄부터 60줄, 한 줄 30글자
 - 결과: public/models/animals/cat.glb. 확인 판 art/concepts/animal3d-cat-check.png(시안 A-1·A-2와 앞·3/4·옆, idle·walk·jump·wave 대표 장면, Cycles 렌더).
 - three.js 확인(헤드리스 크롬, 임시 페이지): GLTFLoader로 읽힘, 메시 7개 모두 꼭짓점 색, 키 1.000·발바닥 y=0, 얼굴이 +Z, 클립 4개가 AnimationMixer로 재생되고 오류 없음.
 - 시안과 다른 점: 입 둘레 흰 부분이 시안보다 작고, 입이 덜 벌어졌고, 털 질감(플로킹)이 없다.
+
+## 3D 시제품에 고양이 넣기(2026-11-21, 맵 담당)
+- ?view=3d에서 모든 사람(학생·선생님·봇)을 public/models/animals/cat-astra.glb로 그린다(characters.json의 animal, 임시로 8개 캐릭터 모두 cat-astra).
+- 뼈대가 없어 일반 clone으로 나눠 쓴다(모양 함께 씀). GLB 재질 2개는 꼭짓점 색 Lambert(털)·Phong(눈·코, clearcoat 재질) 하나씩으로 바꿔 모든 동물이 함께 쓴다.
+- 키는 theme.three.charHeight(1.3칸)에 맞추고 발바닥을 y = 0에 둔다. 서 있을 때 idle, 걸을 때 walk(빠르기 theme.three.walkTimeScale.animal).
+  주소에 ?act=1을 붙이면 J 키로 jump, H 키로 wave를 내 캐릭터에서 틀어 본다(서버에 보내지 않음).
+- 고양이 하나가 메시 11개(재질 나뉜 부분까지 그리기 12번)라 35명이 모이면 그리기가 Kenney의 약 3.4배(500번 안팎)다.
+
