@@ -7,7 +7,7 @@
 ## 환경
 - 집 데스크탑 WSL2 Ubuntu의 ~/projects/delta-field. 교사는 맥의 Orca 앱으로 원격 접속하고, 이 컴퓨터를 원격으로 켜고 끈다.
 - Phaser 4.2.1, Vite 8.3.7, TypeScript 7.0.2(엄격 모드), pnpm 10.26.0, Node 24(nvm, .nvmrc)
-- 구조: src/main.ts(시작), src/render.ts(그리는 방식: 주소의 ?render=dpr·free·css, ?fps=1), src/scenes/(MapScene.ts 맵·움직임·카메라 바탕, painter.ts 맵 그리기, RoomScene.ts 학교 맵·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨, avatar.ts 캐릭터 아바타),
+- 구조: src/main.ts(시작, ?view=3d면 3D 시제품), src/view2d.ts(2D 화면 시작), src/three/(3D 시제품: view3d.ts 화면·카메라, world.ts 맵, characters.ts 모델·동작, rules.ts 문·사물 규칙), src/render.ts(그리는 방식: 주소의 ?render=dpr·free·css, ?fps=1), src/scenes/(MapScene.ts 맵·움직임·카메라 바탕, painter.ts 맵 그리기, RoomScene.ts 학교 맵·살펴보기·CCTV 모드, GoldenBellScene.ts 골든벨, avatar.ts 캐릭터 아바타),
   src/data/(맵 데이터 JSON과 형식: school.json, goldenbell.json. 형식은 docs/map.md. characters.json 캐릭터 목록), src/game/(state.ts 한 판의 상태, cctv.ts·goldenbell.ts 화면에 보일 글),
   src/ui/(첫 화면·대화상자·안내·조이스틱·CCTV 창·골든벨 안내, HTML), src/net/connection.ts(서버 연결), src/theme.ts(색·크기·글꼴. CSS도 여기서 넣는 --df-* 변수만 쓴다),
   server/(Colyseus 게임 서버: main.ts, ClassRoom.ts, questions.ts 골든벨 문제 읽기, escape.ts 방탈출 자료 읽기, EscapeGame.ts 방탈출 채점·진행),
@@ -21,7 +21,7 @@
   pnpm playtest(화면·게임 서버를 켠 채로 DF_TEACHER_PASSWORD를 넘겨, 헤드리스 크롬에서 선생님 1명·학생 2명으로 한 판을 자동으로 해 본다.
   방 데이터를 바꾸면 scripts/playtest.mjs도 맞춘다. 확인용 게임 서버는 확인용 비밀번호로 따로 켜고, 끝나면 끈다.
   공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell, 방탈출 확인용 자료는 DF_ESCAPE_DIR=scripts/playtest-escape(README)),
-  pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
+  pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm loadtest:3d(3D 화면 확인과 35명 fps 측정), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
 - 그림 생성 키: ~/.config/delta-field/baze.env의 BAZE_API_KEY(저장소 밖, chmod 600). 교사가 직접 넣는다. pnpm art:gen만 읽고 내용을 출력하지 않는다.
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 화면·게임 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
