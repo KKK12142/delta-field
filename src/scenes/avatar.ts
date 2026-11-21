@@ -6,6 +6,7 @@ import characters from '../data/characters.json';
 import { DEFAULT_CHARACTER } from '../../shared/protocol.ts';
 import { alpha, color, motion, size } from '../theme';
 import { Plate, type PlateSkin } from './plate';
+import { characterSheet } from '../ui/pictures';
 
 /** 아바타 위 짧은 글의 모양: CCTV에서 지금 하는 일, 골든벨에서 목숨 */
 export type TagStyle = 'cctv' | 'lives';
@@ -19,10 +20,6 @@ const STAND = 1;
 
 export const CHARACTER_IDS: readonly string[] = characters.map((c) => c.id);
 
-/** 캐릭터 시트 주소(public/ 아래). 첫 화면의 캐릭터 고르기도 쓴다. */
-export function characterSheet(id: string) {
-  return `${import.meta.env.BASE_URL}sprites/characters/${id}.png`;
-}
 
 /** 시트를 불러오게 건다(장면의 preload에서). 이미 불러온 것은 건너뛴다. */
 export function loadCharacters(scene: Scene) {

@@ -439,6 +439,57 @@ export const motion = {
   mapMarkMs: 60000, // 미니맵에 2부 문을 표시해 두는 시간(ms)
 } as const;
 
+/**
+ * 3D 화면(three.js 시제품, src/three/, 주소의 ?view=3d). 길이는 칸 단위(바닥 한 칸 = 1). 서버 좌표(칸)를 그대로 바닥 평면 (x = col, z = row)에 놓는다.
+ * 바닥 칸 색은 color.tile의 fill·alt를 그대로 쓴다.
+ */
+export const three = {
+  background: color.background,
+  wallHeight: { wall: 0.5, fence: 0.35, roof: 0.9, auditorium: 0.9 } as Record<string, number>, // 막힌 칸 상자 높이(칸 종류 id별, 없으면 wall)
+  objectHeight: 0.45, // 사물(가구 등) 상자 높이
+  flatHeight: 0.04, // 지나갈 수 있는 사물(walk)·벽에 거는 사물(flat)·연 문의 높이
+  objectInset: 0.08, // 사물 상자를 차지 칸보다 사방으로 이만큼 줄인다(칸 사이가 보이게)
+  charHeight: 1.3, // 캐릭터 키(발~머리 꼭대기). 모델 키를 재서 이 키로 맞춘다
+  // 카메라: 고정 시점(비스듬히 내려다봄, 돌리기 없음). 화면 짧은 쪽에 보이는 칸 수 = 짧은 쪽 CSS 픽셀 / tilePx를 viewTilesMin~Max로 자른 값
+  fov: 40, // 세로 화각(도)
+  pitch: 55, // 내려다보는 각도(도, 90이면 바로 위)
+  tilePx: 64,
+  viewTilesMin: 8,
+  viewTilesMax: 12,
+  lookHeight: 0.5, // 카메라가 바라보는 점의 높이(발에서, 칸)
+  followSmoothing: 80, // 카메라가 나를 따라가는 빠르기(ms, 작을수록 바로)
+  pixelRatioMax: 1.5, // 기기 픽셀 비율 상한(레티나 태블릿·휴대폰에서 그리는 픽셀 수를 줄인다)
+  antialias: true,
+  // 빛(실시간 그림자는 계산하지 않는다)
+  skyLight: 0xffffff,
+  groundLight: 0xb9ad9a,
+  hemiIntensity: 1.8,
+  sunLight: 0xffffff,
+  sunIntensity: 1.6,
+  sunFrom: { x: -0.5, y: 1, z: 0.7 }, // 빛이 오는 쪽
+  // 발밑 원 그림자(그림자 계산 대신)
+  shadowColor: 0x000000,
+  shadowOpacity: 0.22,
+  shadowRadius: 0.3,
+  // 내 캐릭터 발밑 고리(color.meMark, 많이 모여도 내 캐릭터를 찾게)
+  meRingInner: 0.34,
+  meRingOuter: 0.44,
+  // 머리 위 닉네임 판
+  tagFont: 20, // 캔버스 글자 크기(px, Galmuri9 10px의 2배)
+  tagPadX: 8,
+  tagPadY: 5,
+  tagHeight: 0.28, // 판 높이(칸)
+  tagGap: 0.1, // 머리 꼭대기와 판 사이(칸)
+  tagBackground: 'rgba(29, 21, 49, 0.78)',
+  tagText: color.plateText,
+  tagMeText: color.plateMeText,
+  // 동작
+  walkFade: 0.15, // 서기·걷기 바꿀 때 섞는 시간(초)
+  walkTimeScale: 1.4, // 걷기 동작 빠르기(motion.speed 4.4칸/초에 발이 미끄러져 보이지 않게)
+  turnSmoothing: 60, // 도는 빠르기(ms)
+  remoteWalkGap: 0.04, // 다른 사람이 서버 위치와 이 거리(칸) 넘게 떨어져 있으면 걷는 중으로 본다
+} as const;
+
 /** 미니맵(src/ui/minimap.ts, 캔버스에 그리므로 CSS 변수가 아니라 값을 바로 쓴다) */
 export const minimap = {
   background: '#8a7f72', // 벽·바깥

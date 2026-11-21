@@ -94,7 +94,7 @@
 | art/work/ | 다듬는 중간 그림과 미리보기 | 넣지 않음 |
 | art/src/ | 다듬은 그림의 글자판(.txt). 손으로 고치는 원본. tiles/<id>.txt, objects/<kind>.txt. 캐릭터는 char-0N.txt(네 방향 서기), char-0N.sheet.txt(걷기 12프레임), rig.json(걷기 뼈대 고침), palette.txt(공용 색표) | 넣음 |
 | public/sprites/characters/char-01.png | 캐릭터 시트 | 넣음 |
-| src/data/characters.json | 캐릭터 목록 `[{ id, name }]`. name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
+| src/data/characters.json | 캐릭터 목록 `[{ id, name, model }]`. model은 3D 화면의 Kenney 모델 이름(character-<model>.glb). name은 화면 이름(교사가 정하지 않아 주제 이름을 임시로 씀) | 넣음 |
 | public/sprites/tiles/<이름>.png | 바닥·벽. 이름은 맵의 바닥·벽 이름과 같게(classroomFloor, wallFace …) | 넣음 |
 | public/sprites/objects/<kind>.png | 사물. 이름은 src/data/room.ts의 OBJECT_KINDS와 같게(blackboard, teacherDesk …). 문·현관문의 열린 모양은 따로 `<kind>-open.png`(docs/map.md) | 넣음 |
 | public/sprites/icons/<아이템 id>.png | 아이템 아이콘(locker-key …). 바닥 물건은 사물 sprite와 같은 이름(item-sensor …) | 넣음 |
@@ -492,3 +492,7 @@ frame down            프레임 이름. 다음 줄부터 60줄, 한 줄 30글자
   캐릭터 20개(character-*.glb, 하나 약 250 KB, 텍스처 Textures/colormap.png를 함께 씀). 동작: idle, walk, sprint, jump, fall, die, emote-yes, emote-no, sit, pick-up 등.
   보조기구·휠체어·무기 같은 소품 GLB는 묶음에 있지만 넣지 않았다(필요할 때 대장이 받는다).
 - 출처 표기는 필요 없지만 남긴다: Kenney(www.kenney.nl).
+- 3D 화면(?view=3d 시제품, src/three/)의 캐릭터 대응(2026-11-21 맵 담당이 정함, 교사 확인 전): 도트 캐릭터와 옷 색·느낌이 가까운 사람 모델을 골랐다.
+  char-01 실험실 → male-e(안경·흰 가운), char-02 전자기 → male-f, char-03 탐험 → female-b(노란 옷), char-04 관찰 → female-a,
+  char-05 운동 → male-b(주황 옷), char-06 교복 → male-d(정장·넥타이), char-07 천문 → female-c(보라), char-08 메이커 → female-f.
+  나머지 12개(female-d·e, male-a·c·g, alien, knight, raider, robot, soldier, worker, zombie)는 아직 쓰지 않는다. 모델 키는 화면에서 theme의 three.charHeight로 맞춘다.
