@@ -12,6 +12,7 @@ import {
   Group,
   LinearFilter,
   LoopOnce,
+  NearestFilter,
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
@@ -146,12 +147,101 @@ function nameTag(text: string, me: boolean) {
   return { sprite, texture, material };
 }
 
+/** 골든벨 목숨 아이콘(2D와 같은 그림: public/sprites/ui/heart·heart-empty·skull). 한 번만 읽는다. */
+const LIVES_ICONS = { '♥': 'heart', '♡': 'heart-empty', '💀': 'skull' } as const;
+let livesImages: Promise<Map<string, HTMLImageElement>> | null = null;
+function loadLivesImages() {
+  livesImages ??= Promise.all(
+    Object.entries(LIVES_ICONS).map(
+      ([ch, name]) =>
+        new Promise<[string, HTMLImageElement]>((done) => {
+          const img = new Image();
+          img.onload = img.onerror = () => done([ch, img]);
+          img.src = `${import.meta.env.BASE_URL}sprites/ui/${name}.png`;
+        }),
+    ),
+  ).then((list) => new Map(list));
+  return livesImages;
+}
+/** 아이콘 하나의 칸(도트). 그림은 9×8·9×9라 9×9 칸에 아래를 맞춰 그린다. */
+const ICON_DOTS = 9;
+
+/**
+ * 머리 위 목숨 줄(♥♥♡, 탈락이면 💀💀). 캔버스 한 장(가장 많은 목숨 GB_MAX_LIVES 칸)에 가운데 맞춰 그리고 도트가 번지지 않게 NearestFilter로 보인다.
+ * 이름표 아래(머리 위)에 놓는다.
+ */
+class LivesRow {
+  private readonly canvas = document.createElement('canvas');
+  readonly texture: CanvasTexture;
+  readonly material: SpriteMaterial;
+  readonly sprite: Sprite;
+  private text = '';
+
+  constructor(me: boolean) {
+    const n = three.livesMax;
+    this.canvas.width = (n * ICON_DOTS + (n - 1) * three.livesIconGap) * three.livesDotPx;
+    this.canvas.height = ICON_DOTS * three.livesDotPx;
+    this.texture = new CanvasTexture(this.canvas);
+    this.texture.colorSpace = SRGBColorSpace;
+    this.texture.magFilter = this.texture.minFilter = NearestFilter;
+    this.texture.generateMipmaps = false;
+    this.material = new SpriteMaterial({ map: this.texture, depthTest: false, depthWrite: false, transparent: true });
+    this.sprite = new Sprite(this.material);
+    this.sprite.center.set(0.5, 0);
+    this.sprite.scale.set((three.livesHeight * this.canvas.width) / this.canvas.height, three.livesHeight, 1);
+    this.sprite.position.y = three.charHeight + three.tagGap;
+    this.sprite.renderOrder = me ? 2 : 1;
+    this.sprite.visible = false;
+  }
+
+  /** 지금 보이는 글(확인용) */
+  get shown() {
+    return this.sprite.visible ? this.text : null;
+  }
+
+  /** 받은 글(♥·♡·💀) 그대로 아이콘을 늘어놓는다. 글이 같으면 다시 그리지 않는다. */
+  set(text: string) {
+    if (text === this.text) return;
+    this.text = text;
+    void loadLivesImages().then((images) => {
+      if (text !== this.text) return;
+      const ctx = this.canvas.getContext('2d');
+      if (!ctx) return;
+      const icons = [...text].map((ch) => images.get(ch)).filter((img): img is HTMLImageElement => !!img && img.width > 0);
+      const d = three.livesDotPx;
+      const gap = three.livesIconGap;
+      const width = icons.reduce((a, img) => a + img.width, 0) + gap * Math.max(0, icons.length - 1);
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      let x = Math.round((this.canvas.width / d - width) / 2);
+      for (const img of icons) {
+        ctx.drawImage(img, x * d, (ICON_DOTS - img.height) * d, img.width * d, img.height * d);
+        x += img.width + gap;
+      }
+      this.texture.needsUpdate = true;
+    });
+  }
+
+  dispose() {
+    this.texture.dispose();
+    this.material.dispose();
+  }
+}
+
 /** 한 사람의 3D 캐릭터. root의 위치가 발 위치(x = col, z = row)다. */
 export class Character {
   readonly root = new Group();
   /** 몸(모델을 담고 바라보는 쪽으로 돈다) */
   readonly body = new Group();
   private readonly tag: ReturnType<typeof nameTag>;
+  private readonly shadow: Mesh;
+  private lives: LivesRow | null = null;
+  private readonly me: boolean;
+  /** 모델의 메시와 함께 쓰는 재질(흐리게 할 때 이 캐릭터만의 재질로 바꿨다가 돌려놓는다) */
+  private readonly shared = new Map<Mesh, Material>();
+  /** 흐리게 할 때 쓰는 이 캐릭터만의 재질(함께 쓰는 재질 → 복사본). 처음 흐려질 때 만든다. */
+  private own: Map<Material, Material> | null = null;
+  private opacity = 1;
   private mixer: AnimationMixer | null = null;
   private clips = new Map<string, AnimationClip>();
   private idle: AnimationAction | null = null;
@@ -169,9 +259,12 @@ export class Character {
     nickname: string,
     me: boolean,
   ) {
+    this.me = me;
     const shadow = new Mesh(bank.shadowGeometry, bank.shadowMaterial);
     shadow.position.y = 0.01;
     shadow.renderOrder = -1;
+    this.shadow = shadow;
+    this.shared.set(shadow, bank.shadowMaterial);
     this.root.add(shadow, this.body);
     if (me) {
       const ring = new Mesh(bank.ringGeometry, bank.ringMaterial);
@@ -191,6 +284,11 @@ export class Character {
     model.scale.setScalar(t.scale);
     model.position.y = t.lift;
     this.body.add(model);
+    model.traverse((o) => {
+      const mesh = o as Mesh;
+      if (mesh.isMesh) this.shared.set(mesh, mesh.material as Material);
+    });
+    if (this.opacity < 1) this.applyOpacity();
     this.mixer = new AnimationMixer(model);
     this.clips = t.clips;
     const idle = t.clips.get('idle');
@@ -270,11 +368,76 @@ export class Character {
     return this.yaw;
   }
 
+  /**
+   * 머리 위 목숨 줄(골든벨, ♥·♡·💀 글). null이면 감춘다. 보이면 이름표를 그 위로 올린다.
+   */
+  setLives(text: string | null) {
+    if (text === null) {
+      if (this.lives) this.lives.sprite.visible = false;
+    } else {
+      if (!this.lives) {
+        this.lives = new LivesRow(this.me);
+        this.lives.material.opacity = this.opacity;
+        this.root.add(this.lives.sprite);
+      }
+      this.lives.set(text);
+      this.lives.sprite.visible = true;
+    }
+    const raised = this.lives?.sprite.visible ?? false;
+    this.tag.sprite.position.y = three.charHeight + three.tagGap + (raised ? three.livesHeight + three.livesGap : 0);
+  }
+
+  /**
+   * 몸(모델·그림자·이름표·목숨 줄)의 투명도 0~1. 1이면 함께 쓰는 재질로 돌려놓고, 1보다 작으면 이 캐릭터만의 재질 복사본을 흐리게 한다.
+   * 0이면 감춘다. 내 발밑 고리는 흐리게 하지 않는다.
+   */
+  setOpacity(a: number) {
+    const v = Math.max(0, Math.min(1, a));
+    if (v === this.opacity) return;
+    this.opacity = v;
+    this.root.visible = v > 0;
+    this.applyOpacity();
+  }
+
+  /** 머리 위 목숨 글(확인용, 감췄으면 null) */
+  get livesText() {
+    return this.lives?.shown ?? null;
+  }
+
+  /** 지금 투명도(확인용) */
+  get shownOpacity() {
+    return this.root.visible ? this.opacity : 0;
+  }
+
+  private applyOpacity() {
+    const fade = this.opacity < 1;
+    if (fade) this.own ??= new Map();
+    for (const [mesh, shared] of this.shared) {
+      if (!fade || !this.own) {
+        mesh.material = shared;
+        continue;
+      }
+      let own = this.own.get(shared);
+      if (!own) {
+        own = shared.clone();
+        own.transparent = true;
+        this.own.set(shared, own);
+      }
+      // 그림자는 처음부터 반투명이라 처음 투명도에 곱한다.
+      own.opacity = mesh === this.shadow ? three.shadowOpacity * this.opacity : this.opacity;
+      mesh.material = own;
+    }
+    this.tag.material.opacity = this.opacity;
+    if (this.lives) this.lives.material.opacity = this.opacity;
+  }
+
   dispose() {
     this.disposed = true;
     this.root.removeFromParent();
     this.mixer?.stopAllAction();
     this.tag.texture.dispose();
     this.tag.material.dispose();
+    this.lives?.dispose();
+    for (const m of this.own?.values() ?? []) m.dispose();
   }
 }

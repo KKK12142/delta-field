@@ -6,11 +6,13 @@
 // 사물 위치는 src/data/school.json에, 미션 답 번호는 escape/example.yaml에 맞춰 두었다. 맵이나 예시 자료를 바꾸면 함께 고친다.
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { color, seeThrough, size, uiSize } from '../src/theme.ts';
-import { launchChrome, wait } from './lib/chrome.mjs';
+import { launchChrome, wait, withView } from './lib/chrome.mjs';
 import qrcode from 'qrcode-generator';
 import { startDelayProxy } from './lib/delay-proxy.mjs';
 
-const [baseUrl = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
+const [baseArg = 'http://localhost:5173/', outDir = '.run/playtest'] = process.argv.slice(2);
+// 2D 화면을 확인한다(기본 화면은 3D라 ?view=2d를 붙인다).
+const baseUrl = withView(baseArg, '2d');
 const password = process.env.DF_TEACHER_PASSWORD;
 if (!password) {
   console.error('DF_TEACHER_PASSWORD(게임 서버의 선생님 비밀번호)를 넘겨야 합니다.');
@@ -81,7 +83,7 @@ for (let i = 0; i < 60 && !/방탈출 자료/.test((await slowHost.dialogText())
 await clickIn(slowHost, '.df-dialog .df-button', '닫기');
 await wait(300);
 const slowCode = await slowHost.js(`__df.code()`);
-const slow = await openPage('slow', `http://127.0.0.1:${webPort + 1000}/`);
+const slow = await openPage('slow', withView(`http://127.0.0.1:${webPort + 1000}/`, '2d'));
 await slow.enter({ nickname: '느림', code: slowCode });
 for (let i = 0; i < 80 && (await slow.js(`typeof window.__df?.code === 'function'`)) !== true; i++) await wait(250);
 await wait(1000);

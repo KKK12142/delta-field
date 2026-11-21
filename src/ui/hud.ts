@@ -204,6 +204,11 @@ export class Hud {
         : '방향키나 WASD로 움직이고, 스페이스바로 살펴봅니다.';
   }
 
+  /** 조작 안내를 바꾼다(3D 화면처럼 살펴보기가 없는 화면). */
+  setHelp(text: string) {
+    this.help.textContent = text;
+  }
+
   destroy() {
     clearTimeout(this.bannerTimer);
     this.top.remove();

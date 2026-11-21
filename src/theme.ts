@@ -493,6 +493,38 @@ export const three = {
   glossShininess: 60, // 동물 모델의 반짝이는 재질(눈·코, GLB 재질에 clearcoat가 있음)의 반짝임(Phong)
   turnSmoothing: 60, // 도는 빠르기(ms)
   remoteWalkGap: 0.04, // 다른 사람이 서버 위치와 이 거리(칸) 넘게 떨어져 있으면 걷는 중으로 본다
+  // 머리 위 목숨 줄(골든벨, 2D와 같은 하트·해골 그림). 이름표 아래에 놓고 이름표를 그만큼 올린다
+  livesMax: 5, // 캔버스에 넣을 아이콘 수(GB_MAX_LIVES)
+  livesDotPx: 4, // 아이콘 도트 하나를 캔버스에 그리는 크기(px)
+  livesIconGap: 1, // 아이콘 사이(도트)
+  livesHeight: 0.26, // 목숨 줄 높이(칸)
+  livesGap: 0.04, // 목숨 줄과 이름표 사이(칸)
+  // 골든벨 경기장(src/three/goldenbell3d.ts). 구역 색은 color.zone(2D와 같음)
+  gbZoneLift: 0.015, // 구역 판을 바닥에서 띄우는 높이(칸, 바닥과 겹쳐 깜박이지 않게)
+  gbZoneWait: 0.12, // 대기(첫 문제 전·문제 사이 아님·결과) 흐린 판 투명도. 대기에는 객관식 4구역을 흐리게 보인다
+  gbZoneQuestion: 0.42, // 문제: 이번 종류 구역 판 투명도
+  gbZoneCorrect: 0.72, // 정답 공개: 정답 구역
+  gbZoneDim: 0.06, // 정답 공개: 나머지 구역
+  gbZoneOnMs: 400, // 문제가 시작되면 판이 켜지는(투명도가 오르는) 시간(ms)
+  gbGlowMs: 1800, // 정답 공개 때 정답 구역이 번쩍이는 시간(ms)
+  gbGlowPeriod: 450, // 번쩍임 한 번(ms)
+  gbGlowBoost: 0.25, // 번쩍일 때 더하는 투명도
+  gbCloseSeconds: 3, // 남은 시간이 이 초 이하면 구역 테두리가 안쪽으로 닫혀 들어온다
+  gbFrameMin: 0.08, // 테두리 두께(칸): 닫히기 시작
+  gbFrameMax: 0.6, // 테두리 두께(칸): 시간 끝
+  gbFrameColor: 0xffffff,
+  gbFrameOpacity: 0.75,
+  gbLabelPx: 16, // 구역 이름 그림(zone-O 등 16×16 도트)을 캔버스에 그릴 때 도트 하나 크기(px)
+  gbChoiceFont: 44, // 객관식 보기 글 캔버스 글자 크기(px)
+  gbChoiceLine: 0.62, // 보기 글 한 줄 높이(칸)
+  gbChoicePad: 0.3, // 판과 보기 글 사이·구역 가장자리 여백(칸)
+  gbChoiceText: '#2e2a26', // 보기 글 색(color.zoneLabel과 같음)
+  gbChoiceBack: 'rgba(255, 248, 230, 0.82)', // 보기 글 바탕(구역 색 위에서 읽히게)
+  gbStudentTiles: 10, // 학생: 문제 카드 아래 빈 자리의 짧은 쪽에 보이는 칸 수
+  gbTeacherMargin: 0.4, // 선생님: 경기장 전체를 맞출 때 둘레 여백(칸)
+  gbJumpRanks: 3, // 결과(끝)에서 jump하는 등수(1~3등)
+  // 느린 기기 설정(주소의 ?lite=1): 픽셀 비율 상한을 낮추고 번쩍임·테두리 닫힘 효과를 끈다
+  lite: { pixelRatioMax: 1, effects: false },
 } as const;
 
 /** 미니맵(src/ui/minimap.ts, 캔버스에 그리므로 CSS 변수가 아니라 값을 바로 쓴다) */
