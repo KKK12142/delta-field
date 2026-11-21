@@ -6,6 +6,9 @@
   - 서울을 쓰려고 SCP AdvancedModeRegionRestrictionSecurityControlPolicy의 RegionFloor에 ap-northeast-2를 더했다(교사가 관리 계정 콘솔에서 고침).
 - Lightsail 서울(ap-northeast-2a): 인스턴스 delta-field(Ubuntu 24.04, micro_3_0 1 GB, 월 7달러), 고정 IP delta-field-ip 3.38.62.241, 열린 포트 22·80·443.
 - 예산: AWS Budgets delta-field-monthly 월 10달러(실제 50%·100%, 예상 100%에 메일 알림). 고급 기능을 켜면 지출 한도(자동 차단)는 쓸 수 없다.
+- 요금(2026-11-21 확인): 지금까지 0달러. Lightsail 서버 사용 시간의 단가가 0으로 잡힌다(무료 기간, 끝나는 날은 콘솔·CLI 어디에도 나오지 않음).
+  관리 계정에 크레딧 120달러(Free Tier 100 + Budgets 설정 20, 2026-11-12 발급, 2027-11-12 만료, 사용 0). 무료 기간이 끝나면 월 7달러를 이 크레딧에서 쓴다.
+  데이터 전송은 요금제에 월 2 TB가 들어 있어 전송량이 적어도 요금은 줄지 않는다.
 - 서버 안: 스왑 1 GB, Node 24(/opt/node), pnpm(corepack), Caddy(/etc/caddy/Caddyfile), 저장소 ~/delta-field,
   systemd 서비스 delta-field(NODE_ENV=production, 포트 2567, 꺼지면 다시 켬). 정답 YAML은 scp로 goldenbell/·escape/에만 둔다(권한 600).
 - 대장 접속: ~/.ssh/config의 df-cloud(열쇠 ~/.ssh/delta-field-cloud, Lightsail 키 페어 delta-field-lead).
