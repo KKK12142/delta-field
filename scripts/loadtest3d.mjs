@@ -2,7 +2,8 @@
 // 선생님 1명(2D 크롬 화면)이 방을 만들고, 가짜 학생(봇)이 Node에서 붙어 학교 맵을 쉬지 않고 돌아다닌다.
 // 학생 1명은 헤드리스 크롬의 3D 화면으로 들어와 맵·내 캐릭터·닉네임을 캡처하고, 방향키와 조이스틱으로 걸어 본다.
 // 그다음 휴대폰(390×844, DPR 3)·태블릿(1180×820, DPR 2) 크기에서 보통 속도와 CPU 4배 느리게(CDP Emulation.setCPUThrottlingRate)로 fps를 잰다.
-// 같은 조건의 2D 화면 fps도 함께 잰다(견주기용).
+// 같은 조건의 2D 화면 fps도 함께 잰다(견주기용). 3D는 동물 모델(기본)과 Kenney 모델(?chars=kenney)을 같은 모임에서 견준다.
+// 동물 모델은 가까이(__df.zoom) 걸어 가며 걷기 동작·보는 쪽·발바닥 높이를 보고 캡처하고, ?act=1의 J·H 키로 jump·wave도 틀어 본다.
 // 헤드리스 크롬은 GPU 없이 소프트웨어로 그릴 수 있어(결과에 WebGL 렌더러를 적는다) 실제 기기와 숫자가 다르다. 실제 모양과 빠르기는 기기에서 본다.
 // 화면 서버(Vite)와 게임 서버가 켜져 있어야 하고, 게임 서버는 DF_ESCAPE_DIR=scripts/playtest-escape로 켠다.
 // 사용: DF_TEACHER_PASSWORD=... pnpm loadtest:3d [화면 주소] [게임 서버 주소] [학생 수]
@@ -41,6 +42,12 @@ const withQuery = (q) => {
   return u.href;
 };
 
+/** 키를 누른 채로 둔다(release로 뗀다). 누르는 동안 상태를 읽을 때 쓴다. */
+const KEYS = { ArrowLeft: 37, ArrowRight: 39, ArrowUp: 38, ArrowDown: 40, KeyJ: 74, KeyH: 72 };
+const keyName = (code) => (code.startsWith('Key') ? code.slice(3).toLowerCase() : code);
+const hold = (page, code) => page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName(code), code, windowsVirtualKeyCode: KEYS[code] });
+const release = (page, code) => page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName(code), code, windowsVirtualKeyCode: KEYS[code] });
+
 const SIZES = [
   { name: '휴대폰', width: 390, height: 844, dpr: 3 },
   { name: '태블릿', width: 1180, height: 820, dpr: 2 },
@@ -57,7 +64,7 @@ await teacher.js(`[...document.querySelectorAll('.df-dialog .df-choice')].find((
 await wait(500);
 
 // ---- 3D 화면에 혼자 들어가 걸어 보기 ----
-const s3 = await chrome.openPage('student3d', withQuery('view=3d'));
+const s3 = await chrome.openPage('student3d', withQuery('view=3d&act=1'));
 await enter(s3, { nickname: '삼디학생', code, character: 'char-03' });
 await wait(2500);
 const gl = await s3.js(`(() => {
@@ -69,6 +76,7 @@ const gl = await s3.js(`(() => {
 measure('WebGL 렌더러(헤드리스 크롬)', String(gl));
 check('3D 화면으로 들어감', (await s3.js(`__df.view()`)) === '3d' && (await s3.js(`__df.map()`)) === 'school');
 const info0 = await s3.js(`__df.three()`);
+check('3D: 캐릭터를 동물 모델로 그림', info0?.set === 'animal', info0?.set);
 check('3D: 맵과 캐릭터를 그림', info0?.calls > 3, `그리기 ${info0?.calls}번, 삼각형 ${info0?.triangles}개`);
 const me0 = info0?.me;
 check('3D: 내 캐릭터가 화면 가운데쯤', me0 && Math.abs(me0.x - 640) < 80 && Math.abs(me0.y - 400) < 120, JSON.stringify(me0));
@@ -86,6 +94,61 @@ await wait(500);
 const seen = await teacher.js(`__df.others().find((o) => o.nickname === '삼디학생')`);
 check('3D: 선생님 화면(서버)도 새 위치를 앎', seen && Math.hypot(seen.col - p1.col, seen.row - p1.row) < 0.01, seen ? `(${seen.col.toFixed(2)}, ${seen.row.toFixed(2)})` : '없음');
 await s3.shot('walked');
+
+// ---- 고양이 가까이: 걷기 동작, 앞을 보고 걷는지, 발이 바닥에 붙는지 ----
+await s3.js(`__df.teleport(11.5, 9.5)`);
+await s3.js(`__df.zoom(3.2)`);
+await wait(800);
+const still = await s3.js(`__df.three()`);
+check('고양이: 서 있을 때 idle', still.action === 'idle', still.action);
+check('고양이: 서 있을 때 발바닥이 바닥(y = 0)', Math.abs(still.feetY) < 0.02, `y = ${still.feetY.toFixed(3)}`);
+await s3.shot('cat-idle');
+const walkFeet = [];
+// 오른쪽(+X, 보는 쪽 90°), 아래(+Z 카메라 쪽, 0°), 위(-Z, 180°), 왼쪽(-X, -90°)
+// 그 방향으로 1.5칸이 트인 자리를 찾아 서서 걷는다(책상·벽에 막혀 멈추면 idle이 된다).
+const DIRS = [['ArrowRight', 90, 'right', 1, 0], ['ArrowDown', 0, 'down', 0, 1], ['ArrowLeft', -90, 'left', -1, 0], ['ArrowUp', 180, 'up', 0, -1]];
+for (const [code, want, label, dx, dy] of DIRS) {
+  const spot = await s3.js(`(() => {
+    for (let r = 2; r < 30; r++) for (let c = 2; c < 40; c++) {
+      const col = c + 0.5, row = r + 0.5;
+      let ok = true;
+      for (let k = 0; k <= 6 && ok; k++) ok = __df.free(col + ${dx} * k * 0.25, row + ${dy} * k * 0.25);
+      if (ok) return { col, row };
+    }
+    return null;
+  })()`);
+  if (spot) await s3.js(`__df.teleport(${spot.col}, ${spot.row})`);
+  await wait(300);
+  await hold(s3, code);
+  await wait(200);
+  const t = await s3.js(`__df.three()`);
+  for (let i = 0; i < 4; i++) {
+    walkFeet.push((await s3.js(`__df.three()`)).feetY);
+    await wait(25);
+  }
+  await s3.shot(`cat-walk-${label}`);
+  await release(s3, code);
+  const off = Math.abs(((t.facing - want + 540) % 360) - 180);
+  check(`고양이: ${label}로 걸을 때 walk, 그쪽을 봄`, !!spot && t.action === 'walk' && off < 10, `${spot ? `(${spot.col}, ${spot.row})에서 ` : '트인 자리 없음, '}${t.action}, 보는 쪽 ${t.facing.toFixed(0)}° (바랄 쪽 ${want}°)`);
+  await wait(500);
+}
+measure('고양이: 걷는 동안 몸의 가장 낮은 점 높이', `${Math.min(...walkFeet).toFixed(3)} ~ ${Math.max(...walkFeet).toFixed(3)}칸 (${walkFeet.length}번 잼)`);
+const stop = await s3.js(`__df.three()`);
+check('고양이: 멈추면 idle로 돌아옴', stop.action === 'idle', stop.action);
+// 한 번 하는 동작: ?act=1에서 J = jump, H = wave
+for (const [code, name] of [['KeyJ', 'jump'], ['KeyH', 'wave']]) {
+  await hold(s3, code);
+  await release(s3, code);
+  await wait(350);
+  const t = await s3.js(`__df.three()`);
+  await s3.shot(`cat-${name}`);
+  check(`고양이: ${code.slice(3)} 키로 ${name}`, t.action === name, t.action);
+  await wait(1800);
+  const back = await s3.js(`__df.three()`);
+  check(`고양이: ${name}가 끝나면 idle`, back.action === 'idle' && Math.abs(back.feetY) < 0.02, `${back.action}, 발 y = ${back.feetY.toFixed(3)}`);
+}
+await s3.js(`__df.zoom(null)`);
+await wait(500);
 
 // 조이스틱(터치 화면): 화면 전체 어디든 누르고 끌면 걷는다.
 const t3 = await chrome.openPage('touch3d', withQuery('view=3d&touch=1'), { touch: true, size: { width: 390, height: 844 } });
@@ -131,7 +194,7 @@ async function fpsMatrix(page, label, crowd = '퍼짐') {
       await wait(1500);
       const fps = await page.fps(5000);
       const extra =
-        label === '3D'
+        label.startsWith('3D')
           ? await page.js(`(() => { const t = __df.three(); const f = t.frameMs;
               return \`프레임당 계산 평균 \${f.avg.toFixed(1)}ms·95% \${f.p95.toFixed(1)}ms, 그리기 \${t.calls}번, 픽셀 비율 \${t.pixelRatio}, 화면 안 \${t.onScreen}명\`; })()`)
           : '';
@@ -142,7 +205,7 @@ async function fpsMatrix(page, label, crowd = '퍼짐') {
   }
 }
 // 퍼진 경우(봇이 학교 맵 전체를 돌아다님)와 모두 내 둘레에 모인 경우(골든벨처럼 한 곳에 모임)를 잰다.
-await fpsMatrix(s3, '3D', '퍼짐');
+await fpsMatrix(s3, '3D 고양이', '퍼짐');
 const center = await s3.js(`__df.pos()`);
 for (const bot of live) {
   bot.wander = false;
@@ -153,8 +216,19 @@ await wait(4000);
 const shuffle = setInterval(() => {
   for (const bot of live) bot.target = { col: center.col - 4 + Math.random() * 8, row: center.row - 2.5 + Math.random() * 5 };
 }, 1500);
-await fpsMatrix(s3, '3D', '모임');
+await fpsMatrix(s3, '3D 고양이', '모임');
+await s3.shot('crowd-cat');
 await s3.close();
+// 같은 모임을 Kenney 모델(앞 시제품)로 다시 잰다(견주기).
+const sk = await chrome.openPage('student3d-kenney', withQuery('view=3d&chars=kenney'));
+await enter(sk, { nickname: '케니학생', code, character: 'char-03' });
+await wait(3000);
+check('3D(?chars=kenney): Kenney 모델로 그림', (await sk.js(`__df.three().set`)) === 'kenney');
+await sk.js(`__df.teleport(${center.col}, ${center.row})`);
+await wait(1500);
+await fpsMatrix(sk, '3D Kenney', '모임');
+await sk.shot('crowd-kenney');
+await sk.close();
 const s2 = await chrome.openPage('student2d', baseUrl);
 await enter(s2, { nickname: '이디학생', code, character: 'char-03' });
 await wait(2500);
