@@ -1,10 +1,11 @@
 // 3D 화면의 맵 규칙: 사물이 보이는지·막는지와 발밑 충돌. 2D(MapScene.free, RoomScene.objectBlocks)와 같은 규칙을 따른다.
-// 미니게임(공 피하기 울타리, 보물찾기 중 문 열기)은 3D 시제품 범위 밖이라 따지지 않는다.
+// 미니게임: 보물찾기 중에는 열린 부의 문을 모두 연다(2D와 같다). 공 피하기 운동장 울타리는 minigame3d.ts(MapMode.allows).
 import { DOOR_KINDS } from '../../shared/escape.ts';
 import type { MapId } from '../../shared/protocol.ts';
 import { isFloor, partOf, type Room, type RoomObject } from '../data/room';
 import type { Net } from '../net/connection';
 import { size } from '../theme';
+import { playingMini } from './minigame3d';
 
 /** 사물의 모습: 서 있음(막음), 열림(연 문, 지나감), 감춤(주운 물건, 열리지 않은 2부 사물) */
 export type ObjectLook = 'shown' | 'open' | 'hidden';
@@ -30,6 +31,8 @@ export class MapRules {
     const part = this.net.part;
     if (isDoor(o)) {
       if (partOf(this.room, o) > part) return 'shown';
+      // 보물찾기 중(세기 포함)에는 열린 부의 문을 모두 연다(방탈출 진행과 따로).
+      if (playingMini(this.net) === 'treasure') return 'open';
       if (!o.mission || !this.net.escape.doors.includes(o.mission)) return 'open';
       return this.hasDone(o.mission) ? 'open' : 'shown';
     }

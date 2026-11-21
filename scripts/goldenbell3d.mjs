@@ -93,8 +93,8 @@ await enter(teacher, { teacher: true, nickname: '선생님', pw: password });
 const code = await teacher.js(`window.__df?.code()`);
 check('선생님: 주소에 view 없이 3D 화면으로 방을 만듦', /^\d{4}$/.test(code ?? '') && (await teacher.js(`__df.view()`)) === '3d', code);
 const shownButtons = await teacher.js(`[...document.querySelectorAll('.df-hud button')].filter((b) => !b.hidden && b.offsetParent).map((b) => b.textContent)`);
-check('선생님 3D 학교 맵: 강당으로 모으기·전체 공지 단추가 보이고 CCTV·미니게임은 감춤',
-  shownButtons.includes('강당으로 모으기') && shownButtons.includes('전체 공지') && !shownButtons.includes('CCTV 보기') && !shownButtons.includes('미니게임 시작'), shownButtons.join(', '));
+check('선생님 3D 학교 맵: 강당으로 모으기·전체 공지·미니게임 시작 단추가 보이고 CCTV는 감춤',
+  shownButtons.includes('강당으로 모으기') && shownButtons.includes('전체 공지') && shownButtons.includes('미니게임 시작') && !shownButtons.includes('CCTV 보기'), shownButtons.join(', '));
 
 // ---- 학생 A(3D), B(2D) ----
 const a = await open('a3d', baseUrl);

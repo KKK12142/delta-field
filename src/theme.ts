@@ -611,6 +611,37 @@ export const playground = {
   choiceLine: 1.1, // 객관식 보기 글 한 줄 높이(칸, 넓은 구역에 맞게 three.gbChoiceLine 대신)
 } as const;
 
+/** 미니게임 3D(src/three/minigame3d.ts, 미니게임 담당). 길이는 칸(바닥 한 칸 = 1). 규칙 값(공 반지름·운동장 등)은 shared/minigame.ts */
+export const mini3d = {
+  // 보물: 보통은 작은 상자, 금은 보석(팔면체). 떠서 돌고 오르내리며 스스로 빛나는 세기가 오르내린다(반짝임).
+  treasureSize: 0.32, // 보통 보물 상자 한 변
+  goldSize: 0.24, // 금 보물 보석 반지름
+  treasureLift: 0.32, // 보물 가운데를 바닥에서 띄운 높이
+  bob: 0.07, // 오르내리는 폭
+  bobMs: 1400, // 한 번 오르내리는 시간(ms)
+  spinMs: 2600, // 한 바퀴 도는 시간(ms)
+  treasureColor: color.treasure,
+  goldColor: color.treasureGold,
+  glow: 0.3, // 스스로 빛나는 세기(가운데)
+  glowAmp: 0.25, // 반짝일 때 더하고 빼는 폭
+  glowMs: 650, // 반짝임 한 번(ms)
+  goldGlowBoost: 0.25, // 금 보물은 더 밝게
+  // 공: 빨간 공에 흰 띠(굴러가는 것이 보이게). 바닥에 둥근 그림자
+  ballColor: color.ball,
+  ballStripe: 0xffffff,
+  ballStripeWidth: 0.32, // 띠 너비(반지름에 대한 비율, 가운데에서 위아래로)
+  ballSegments: 16,
+  ballsMax: 160, // 한 번에 그릴 수 있는 공 수
+  shadowColor: 0x000000,
+  shadowOpacity: 0.25,
+  shadowScale: 1.1, // 그림자 반지름(공 반지름에 대한 비율)
+  // 공 피하기 운동장 울타리(이번 판 학생은 밖으로 못 나간다): 반투명 판 네 변
+  fenceHeight: 0.45,
+  fenceThick: 0.06,
+  fenceColor: 0xffffff,
+  fenceOpacity: 0.4,
+} as const;
+
 /** uiColor, uiSize, uiSkin(--df-skin-이름), 글꼴을 CSS 변수(--df-이름)로 넣는다. */
 export function applyCssTheme(root: HTMLElement = document.documentElement) {
   const entries: [string, string][] = [
