@@ -1094,13 +1094,13 @@ await wait(300);
 // 거기 다른 학생(B)이 서도 A 화면의 카드는 뚫리지 않는다(안내 뚫기는 내 캐릭터만, 교사 결정 2026-11-13).
 const gbFrom = await a.js(`__df.pos()`);
 const bFrom = await b.js(`__df.pos()`);
-await a.js(`__df.teleport(9.5, 15.5)`);
+await a.js(`__df.teleport(22, 25.5)`); // 맨 아래(트랙)
 await wait(2500);
 const bRow = await a.js(`(() => {
   const card = document.querySelector('.df-gb-card').getBoundingClientRect(), cam = __df.camera();
   return (card.top + card.height / 2 - cam.map.y) / (cam.zoom * ${size.tile}) + ${size.avatarHeight / 2 / size.tile};
 })()`);
-await b.js(`__df.teleport(9.5, ${bRow})`);
+await b.js(`__df.teleport(22, ${bRow})`);
 await wait(1500);
 const gbHole = await a.js(`(() => {
   const n = document.querySelector('.df-gb-card'), r = n.getBoundingClientRect(), s = __df.screenOf('나래');
@@ -1120,9 +1120,9 @@ check('골든벨: 머리 위에 목숨(보너스와 줄다리기를 이긴 A는 
 await teacher.shot('gb-ready');
 // 내 캐릭터 표시(골든벨): 한 자리에 모여 겹쳐도 내 것만 표시. 선생님 화면은 선생님 자신만 표시한다.
 const gbMarkFrom = { a: await a.js(`__df.pos()`), b: await b.js(`__df.pos()`), t: await teacher.js(`__df.pos()`) };
-await a.js(`__df.teleport(4.5, 7)`);
-await b.js(`__df.teleport(4.7, 7.3)`);
-await teacher.js(`__df.teleport(4.3, 7.5)`);
+await a.js(`__df.teleport(8, 8)`);
+await b.js(`__df.teleport(8.2, 8.3)`);
+await teacher.js(`__df.teleport(7.8, 8.5)`);
 await wait(2500);
 const gbMarks = await a.js(`__df.meMarks()`);
 const tMarks = await teacher.js(`__df.meMarks()`);
@@ -1140,7 +1140,7 @@ async function gbPhones(scene) {
   const out = [];
   for (const s of PHONES) {
     await a.resize(s);
-    await a.js(`__df.teleport(9.5, 9.5)`);
+    await a.js(`__df.teleport(22, 14)`);
     await wait(2000);
     const v = await seenRatio(a, GB_HUD);
     const font = await a.js(`getComputedStyle(document.querySelector('.df-gb-question')).fontSize`);
@@ -1163,8 +1163,8 @@ check('골든벨 학생 화면은 맵이 화면 폭을 빈 곳 없이 채우고(
   ga.zoom >= zoomA - 1e-6 && ga.map.x <= 0.5 && ga.map.x + ga.map.w >= aw - 0.5,
   `배율 ${ga.zoom} (학교 ${zoomA}), 맵 화면 ${ga.map.x.toFixed(0)}~${(ga.map.x + ga.map.w).toFixed(0)} / 화면 ${aw}`);
 
-// 골든벨 맵의 답 구역 가운데쯤(구역은 4행부터, 가운데 9열은 통로)
-const ZONE = { O: [4.5, 6.5], X: [14.5, 6.5], 1: [4.5, 6.5], 2: [14.5, 6.5], 3: [4.5, 12.5], 4: [14.5, 12.5], 밖: [9.5, 6.5] };
+// 골든벨 맵(44×28 운동장)의 답 구역 안쪽(구역은 4행부터, 가운데 18~26열은 통로·출발 자리)
+const ZONE = { O: [8, 8], X: [30, 8], 1: [8, 8], 2: [30, 8], 3: [8, 19], 4: [30, 19], 밖: [22, 8] };
 const nextButton = () => teacher.js(`document.querySelector('.df-gb-panel .df-row > .df-button:not(.df-button-small):not(.df-gb-close)').click()`);
 /** 선생님이 문제를 내고 A, B를 구역에 세운다. during은 푸는 중에, 시간이 끝나면 정답 공개까지 기다린다. */
 async function gbRound(aZone, bZone, during) {
@@ -1216,7 +1216,7 @@ await gbRound(3, 1, async () => {
 // 객관식 정답 공개(문제 카드가 길다): 학생 화면 배율은 학교 맵과 같고, 맨 윗줄로 가면 맵 위쪽이 카드 아래로 내려와 구역이 가리지 않는다.
 // 태블릿 크기(가로 1024×768, 세로 768×1024)에서도 본다.
 const gbTop = async (label) => {
-  await a.js(`__df.teleport(2.5, 3)`); // 맨 윗줄 바닥(2행, 무대 옆)
+  await a.js(`__df.teleport(2.5, 1.5)`); // 맨 윗줄 바닥(1행 트랙)
   await wait(2500);
   const v = await a.js(`(() => { const c = __df.camera(); return { zoom: c.zoom, map: c.map, mapY: c.map.y, card: document.querySelector('.df-gb').getBoundingClientRect().bottom, w: innerWidth, h: innerHeight }; })()`);
   // 맵이 화면 폭(또는 높이)을 빈 곳 없이 채운다(cover). 짧은 쪽에 gbMinTiles칸 이상은 보인다.
@@ -1235,7 +1235,7 @@ const gbTop = async (label) => {
     JSON.stringify(ch));
   await a.shot(`gb-choice-${label}`);
   // 맵 가운데에 서면 구역이 몇 개 보이는지(다 보임 / 조금이라도 보임)
-  await a.js(`__df.teleport(9.5, 9.5)`);
+  await a.js(`__df.teleport(22, 14)`);
   await wait(2500);
   const seen = await a.js(`(() => { const c = __df.camera(), t = c.zoom * ${size.tile}, top = document.querySelector('.df-gb').getBoundingClientRect().bottom;
     const zs = ${JSON.stringify(gbZones)}.map((z) => ({ y0: c.map.y + z.row * t, y1: c.map.y + (z.row + z.h) * t, x0: c.map.x + z.col * t, x1: c.map.x + (z.col + z.w) * t }));

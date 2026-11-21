@@ -1,5 +1,7 @@
 // 3D 골든벨 경기장(design/gdd/goldenbell-3d.md). 규칙·채점은 서버(shared/goldenbell.ts, server/ClassRoom.ts) 그대로이고, 여기서는 보이는 모습만 정한다.
-// - 답 구역 판(OX: O 파랑·X 빨강, 객관식 1~4: 2×2, 2D와 같은 자리·색)과 구역 이름 그림(2D의 zone-O 등)·객관식 보기 글. 글은 캐릭터 위에 그린다.
+// - 넓은 운동장(44×28칸, 바닥 무늬·나무·건물은 playground3d.ts, design/quick-specs/goldenbell-playground.md).
+// - 답 구역 판(OX: O 파랑·X 빨강, 객관식 1~4: 2×2, 2D와 같은 자리·색)과 구역 이름 그림(2D의 zone-O 등)·객관식 보기 글.
+//   판·글자는 바닥 바로 위에 깔아 캐릭터가 위에 보인다(2026-11-22 교사 요청: 발판이 캐릭터를 가리지 않게).
 // - 단계별 모습: 대기(흐린 판) → 문제(이번 종류 구역이 켜짐) → 마감 3초(테두리가 안쪽으로 닫힘) → 정답 공개(정답 구역 번쩍·나머지 어둡게).
 // - 머리 위 목숨(♥·♡, 탈락이면 💀), 정답이면 jump·틀리면 그대로, 탈락은 반투명, 문제 중 다른 학생은 gbFadeMs 동안 흐려져 사라짐(학생 화면).
 // - 안내(문제 카드·내 상태·단답형 칸·순위·선생님 창)는 2D와 같은 HTML(src/ui/goldenbell.ts)을 얹는다.
@@ -20,11 +22,12 @@ import type { Player } from '../../shared/schema.ts';
 import { mapSize } from '../data/room';
 import { cardView, livesTag, mineView, panelView, ranking } from '../game/goldenbell';
 import { hintSummary } from '../game/progress';
-import { alpha, color, fontFamily, motion, size, three } from '../theme';
+import { alpha, color, fontFamily, motion, playground, size, three } from '../theme';
 import { askAnnounce } from '../ui/announce';
 import { GbHud, GbPanel } from '../ui/goldenbell';
 import type { Character } from './characters';
 import type { MapMode, ModeContext, TileRect } from './mode';
+import { Playground } from './playground3d';
 
 /** 느린 기기 설정(?lite=1): 번쩍임·테두리 닫힘 효과를 끈다 */
 const effects = new URLSearchParams(location.search).get('lite') === '1' ? three.lite.effects : true;
@@ -32,8 +35,12 @@ const effects = new URLSearchParams(location.search).get('lite') === '1' ? three
 const JUMP_RESULTS = new Set(['correct', 'revived', 'heart']);
 /** 바닥에 눕힌 1×1 판(구역 판·테두리·글이 함께 쓴다) */
 const FLAT = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
-/** 구역 판 → 구역 이름 그림 → 보기 글 순으로 그린다(판은 그림자보다 먼저, 글은 캐릭터 뒤에 그려 위에 보이게) */
-const ORDER = { plate: -2, frame: -1.5, label: 0.5, choice: 0.6 };
+/**
+ * 바닥에 까는 것의 그리는 순서와 높이(칸). 모두 깊이 검사를 하므로 먼저 그린 캐릭터(불투명)가 가린다.
+ * 순서: 바닥 무늬 → 구역 판 → 이름 그림·보기 글 → 마감 테두리 → 발밑 그림자(characters.ts, -1) → 흐린 캐릭터 → 이름표·하트(늘 위)
+ */
+const ORDER = { plate: -3, label: -2.5, choice: -2.4, frame: -2 };
+const LIFT = { plate: 0.012, label: 0.016, choice: 0.016, frame: 0.02 };
 
 interface ZoneView {
   zone: Zone;
@@ -46,6 +53,7 @@ interface ZoneView {
 
 export class GoldenBellMode implements MapMode {
   private readonly group = new Group();
+  private readonly field: Playground;
   private readonly hud: GbHud;
   private readonly panel: GbPanel | null;
   private readonly zones: Zones;
@@ -91,6 +99,8 @@ export class GoldenBellMode implements MapMode {
           },
         })
       : null;
+    this.field = new Playground(ctx.room);
+    ctx.scene.add(this.field.group);
     for (const z of zones.ox) this.views.push(this.makeZone(z, 'ox'));
     for (const z of zones.choice) this.views.push(this.makeZone(z, 'choice'));
     ctx.scene.add(this.group);
@@ -114,7 +124,7 @@ export class GoldenBellMode implements MapMode {
       }),
     );
     plate.scale.set(zone.w, 1, zone.h);
-    plate.position.set(zone.col + zone.w / 2, three.gbZoneLift, zone.row + zone.h / 2);
+    plate.position.set(zone.col + zone.w / 2, LIFT.plate, zone.row + zone.h / 2);
     plate.renderOrder = ORDER.plate;
     plate.visible = false;
     // 테두리: 네 변(위·아래·왼쪽·오른쪽). 두께는 마감 때 update에서 정한다.
@@ -134,9 +144,10 @@ export class GoldenBellMode implements MapMode {
       texture.magFilter = texture.minFilter = NearestFilter;
       texture.generateMipmaps = false;
       this.textures.push(texture);
-      label = new Mesh(FLAT, new MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
-      label.scale.set(pad.w, 1, pad.h);
-      label.position.set(pad.col + pad.w / 2, three.gbZoneLift * 2, pad.row + pad.h / 2);
+      label = new Mesh(FLAT, new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
+      // 2D 그림 크기(2×2칸)의 판 가운데에 넓은 구역에 맞게 키워 눕힌다.
+      label.scale.set(pad.w * playground.labelScale, 1, pad.h * playground.labelScale);
+      label.position.set(pad.col + pad.w / 2, LIFT.label, pad.row + pad.h / 2);
       label.renderOrder = ORDER.label;
       label.visible = false;
     }
@@ -158,7 +169,7 @@ export class GoldenBellMode implements MapMode {
     const pad = this.ctx.room.objects.find((o) => o.id === `pad-${v.zone.label}`);
     const z = v.zone;
     const widthTiles = z.w - three.gbChoicePad * 2;
-    const pxPerTile = three.gbChoiceFont / three.gbChoiceLine;
+    const pxPerTile = three.gbChoiceFont / playground.choiceLine;
     const canvas = document.createElement('canvas');
     const g = canvas.getContext('2d');
     if (!g) return;
@@ -184,10 +195,10 @@ export class GoldenBellMode implements MapMode {
     texture.colorSpace = SRGBColorSpace;
     texture.minFilter = LinearFilter;
     texture.generateMipmaps = false;
-    const mesh = new Mesh(FLAT, new MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
+    const mesh = new Mesh(FLAT, new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
     mesh.scale.set(w / pxPerTile, 1, h / pxPerTile);
-    const top = pad ? pad.row + pad.h + three.gbChoicePad : z.row + three.gbChoicePad;
-    mesh.position.set(z.col + z.w / 2, three.gbZoneLift * 2, top + h / pxPerTile / 2);
+    const top = pad ? pad.row + pad.h / 2 + (pad.h * playground.labelScale) / 2 + three.gbChoicePad : z.row + three.gbChoicePad;
+    mesh.position.set(z.col + z.w / 2, LIFT.choice, top + h / pxPerTile / 2);
     mesh.renderOrder = ORDER.choice;
     this.group.add(mesh);
     v.choice = { mesh, text };
@@ -231,7 +242,7 @@ export class GoldenBellMode implements MapMode {
   /** 테두리 네 변을 구역 안쪽 가장자리에 두께 t(칸)로 놓는다. */
   private placeFrame(v: ZoneView, t: number) {
     const { col, row, w, h } = v.zone;
-    const y = three.gbZoneLift * 1.5;
+    const y = LIFT.frame;
     const [top, bottom, left, right] = v.frame.children;
     top.scale.set(w, 1, t);
     top.position.set(col + w / 2, y, row + t / 2);
@@ -363,6 +374,7 @@ export class GoldenBellMode implements MapMode {
     }
     for (const t of this.textures) t.dispose();
     this.frameMaterial.dispose();
+    this.field.dispose();
     this.group.removeFromParent();
   }
 
