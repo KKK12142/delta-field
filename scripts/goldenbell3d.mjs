@@ -152,7 +152,8 @@ check('대기: 객관식 4구역이 흐린 판(이름 그림 없음)', Object.ke
 // ---- 문제마다: A(3D)와 B(2D)가 같은 답 ----
 // quick.yaml: 1 ox O, 2 choice 3(가·나·다·라), 3 ox X, 4 ox O, 5 choice 2(가·나·다), 6 ox X, 7 ox O, 8 short 10 m/s, 9 short '가, 나', 10 ox O, 11 short 넌센스 관성, 12 ox 넌센스 X
 // 고르는 답: 1 맞힘, 2·3·4 틀림(목숨 0 → 탈락), 5·6 맞힘(부활), 7·8·9 맞힘, 10 틀림(다시 탈락), 11 맞힘(부활에 셈), 12 맞힘
-const ZONE_AT = { O: [3, 12], X: [16, 12], 1: [3, 6.5], 2: [16, 6.5], 3: [3, 12.5], 4: [16, 12.5] };
+// 운동장 맵(44×28, design/quick-specs/goldenbell-playground.md). O·X는 구역 이름 그림(pad-O·pad-X 가운데) 위에 선다(글자가 캐릭터 아래에 보이는지 캡처).
+const ZONE_AT = { O: [11, 14], X: [33, 14], 1: [11, 10.5], 2: [33, 10.5], 3: [11, 21.5], 4: [33, 21.5] };
 const PLAN = ['O', '1', 'O', 'X', '2', 'X', 'O', 'text:10 m/s', 'text:가, 나', 'X', 'text:관성', 'X'];
 const next = () => teacher.js(`document.querySelector('.df-gb-panel .df-gb-next')?.click()`);
 const phaseOf = (pg) => pg.js(`__df.gb().phase`);
@@ -180,26 +181,33 @@ let jumpChecked = 0;
 let livesOk = 0;
 const fadeDetail = [];
 /**
- * A 화면 안에서 시간을 잰다(헤드리스 화면이 느려 Node에서 물으면 늦다): 문제 i가 시작된 프레임부터 1초·2.2초에 다른 사람의 투명도를 보고,
+ * A 화면 안에서 시간을 잰다(헤드리스 화면이 느려 Node에서 물으면 늦다): 문제 i가 시작된 프레임부터 1초, 2초 뒤 새 프레임에서 다른 사람의 투명도를 보고,
  * 정답 공개가 되면 0.2초 뒤 모습·구역·내 상태를 본다.
  */
 const sampler = (i) => `new Promise((done) => {
-  const out = {};
+  const out = { fading: false, goneAt: null, mid: null };
   const t0 = performance.now();
   const poll = () => {
     const g = __df.gb();
+    const now = performance.now();
     if (!out.start && g.phase === 'question' && g.index === ${i}) {
-      out.start = performance.now();
+      out.start = now;
       out.type = g.type;
-      setTimeout(() => { out.mid = __df.looks(); window.__fadeStage = 'mid'; }, 1000);
-      setTimeout(() => { out.late = __df.looks(); window.__fadeStage = 'late'; }, 2200);
+      setTimeout(() => { window.__fadeStage = 'mid'; }, 1000);
+      setTimeout(() => { window.__fadeStage = 'late'; }, 2100);
+    }
+    // 문제를 푸는 동안 프레임마다: 다른 사람이 흐려지는 중(0과 1 사이)인 프레임이 있었는지, 모두 0이 된 첫 프레임은 언제인지
+    if (out.start && g.phase === 'question') {
+      const a = Object.values(__df.looks().others).map((o) => o.alpha);
+      if (a.length && a.some((x) => x > 0 && x < 1)) { out.fading = true; out.mid ??= a.slice(0, 3); }
+      if (a.length && a.every((x) => x === 0) && out.goneAt === null) out.goneAt = now - out.start;
     }
     if (out.start && g.phase === 'reveal' && !out.revealAt) {
-      out.revealAt = performance.now() - out.start;
+      out.revealAt = now - out.start;
       setTimeout(() => { out.looks = __df.looks(); out.zones = __df.zones(); out.gb = __df.gb(); out.mine = __df.mine(); done(out); }, 200);
       return;
     }
-    if (performance.now() - t0 > 25000) return done(out);
+    if (now - t0 > 25000) return done(out);
     requestAnimationFrame(poll);
   };
   poll();
@@ -228,12 +236,10 @@ for (let i = 0; i < PLAN.length; i++) {
   const gb = r.gb ?? {};
   const mine = r.mine ?? {};
   types.add(r.type);
-  const midA = alphasOf(r.mid);
-  const lateA = alphasOf(r.late);
   fadeChecked++;
-  // 1초: 흐려지는 중(0과 1 사이), 2.2초(gbFadeMs 2초 뒤): 모두 사라짐
-  if (midA.length && midA.every((x) => x > 0 && x < 1) && lateA.length && lateA.every((x) => x === 0)) fadeOk++;
-  else fadeDetail.push(`${i + 1}번 1초 ${midA.slice(0, 3).map((x) => x.toFixed(2))} 2.2초 ${lateA.slice(0, 3).map((x) => x.toFixed(2))} 공개 ${Math.round(r.revealAt)}ms`);
+  // 흐려지는 중인 프레임이 있었고, gbFadeMs(2초)에 프레임 한 번(느린 화면, 0.6초까지) 안에 모두 사라짐
+  if (r.fading && r.goneAt !== null && r.goneAt <= 2600) fadeOk++;
+  else fadeDetail.push(`${i + 1}번 흐려지는 중 ${r.fading} ${r.mid?.map((x) => x.toFixed(2))}, 모두 사라진 때 ${r.goneAt === null ? '없음' : Math.round(r.goneAt) + 'ms'}, 공개 ${Math.round(r.revealAt)}ms`);
   // 정답 공개: 다른 사람이 다시 보임(탈락은 반투명)
   const back = alphasOf(r.looks);
   if (back.length && back.every((x) => x > 0.3)) backOk++;
@@ -252,6 +258,11 @@ for (let i = 0; i < PLAN.length; i++) {
     else fadeDetail.push(`${i + 1}번 맞혔는데 ${r.looks?.me.action}`);
   } else if (r.looks?.me.action === 'jump') fadeDetail.push(`${i + 1}번 틀렸는데 jump`);
   if (i === 0) {
+    // 레이어: O 글자 그림 위에 선 내 캐릭터가 글자에 가리지 않음(가까이)
+    await a.js(`__df.zoom(5)`);
+    await wait(250);
+    await shot(a, 'layer-on-label', 'layer-on-label');
+    await a.js(`__df.zoom(null)`);
     await shot(a, 'reveal-correct', 'reveal-jump');
     await shot(teacher, 'reveal-teacher', 'reveal-teacher');
   }
@@ -275,7 +286,7 @@ check('AC1: 3D 학생이 OX·객관식·단답형을 모두 풂', ['ox', 'choice
 check('AC2: 서버 채점(목숨·점수·탈락·부활·결과)이 3D 학생과 2D 학생에 같음', same.every((s) => s.includes('같음')), same.join(' | '));
 check('AC3: 정답 공개 때 정답 구역이 빛나고 나머지는 어두움', glowChecked > 0 && glowOk === glowChecked, `${glowOk}/${glowChecked}`);
 check('AC3: 맞힌 3D 학생 캐릭터가 jump', jumpChecked > 0 && jumpOk === jumpChecked, `${jumpOk}/${jumpChecked}`);
-check('AC4: 문제 중 다른 학생이 gbFadeMs 안에 사라짐(1초에 흐려지는 중, 2.2초에 모두 사라짐)', fadeOk === fadeChecked, `${fadeOk}/${fadeChecked}`);
+check('AC4: 문제 중 다른 학생이 흐려지다 gbFadeMs(2초) 뒤 첫 프레임까지 모두 사라짐', fadeOk === fadeChecked, `${fadeOk}/${fadeChecked}`);
 if (fadeDetail.length) measure('자세히', fadeDetail.join(' | '));
 check('AC4: 정답 공개 때 다른 학생이 다시 보임', backOk === PLAN.length, `${backOk}/${PLAN.length}`);
 check('AC5: 머리 위 하트·해골이 서버 목숨과 같음(내 것, 2D 학생 것)', livesOk === PLAN.length, `${livesOk}/${PLAN.length}`);

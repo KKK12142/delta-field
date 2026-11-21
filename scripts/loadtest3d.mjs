@@ -155,6 +155,17 @@ await wait(500);
 const t3 = await chrome.openPage('touch3d', withQuery('touch=1'), { touch: true, size: { width: 390, height: 844 } });
 await enter(t3, { nickname: '터치삼디', code, character: 'char-05' });
 await wait(2500);
+// 흩어 선 자리에 따라 책상에 막힐 수 있어, 오른쪽으로 2칸이 트인 자리에 선 뒤 끈다.
+const tSpot = await t3.js(`(() => {
+  for (let r = 2; r < 30; r++) for (let c = 2; c < 40; c++) {
+    let ok = true;
+    for (let k = 0; k <= 8 && ok; k++) ok = __df.free(c + 0.5 + k * 0.25, r + 0.5);
+    if (ok) return { col: c + 0.5, row: r + 0.5 };
+  }
+  return null;
+})()`);
+if (tSpot) await t3.js(`__df.teleport(${tSpot.col}, ${tSpot.row})`);
+await wait(300);
 const q0 = await t3.js(`__df.pos()`);
 await t3.touch('touchStart', [{ x: 200, y: 600 }]);
 await wait(100);

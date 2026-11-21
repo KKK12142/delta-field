@@ -520,7 +520,7 @@ export const three = {
   gbChoicePad: 0.3, // 판과 보기 글 사이·구역 가장자리 여백(칸)
   gbChoiceText: '#2e2a26', // 보기 글 색(color.zoneLabel과 같음)
   gbChoiceBack: 'rgba(255, 248, 230, 0.82)', // 보기 글 바탕(구역 색 위에서 읽히게)
-  gbStudentTiles: 10, // 학생: 문제 카드 아래 빈 자리의 짧은 쪽에 보이는 칸 수
+  gbStudentTiles: 14, // 학생: 문제 카드 아래 빈 자리의 짧은 쪽에 보이는 칸 수(운동장 44×28칸, 2026-11-22)
   gbTeacherMargin: 0.4, // 선생님: 경기장 전체를 맞출 때 둘레 여백(칸)
   gbJumpRanks: 3, // 결과(끝)에서 jump하는 등수(1~3등)
   // 느린 기기 설정(주소의 ?lite=1): 픽셀 비율 상한을 낮추고 번쩍임·테두리 닫힘 효과를 끈다
@@ -563,6 +563,52 @@ export const seeThrough = {
   step: 2, // 구멍 위치·크기를 이 CSS 픽셀 단위로 맞춰, 조금 움직일 때마다 스타일을 다시 쓰지 않는다
   hole: 'transparent', // 마스크: 뚫린 곳
   keep: '#000', // 마스크: 덮인 곳(색은 쓰지 않고 불투명도만 쓴다)
+} as const;
+
+/**
+ * 3D 골든벨 운동장(맵 담당, src/three/playground3d.ts, design/quick-specs/goldenbell-playground.md). 길이는 칸 단위.
+ * 바닥 무늬(잔디 줄무늬·흰 선·트랙)는 캔버스 판 하나, 바깥 땅 판 하나, 나무(줄기·잎)와 학교 건물은 InstancedMesh로 그린다.
+ */
+export const playground = {
+  texturePx: 32, // 바닥 무늬 캔버스에서 한 칸의 픽셀
+  groundLift: 0.004, // 무늬 판 높이(맵 바닥 위)
+  grass: '#86b45e', // 잔디(줄무늬 밝은 쪽)
+  grassAlt: '#79a853', // 잔디(줄무늬 어두운 쪽)
+  stripeTiles: 2, // 잔디 줄무늬 너비(칸)
+  track: '#c98b62', // 트랙(붉은 흙)
+  line: '#ffffff', // 흰 선
+  lineWidth: 0.08, // 흰 선 두께(칸)
+  lineOpacity: 0.85,
+  spawnDash: 0.5, // 출발 자리 점선 한 마디(칸)
+  outer: 0x93ad74, // 울타리 밖 땅
+  outerSize: 260, // 바깥 땅 판 한 변(칸)
+  // 나무(울타리 밖 왼쪽·오른쪽·위쪽에 줄지어)
+  treeGap: 4, // 나무 사이(칸)
+  treeOut: 2.2, // 울타리에서 떨어진 거리(칸)
+  treeRows: 2, // 줄 수(바깥으로)
+  trunk: 0x8a6a48,
+  leaf: 0x5c9a4a,
+  trunkHeight: 0.9,
+  trunkRadius: 0.16,
+  leafHeight: 2.2,
+  leafRadius: 1.0,
+  treeScaleMin: 0.85,
+  treeScaleMax: 1.25,
+  // 학교 건물(운동장 위쪽 뒤)
+  buildingOut: 5, // 울타리 위쪽에서 건물 앞면까지(칸)
+  buildingDepth: 7,
+  buildingHeight: 7,
+  buildingWidth: 0.8, // 맵 너비에 대한 비율
+  building: 0xe8dcc6,
+  roof: 0x8f5a48,
+  window: 0x8fb3cf,
+  windowW: 1.6,
+  windowH: 1.1,
+  windowGap: 1.2, // 창 사이(칸)
+  windowFloors: 3,
+  door: 0x6d5844,
+  labelScale: 2, // 구역 이름 그림(pad-O 등 2×2칸 사물)을 3D에서 키우는 배율(판 가운데 기준)
+  choiceLine: 1.1, // 객관식 보기 글 한 줄 높이(칸, 넓은 구역에 맞게 three.gbChoiceLine 대신)
 } as const;
 
 /** uiColor, uiSize, uiSkin(--df-skin-이름), 글꼴을 CSS 변수(--df-이름)로 넣는다. */
