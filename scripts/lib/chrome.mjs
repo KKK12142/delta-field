@@ -39,6 +39,7 @@ const KEYS = {
   ArrowLeft: ['ArrowLeft', 'ArrowLeft', 37], ArrowRight: ['ArrowRight', 'ArrowRight', 39],
   ArrowUp: ['ArrowUp', 'ArrowUp', 38], ArrowDown: ['ArrowDown', 'ArrowDown', 40],
   1: ['1', 'Digit1', 49], 2: ['2', 'Digit2', 50], 3: ['3', 'Digit3', 51], 4: ['4', 'Digit4', 52],
+  5: ['5', 'Digit5', 53], 6: ['6', 'Digit6', 54], 7: ['7', 'Digit7', 55], 8: ['8', 'Digit8', 56],
 };
 
 /**

@@ -642,12 +642,55 @@ export const mini3d = {
   fenceOpacity: 0.4,
 } as const;
 
+/**
+ * 기능 담당(2026-11-22): 이모트·효과음·바로 문제 내기(design/quick-specs/emote-sfx-quick-questions-2026-11-22.md).
+ * featureUi는 CSS 변수(--df-fx-*)로 들어가 src/ui/feature.css가 쓰고, emoteUi는 3D 말풍선(캔버스, src/three/emotes3d.ts)이 쓴다.
+ * 효과음의 음색·크기는 src/data/sfx.json.
+ */
+export const featureUi = {
+  fxBarGap: '6px', // 아래 왼쪽 단추 줄(소리·이모트) 사이
+  fxEmoteButton: '48px', // 이모트 단추 한 변(누르기 44px 이상)
+  fxEmoteIcon: '27px', // 이모트 단추의 도트 그림(9도트 × 3배)
+  fxKeyText: '#6a5f78', // 단추 귀퉁이의 키 번호(1~8)
+  fxCooldownOpacity: '0.45', // 다시 보낼 수 있을 때까지 흐린 단추
+  fxQuickWidth: '820px', // 바로 내기 창 너비의 상한
+  fxQuickPaste: '132px', // 붙여넣기 칸 높이
+  fxQuickList: '240px', // 지금 문제 목록 높이의 상한(넘치면 안에서 넘긴다)
+  fxQuickNumber: '2.5em', // 문제 목록의 번호 칸
+  fxError: '#b23b3b',
+  fxOk: '#2e7d4f',
+} as const;
+
+/** 3D 이모트 말풍선(캔버스 픽셀은 도트 글꼴 Galmuri9 20px = 2배에 맞춘다) */
+export const emoteUi = {
+  showMs: 1500, // 말풍선이 보이는 시간
+  fadeMs: 300, // 그 끝에서 흐려지는 시간
+  background: '#fff3d6',
+  line: '#1d1531',
+  text: '#1d1531',
+  font: 20, // 캔버스 글자 크기(px)
+  dot: 3, // 도트 그림 한 칸을 그리는 캔버스 픽셀
+  padX: 12,
+  padY: 8,
+  lineWidth: 3,
+  tail: 9, // 아래 꼬리 높이(캔버스 픽셀)
+  iconGap: 6, // 그림과 글 사이
+  height: 0.6, // 말풍선 높이(칸, 3D)
+  gap: 0.08, // 이름표 위로 띄우는 거리(칸)
+  // 몸으로 흉내 내는 동작(모델에 없는 것): 숙이기 각도, 흔들기 각도, 들썩이기 높이(칸), 길이(ms)
+  bowAngle: 0.55,
+  swayAngle: 0.28,
+  bounceHeight: 0.18,
+  motionMs: 1000,
+} as const;
+
 /** uiColor, uiSize, uiSkin(--df-skin-이름), 글꼴을 CSS 변수(--df-이름)로 넣는다. */
 export function applyCssTheme(root: HTMLElement = document.documentElement) {
   const entries: [string, string][] = [
     ...Object.entries(uiColor),
     ...Object.entries(uiSize),
     ...Object.entries(uiSkin).map(([k, v]): [string, string] => [`skin-${k}`, v]),
+    ...Object.entries(featureUi),
     ['fontFamily', fontFamily],
     ['fontFamilySmall', fontFamilySmall],
   ];

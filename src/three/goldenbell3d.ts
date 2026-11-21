@@ -25,6 +25,7 @@ import { hintSummary } from '../game/progress';
 import { alpha, color, fontFamily, motion, playground, size, three } from '../theme';
 import { askAnnounce } from '../ui/announce';
 import { GbHud, GbPanel } from '../ui/goldenbell';
+import { openQuickOne } from '../ui/quickQuestions';
 import type { Character } from './characters';
 import type { MapMode, ModeContext, TileRect } from './mode';
 import { Playground } from './playground3d';
@@ -96,6 +97,9 @@ export class GoldenBellMode implements MapMode {
           resetTotal: () => void this.confirmResetTotal(),
           announce: () => {
             if (!ctx.dialog.isOpen()) void askAnnounce(ctx.dialog, ctx.net);
+          },
+          quick: () => {
+            if (!ctx.dialog.isOpen() && !document.querySelector('#ui .df-fx-quick')) void openQuickOne(ctx.net);
           },
         })
       : null;

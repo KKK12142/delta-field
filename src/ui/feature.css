@@ -1,0 +1,143 @@
+/*
+ * 기능 담당(2026-11-22): 소리·이모트 단추 줄(src/ui/emoteBar.ts)과 바로 문제 내기 창(src/ui/quickQuestions.ts).
+ * 색과 크기는 src/theme.ts의 featureUi(--df-fx-*)와 공용 --df-* 변수만 쓴다. 바탕·단추는 공용 9-slice 클래스(df-panel, df-button)를 쓴다.
+ */
+
+/* ---- 아래 왼쪽 단추 줄 ---- */
+.df-fx-bar {
+  position: absolute;
+  left: var(--df-margin);
+  bottom: calc(var(--df-margin) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: flex-end;
+  gap: var(--df-fx-bar-gap);
+  max-width: calc(100vw - 2 * var(--df-margin));
+  flex-wrap: wrap;
+}
+.df-fx-sound.is-off {
+  color: var(--df-text-muted);
+}
+.df-fx-emotes {
+  display: flex;
+  gap: var(--df-fx-bar-gap);
+  flex-wrap: wrap;
+}
+.df-fx-emote {
+  min-width: var(--df-fx-emote-button);
+  height: var(--df-fx-emote-button);
+  min-height: var(--df-fx-emote-button);
+  padding: var(--df-button-pad-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--df-gap-small);
+}
+.df-fx-bar.is-cooling .df-fx-emote {
+  opacity: var(--df-fx-cooldown-opacity);
+}
+.df-fx-emote-icon {
+  width: var(--df-fx-emote-icon);
+  height: var(--df-fx-emote-icon);
+  object-fit: cover;
+  object-position: 0 0; /* 여러 프레임 그림(sparkle)은 첫 프레임만 */
+  image-rendering: pixelated;
+}
+.df-fx-emote-text {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  white-space: nowrap;
+}
+.df-fx-key {
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  color: var(--df-fx-key-text);
+  pointer-events: none;
+}
+.is-phone .df-fx-key {
+  display: none;
+}
+
+/* ---- 바로 문제 내기 창 ---- */
+.df-panel.df-fx-quick {
+  width: min(var(--df-fx-quick-width), calc(100vw - 2 * var(--df-margin)));
+}
+.df-fx-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-gap-small);
+  padding-top: var(--df-gap-small);
+  border-top: var(--df-row-line) solid var(--df-line);
+}
+.df-fx-section > strong {
+  font-size: var(--df-font);
+}
+.df-fx-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--df-gap-small);
+  min-width: 0;
+}
+.df-fx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--df-field-min), 1fr));
+  gap: var(--df-gap-small);
+}
+.df-fx-quick .df-input,
+.df-fx-quick textarea.df-input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.df-fx-quick textarea.df-input {
+  font: inherit;
+  resize: vertical;
+}
+.df-fx-paste {
+  min-height: var(--df-fx-quick-paste);
+}
+.df-fx-types {
+  display: flex;
+  gap: var(--df-gap-small);
+  flex-wrap: wrap;
+}
+.df-fx-types .df-button[aria-pressed='true'] {
+  border-image: var(--df-skin-btn-gold);
+}
+.df-fx-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: var(--df-fx-quick-list);
+  overflow-y: auto;
+}
+.df-fx-list li {
+  display: grid;
+  grid-template-columns: var(--df-fx-quick-number) minmax(0, 1fr) auto;
+  gap: var(--df-gap-small);
+  align-items: center;
+  padding: var(--df-gap-small) 0;
+  border-bottom: var(--df-row-line) solid var(--df-line);
+}
+.df-fx-list .df-muted {
+  display: block;
+}
+.df-fx-errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--df-fx-error);
+}
+.df-fx-ok {
+  margin: 0;
+  color: var(--df-fx-ok);
+}
+.df-fx-saved .df-button.is-loaded {
+  border-image: var(--df-skin-btn-gold);
+}
+.df-fx-help {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--df-font-family-small);
+  font-size: var(--df-font-small);
+  color: var(--df-text-muted);
+}
