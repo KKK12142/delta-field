@@ -13,6 +13,7 @@
 //   --size 1024x1536   설정의 size 대신
 //   --quality medium   GPT 품질(low, medium, high). 없으면 설정의 quality, 그것도 없으면 BAZE 기본값
 //   --no-style         prompts/style.txt를 앞에 붙이지 않는다
+//   --style <파일>     prompts/style.txt 대신 이 파일을 앞에 붙인다(3D 시안은 prompts/char3d-style.txt)
 //   --dry-run          보낼 내용만 보인다(참고 그림은 크기만)
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -35,6 +36,7 @@ const { values: opt, positionals } = parseArgs({
     n: { type: 'string', default: '1' },
     size: { type: 'string' },
     'no-style': { type: 'boolean', default: false },
+    style: { type: 'string' },
     'dry-run': { type: 'boolean', default: false },
   },
 });
@@ -74,7 +76,7 @@ for (const v of opt.var) {
   vars[v.slice(0, i)] = v.slice(i + 1);
 }
 let prompt = readFileSync(promptFile, 'utf8');
-if (!opt['no-style']) prompt = readFileSync(join(here, 'prompts', 'style.txt'), 'utf8') + '\n' + prompt;
+if (!opt['no-style']) prompt = readFileSync(opt.style ?? join(here, 'prompts', 'style.txt'), 'utf8') + '\n' + prompt;
 prompt = prompt.replace(/\{\{(\w+)\}\}/g, (m, k) => {
   if (!(k in vars)) throw new Error(`프롬프트의 ${m}에 넣을 값이 없습니다(--char, --thing 또는 --var ${k}=...).`);
   return vars[k];

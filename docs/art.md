@@ -496,3 +496,16 @@ frame down            프레임 이름. 다음 줄부터 60줄, 한 줄 30글자
   char-01 실험실 → male-e(안경·흰 가운), char-02 전자기 → male-f, char-03 탐험 → female-b(노란 옷), char-04 관찰 → female-a,
   char-05 운동 → male-b(주황 옷), char-06 교복 → male-d(정장·넥타이), char-07 천문 → female-c(보라), char-08 메이커 → female-f.
   나머지 12개(female-d·e, male-a·c·g, alien, knight, raider, robot, soldier, worker, zombie)는 아직 쓰지 않는다. 모델 키는 화면에서 theme의 three.charHeight로 맞춘다.
+
+## 3D 캐릭터 시안(2026-11-21, 그림 담당)
+교사 결정(docs/design.md "3D로 바꾸기"의 캐릭터)에 따라, 3D로 옮길 우리 캐릭터를 고르려고 생성 시안을 4방향으로 받았다. 3D 모델은 아직 만들지 않았다.
+- 프롬프트(scripts/art/prompts/): char3d-style.txt(공통: 부드러운 저폴리 3D 장난감 렌더, 연회색 단색 배경, 글자·워터마크 없음, 바이저 헬멧·등 가방 콩·거위·오리 피함, 다른 작품 따라 하지 않음)를
+  `--style`로 앞에 붙이고(도트용 style.txt 대신) 방향별 파일을 쓴다: char3d-a-bean.txt(젤리빈 몸통+짧은 두 발), char3d-b-ball.txt(동그란 공·떡·병아리 느낌+아주 짧은 팔),
+  char3d-c-slime.txt(물방울 몸통, 팔다리 없음), char3d-d-block.txt(둥근 모서리 상자·작은 로봇+안테나).
+  시안판 구성: 윗줄 몸 색 6가지 앞모습, 가운데 줄 3/4 모습 3개, 아랫줄 소품 4가지(실험 고글, 흰 가운, 원자 머리띠, 플라스크·시험관·학사모·안경).
+- 명령: `pnpm art:gen scripts/art/prompts/char3d-a-bean.txt --style scripts/art/prompts/char3d-style.txt --out char3d-a --n 2 --size 1536x1024`(b·c·d도 같게).
+  gpt-image-2.6-sunburst medium, 1536×1024 두 장에 약 72크레딧(한 장 약 36), 25초 안팎. 4방향 8장에 287.67크레딧.
+- 받은 그림: art/raw/char3d-a~d/(저장소에 올리지 않음). 8장 모두 바이저 헬멧·등 가방 콩, 거위·오리 모양이 없어 모두 비교판에 넣었다. 모든 장 오른쪽 아래에 "AI" 표시가 있다.
+- 비교판: art/concepts/char3d-board.png(4줄×2칸, 줄마다 한 방향, `pnpm art:board --cols 2 --height 420`).
+- 본 느낌(교사 고르기 전 참고): A는 앞모습이 단정하고 소품이 잘 붙는다. B는 몸 색이 연한 파스텔로 나와 멀리서 색 구분이 약할 수 있다(색은 3D에서 바꿀 수 있다).
+  C는 팔다리가 없어 3D로 옮기기 가장 쉽고, 소품을 들 손이 없어 플라스크가 몸에 붙어 있다. D는 안테나 공 색까지 몸 색과 같아 구분이 잘 되고 상자라 3D로 옮기기 쉽다.
