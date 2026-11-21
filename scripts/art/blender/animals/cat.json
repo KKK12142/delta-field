@@ -2,119 +2,55 @@
   "_설명": "고양이(주황 줄무늬). 시안 art/concepts/animal3d-board.png A-1·A-2 맨 윗줄 첫 번째. 좌표는 Blender(z 위, 앞 -y), 키 1.0, 발바닥 z=0. 형식은 scripts/art/blender/README.md",
   "name": "cat",
   "colors": {
-    "fur": "#f0902e",
-    "stripe": "#dc6c22",
-    "cream": "#fbe1bd",
-    "earInner": "#f4a3a6",
-    "nose": "#e27384",
-    "eye": "#2a1912",
+    "fur": "#f39a36",
+    "stripe": "#de7024",
+    "cream": "#fff0dc",
+    "earInner": "#f6a3a8",
+    "nose": "#ee8f98",
+    "eye": "#2b1a12",
     "shine": "#ffffff",
-    "mouth": "#8f2c2c",
-    "tongue": "#f17c7a",
-    "blush": "#f6a47e"
+    "mouth": "#7c2626",
+    "tongue": "#f48185"
   },
-  "head": {
-    "center": [0, 0, 0.62],
-    "radius": [0.35, 0.28, 0.29],
-    "color": "fur"
-  },
-  "muzzle": {
-    "center": [0, -0.085, 0.49],
-    "radius": [0.25, 0.18, 0.17],
-    "color": "cream"
-  },
-  "body": {
-    "center": [0, 0, 0.23],
-    "radius": [0.215, 0.18, 0.17],
-    "color": "fur"
-  },
-  "belly": {
-    "center": [0, -0.07, 0.215],
-    "radius": [0.155, 0.13, 0.15],
-    "color": "cream"
-  },
+  "material": { "roughness": 0.85, "sheen": 0.6, "sheenRoughness": 0.45, "sheenColor": "#fff3e6" },
+  "shade": { "bottom": 0.94, "skip": ["eye", "shine", "cream", "nose", "mouth", "tongue"] },
+  "head": { "center": [0, 0, 0.62], "radius": [0.35, 0.31, 0.29], "color": "fur" },
+  "muzzle": { "center": [0, -0.11, 0.5], "radius": [0.17, 0.21, 0.12], "color": "cream" },
+  "body": { "center": [0, 0, 0.23], "radius": [0.215, 0.18, 0.17], "color": "fur" },
+  "belly": { "center": [0, -0.06, 0.215], "radius": [0.16, 0.14, 0.15], "color": "cream" },
+  "extras": [
+    { "part": "head", "center": [0.22, -0.05, 0.5], "radius": [0.15, 0.17, 0.14], "color": "fur", "mirror": true }
+  ],
+  "masks": [
+    { "part": "head", "base": "fur", "color": "cream", "center": [0, 0.46], "radius": [0.27, 0.17], "soft": 0.07, "front": -0.08 }
+  ],
   "ears": {
-    "shape": "cone",
-    "base": [0.19, 0.03, 0.775],
-    "axis": [0.45, -0.05, 1],
-    "radius": 0.16,
-    "height": 0.22,
-    "tip": 0.035,
-    "flat": 0.45,
-    "color": "fur",
-    "inner": {
-      "color": "earInner",
-      "scale": 0.68,
-      "forward": 0.055,
-      "down": 0.0
-    }
+    "shape": "cone", "base": [0.18, 0.02, 0.776], "axis": [0.42, -0.12, 1], "radius": 0.17, "height": 0.22, "tip": 0.03, "flat": 0.6,
+    "color": "fur", "inner": { "color": "earInner", "scale": 0.74, "tall": 1.0, "flat": 0.6, "forward": 0.07, "down": 0.0 }
   },
   "arms": {
-    "shoulder": [0.155, -0.04, 0.34],
-    "offset": [0.01, -0.01, -0.095],
-    "radius": [0.062, 0.062, 0.125],
-    "spread": 7,
-    "color": "fur"
+    "shoulder": [0.17, -0.03, 0.35], "offset": [0.035, -0.01, -0.09], "radius": [0.066, 0.066, 0.11], "spread": 14, "color": "fur",
+    "tip": { "color": "cream", "below": -0.45 }
   },
   "legs": {
-    "hip": [0.1, 0, 0.15],
-    "offset": [0, -0.005, -0.06],
-    "radius": [0.075, 0.08, 0.08],
-    "color": "fur",
-    "foot": {
-      "offset": [0, -0.03, -0.102],
-      "radius": [0.08, 0.1, 0.048],
-      "color": "cream"
-    }
+    "hip": [0.1, 0, 0.15], "offset": [0, -0.005, -0.055], "radius": [0.075, 0.08, 0.075], "color": "fur",
+    "foot": { "offset": [0, -0.03, -0.11], "radius": [0.088, 0.105, 0.04], "color": "cream" }
   },
   "tail": {
     "base": [-0.1, 0.12, 0.13],
-    "points": [
-      [-0.1, 0.12, 0.13],
-      [-0.24, 0.2, 0.12],
-      [-0.34, 0.22, 0.24],
-      [-0.31, 0.19, 0.4]
-    ],
-    "radius": [0.05, 0.062],
-    "rings": 14,
-    "sides": 8,
-    "color": "fur",
-    "bands": [
-      {
-        "from": 0.3,
-        "to": 0.42,
-        "color": "stripe"
-      },
-      {
-        "from": 0.58,
-        "to": 0.7,
-        "color": "stripe"
-      },
-      {
-        "from": 0.84,
-        "to": 1.01,
-        "color": "stripe"
-      }
-    ]
+    "points": [[-0.1, 0.12, 0.13], [-0.24, 0.2, 0.12], [-0.34, 0.22, 0.24], [-0.31, 0.19, 0.4]],
+    "radius": [0.05, 0.062], "rings": 14, "sides": 10, "color": "fur",
+    "bands": [{ "from": 0.3, "to": 0.42, "color": "stripe" }, { "from": 0.58, "to": 0.7, "color": "stripe" }, { "from": 0.84, "to": 1.01, "color": "stripe" }]
   },
   "decals": [
-    { "part": "head", "on": "head", "u": 0, "v": 47, "size": [ 0.024, 0.11, 0.014 ], "color": "stripe" },
-    { "part": "head", "on": "head", "u": -15, "v": 43, "size": [ 0.021, 0.085, 0.014 ], "roll": -8, "color": "stripe" },
-    { "part": "head", "on": "head", "u": 15, "v": 43, "size": [ 0.021, 0.085, 0.014 ], "roll": 8, "color": "stripe" },
-    { "part": "head", "on": "head", "u": -66, "v": 10, "size": [ 0.024, 0.09, 0.02 ], "roll": 82, "color": "stripe" },
-    { "part": "head", "on": "head", "u": -68, "v": -4, "size": [ 0.022, 0.08, 0.02 ], "roll": 98, "color": "stripe" },
-    { "part": "head", "on": "head", "u": 66, "v": 10, "size": [ 0.024, 0.09, 0.02 ], "roll": -82, "color": "stripe" },
-    { "part": "head", "on": "head", "u": 68, "v": -4, "size": [ 0.022, 0.08, 0.02 ], "roll": -98, "color": "stripe" },
-    { "part": "head", "on": "head", "u": -25, "v": 6, "size": [ 0.068, 0.08, 0.035 ], "color": "eye", "id": "eyeL" },
-    { "part": "head", "on": "head", "u": 25, "v": 6, "size": [ 0.068, 0.08, 0.035 ], "color": "eye", "id": "eyeR" },
-    { "part": "head", "on": "head", "u": -21, "v": 12, "size": [ 0.024, 0.024, 0.012 ], "lift": 0.016, "color": "shine" },
-    { "part": "head", "on": "head", "u": 29, "v": 12, "size": [ 0.024, 0.024, 0.012 ], "lift": 0.016, "color": "shine" },
-    { "part": "head", "on": "head", "u": -29, "v": 0, "size": [ 0.011, 0.011, 0.008 ], "lift": 0.015, "color": "shine" },
-    { "part": "head", "on": "head", "u": 21, "v": 0, "size": [ 0.011, 0.011, 0.008 ], "lift": 0.015, "color": "shine" },
-    { "part": "head", "on": "head", "u": -44, "v": -2, "size": [ 0.055, 0.035, 0.01 ], "color": "blush" },
-    { "part": "head", "on": "head", "u": 44, "v": -2, "size": [ 0.055, 0.035, 0.01 ], "color": "blush" },
-    { "part": "head", "on": "muzzle", "u": 0, "v": 40, "size": [ 0.042, 0.028, 0.024 ], "color": "nose" },
-    { "part": "head", "on": "muzzle", "u": 0, "v": 10, "size": [ 0.075, 0.052, 0.02 ], "color": "mouth" },
-    { "part": "head", "on": "muzzle", "u": 0, "v": 3, "size": [ 0.044, 0.024, 0.012 ], "lift": 0.007, "color": "tongue" }
+    { "part": "head", "on": "head", "u": 0, "v": 39, "size": [0.05, 0.1, 0.008], "color": "stripe", "under": "fur", "paint": true },
+    { "part": "head", "on": "head", "u": 16, "v": 36, "size": [0.044, 0.085, 0.008], "roll": 7, "color": "stripe", "under": "fur", "paint": true, "mirror": true },
+    { "part": "head", "on": "head", "u": 62, "v": 14, "size": [0.026, 0.1, 0.008], "roll": -84, "color": "stripe", "under": "fur", "paint": true, "mirror": true },
+    { "part": "head", "on": "head", "u": 64, "v": 1, "size": [0.024, 0.095, 0.008], "roll": -96, "color": "stripe", "under": "fur", "paint": true, "mirror": true },
+    { "part": "head", "on": "head", "u": 21, "v": 10, "size": [0.076, 0.09, 0.036], "face": 0.4, "color": "eye", "mirror": true,
+      "shine": [{ "at": [0.22, 0.32], "size": 0.026 }, { "at": [-0.22, 0.42], "size": 0.013 }] },
+    { "part": "head", "on": "head", "u": 0, "v": -7, "size": [0.042, 0.028, 0.022], "color": "nose" },
+    { "part": "head", "on": "muzzle", "u": 0, "v": 10, "size": [0.082, 0.074, 0.022], "tilt": -24, "lift": -0.012, "color": "mouth", "paint": true },
+    { "part": "head", "on": "muzzle", "u": 0, "v": 3, "size": [0.046, 0.03, 0.012], "lift": 0.013, "color": "tongue" }
   ]
 }

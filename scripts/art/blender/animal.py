@@ -47,6 +47,18 @@ def linear(hexstr):
 
 
 COLORS = {k: linear(v) for k, v in S['colors'].items()}
+# 부위 아래쪽을 살짝 어둡게 칠해(꼭짓점 색 그라데이션) three.js에서도 부드러운 입체감이 나게 한다. 눈·반짝임은 빼고.
+SHADE = S.get('shade', {'bottom': 0.82, 'skip': ['eye', 'shine']})
+SHADE_SKIP = {tuple(round(x, 3) for x in COLORS[c]) for c in SHADE['skip'] if c in COLORS}
+
+
+def lerp(a, b, t):
+    return tuple(x + (y - x) * t for x, y in zip(a, b))
+
+
+def smooth(e0, e1, x):
+    t = max(0.0, min(1.0, (x - e0) / (e1 - e0)))
+    return t * t * (3 - 2 * t)
 
 # ---------- 메시 만들기 도우미 ----------
 
@@ -59,22 +71,32 @@ class Part:
         self.pivot = Vector(pivot)
         self.bm = bmesh.new()
         self.col = self.bm.loops.layers.float_color.new('Color')
+        self.normals = {}  # 꼭짓점 → 따로 정한 법선(무늬를 표면에 칠한 것처럼 보이게)
 
-    def add(self, geom_verts, color, matrix):
-        """bmesh.ops로 막 만든 도형(geom_verts)을 matrix로 옮기고 color로 칠한다."""
+    def add(self, geom_verts, color, matrix, colorfn=None):
+        """bmesh.ops로 막 만든 도형(geom_verts)을 matrix로 옮기고 color로 칠한다.
+        colorfn(옮기기 전 좌표)를 주면 꼭짓점마다 그 색을 쓴다(가장자리를 부드럽게, 손끝만 다른 색 등)."""
+        local = {v: v.co.copy() for v in geom_verts}
         bmesh.ops.transform(self.bm, matrix=matrix, verts=geom_verts)
         faces = {f for v in geom_verts for f in v.link_faces}
         rgba = COLORS[color]
         for face in faces:
             face.smooth = True
             for loop in face.loops:
-                loop[self.col] = rgba
+                loop[self.col] = colorfn(local[loop.vert]) if colorfn else rgba
         return faces
 
-    def ellipsoid(self, center, radius, color, rot=None, seg=(20, 12)):
+    def ellipsoid(self, center, radius, color, rot=None, seg=(20, 12), colorfn=None, paint_on=None):
+        """paint_on=(중심, 반지름): 이 타원체(얇은 무늬)의 법선을 아래 표면 타원체의 법선으로 바꿔, 튀어나온 띠가 아니라 칠한 무늬처럼 보이게 한다."""
         r = bmesh.ops.create_uvsphere(self.bm, u_segments=seg[0], v_segments=seg[1], radius=1.0)
         m = Matrix.Translation(Vector(center)) @ (rot or Matrix.Identity(4)) @ Matrix.Diagonal((*radius, 1.0))
-        return self.add(r['verts'], color, m)
+        faces = self.add(r['verts'], color, m, colorfn)
+        if paint_on:
+            c, rr = Vector(paint_on[0]), Vector(paint_on[1])
+            for v in r['verts']:
+                d = v.co - c
+                self.normals[v] = Vector((d.x / rr.x ** 2, d.y / rr.y ** 2, d.z / rr.z ** 2)).normalized()
+        return faces
 
     def cone(self, base, axis, radius, height, tip, flat, color, seg=10):
         r = bmesh.ops.create_cone(self.bm, cap_ends=True, cap_tris=False, segments=seg, radius1=radius, radius2=tip, depth=height)
@@ -122,12 +144,43 @@ class Part:
         tang = (centers[-1] - centers[-2]).normalized()
         self.ellipsoid(centers[-1], (radius[1],) * 3, color_at(0.999), rot=tang.to_track_quat('Z', 'Y').to_matrix().to_4x4(), seg=(sides, 6))
 
+    def paint_mask(self, mask):
+        """mask(얼굴 크림 무늬 등): 앞(-y)에서 본 타원 안의 base 색 꼭짓점을 color로 바꾼다. 가장자리는 soft만큼 부드럽게."""
+        base, to = COLORS[mask['base']], COLORS[mask['color']]
+        key = tuple(round(x, 3) for x in base)
+        (cx, cz), (rx, rz) = mask['center'], mask['radius']
+        for face in self.bm.faces:
+            for loop in face.loops:
+                if tuple(round(x, 3) for x in loop[self.col]) != key:
+                    continue
+                co = loop.vert.co
+                if co.y > mask.get('front', 0.0):
+                    continue
+                d = math.hypot((co.x - cx) / rx, (co.z - cz) / rz)
+                loop[self.col] = lerp(to, base, smooth(1 - mask['soft'], 1 + mask['soft'], d))
+
     def build(self):
+        for mask in S.get('masks', []):
+            if mask['part'] == self.name:
+                self.paint_mask(mask)
         bmesh.ops.translate(self.bm, vec=-self.pivot, verts=self.bm.verts)
         bmesh.ops.recalc_face_normals(self.bm, faces=self.bm.faces)
+        self.bm.normal_update()
+        self.bm.verts.index_update()
+        custom = {v.index: n for v, n in self.normals.items()}
+        lo = SHADE['bottom']
+        for face in self.bm.faces:
+            for loop in face.loops:
+                c = tuple(loop[self.col])
+                if tuple(round(x, 3) for x in c) in SHADE_SKIP:
+                    continue
+                k = lo + (1 - lo) * (0.5 + 0.5 * loop.vert.normal.z)
+                loop[self.col] = (c[0] * k, c[1] * k, c[2] * k, 1.0)
         mesh = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(mesh)
         self.bm.free()
+        if custom:
+            mesh.normals_split_custom_set_from_vertices([custom.get(i, mesh.vertex_normals[i].vector) for i in range(len(mesh.vertices))])
         obj = bpy.data.objects.new(self.name, mesh)
         bpy.context.collection.objects.link(obj)
         obj.data.materials.append(MATERIAL)
@@ -152,7 +205,13 @@ def make_material():
     attr = nt.nodes.new('ShaderNodeVertexColor')
     attr.layer_name = 'Color'
     nt.links.new(attr.outputs['Color'], bsdf.inputs['Base Color'])
-    bsdf.inputs['Roughness'].default_value = 0.72
+    # 짧은 털 느낌: 거친 표면 + 가장자리가 밝아지는 시트(glTF KHR_materials_sheen, three.js MeshPhysicalMaterial.sheen)
+    M = S.get('material', {})
+    bsdf.inputs['Roughness'].default_value = M.get('roughness', 0.85)
+    if M.get('sheen', 0) > 0:
+        bsdf.inputs['Sheen Weight'].default_value = M['sheen']
+        bsdf.inputs['Sheen Roughness'].default_value = M.get('sheenRoughness', 0.5)
+        bsdf.inputs['Sheen Tint'].default_value = linear(M.get('sheenColor', '#ffffff'))
     return mat
 
 
@@ -167,8 +226,8 @@ def mirror(v):
 
 
 head = Part('head', S['head']['center'])
-head.ellipsoid(S['head']['center'], S['head']['radius'], S['head']['color'], seg=(24, 14))
-head.ellipsoid(S['muzzle']['center'], S['muzzle']['radius'], S['muzzle']['color'], seg=(16, 10))
+head.ellipsoid(S['head']['center'], S['head']['radius'], S['head']['color'], seg=(32, 20))
+head.ellipsoid(S['muzzle']['center'], S['muzzle']['radius'], S['muzzle']['color'], seg=(18, 10))
 E = S['ears']
 for side in (1, -1):
     base = Vector(E['base']) * Vector((side, 1, 1))
@@ -176,21 +235,49 @@ for side in (1, -1):
     head.cone(base, axis, E['radius'], E['height'], E['tip'], E['flat'], E['color'])
     inner = E['inner']
     ibase = base + Vector((0, -inner['forward'], -inner['down']))
-    head.cone(ibase, axis, E['radius'] * inner['scale'], E['height'] * inner['scale'] * 1.05, E['tip'], E['flat'] * 0.7, inner['color'])
+    head.cone(ibase, axis, E['radius'] * inner['scale'], E['height'] * inner['scale'] * inner.get('tall', 1.05), E['tip'], E['flat'] * inner.get('flat', 0.7), inner['color'])
 
 body = Part('body', S['body']['center'][:2] + [S['body']['center'][2] - S['body']['radius'][2]])
 body.ellipsoid(S['body']['center'], S['body']['radius'], S['body']['color'], seg=(18, 10))
 body.ellipsoid(S['belly']['center'], S['belly']['radius'], S['belly']['color'], seg=(14, 8))
 
 parts = {'head': head, 'body': body}
+# 덧붙이는 덩어리(볼살 등). mirror면 x를 뒤집어 하나 더.
+for x in S.get('extras', []):
+    for side in ((1, -1) if x.get('mirror') else (1,)):
+        c = Vector(x['center']) * Vector((side, 1, 1))
+        parts[x['part']].ellipsoid(c, x['radius'], x['color'], seg=tuple(x.get('seg', (14, 8))))
+
+
+def soft_edge(color, under, start=0.55):
+    """얇은 타원체 무늬의 가장자리 색을 아래 표면 색(under)으로 부드럽게 바꾼다."""
+    a, b = COLORS[color], COLORS[under]
+    return lambda co: lerp(a, b, smooth(start, 0.97, math.hypot(co.x, co.y)))
+
+
 for d in S['decals']:
-    p, n = surface(d['on'], d['u'], d['v'])
-    p = p + n * d.get('lift', 0.0)
-    q = n.to_track_quat('Z', 'Y') @ Quaternion((0, 0, 1), math.radians(d.get('roll', 0)))
-    w, h, t = d['size']
-    # 눈처럼 둥글고 큰 것은 곱게, 반짝임처럼 작은 것은 거칠게
-    seg = (14, 8) if min(w, h) >= 0.06 else (6, 4) if max(w, h) < 0.02 else (8, 5)
-    parts[d['part']].ellipsoid(p, (w, h, t / 2), d['color'], rot=q.to_matrix().to_4x4(), seg=seg)
+    for side in ((1, -1) if d.get('mirror') else (1,)):
+        p, n = surface(d['on'], d['u'] * side, d['v'])
+        # face: 법선을 정면(-y) 쪽으로 돌려 눈처럼 앞을 보게 한다(0~1).
+        f = d.get('face', 0)
+        n2 = (n * (1 - f) + Vector((0, -1, 0)) * f).normalized()
+        p = p + n * d.get('lift', 0.0)
+        # tilt: 지역 x축으로 기울여 윗부분을 표면 속에 묻는다(입 윗선을 곧게)
+        q = n2.to_track_quat('Z', 'Y') @ Quaternion((0, 0, 1), math.radians(d.get('roll', 0) * side)) @ Quaternion((1, 0, 0), math.radians(d.get('tilt', 0)))
+        w, h, t = d['size']
+        # 눈처럼 둥글고 큰 것은 곱게, 반짝임처럼 작은 것은 거칠게
+        seg = (14, 9) if min(w, h) >= 0.06 else (6, 4) if max(w, h) < 0.02 else (12, 6) if max(w, h) > 0.07 else (8, 5)
+        fn = soft_edge(d['color'], d['under']) if 'under' in d else None
+        rot = q.to_matrix().to_4x4()
+        paint = (S[d['on']]['center'], S[d['on']]['radius']) if d.get('paint') else None
+        parts[d['part']].ellipsoid(p, (w, h, t / 2), d['color'], rot=rot, seg=seg, colorfn=fn, paint_on=paint)
+        # 눈 위 반짝임: 무늬 안의 비율 좌표(at: 가로, 세로)에 작은 흰 점을 얹는다.
+        for sh in d.get('shine', []):
+            dx, dy = sh['at']
+            top = (t / 2) * math.sqrt(max(0.0, 1 - dx * dx - dy * dy))
+            c = p + rot.to_3x3() @ Vector((dx * w / 1, dy * h / 1, top))
+            r = sh['size']
+            parts[d['part']].ellipsoid(c, (r, r, r * 0.45), sh.get('color', 'shine'), rot=rot, seg=(8, 5) if r > 0.02 else (6, 4))
 
 A = S['arms']
 arms = []
@@ -198,7 +285,9 @@ for side, name in ((1, 'arm_l'), (-1, 'arm_r')):
     sh = Vector(A['shoulder']) * Vector((side, 1, 1))
     part = Part(name, sh)
     rot = Matrix.Rotation(math.radians(A['spread']) * side, 4, 'Y')
-    part.ellipsoid(sh + Vector(A['offset']) * Vector((side, 1, 1)), A['radius'], A['color'], rot=rot, seg=(10, 6))
+    tip = A.get('tip')  # 손끝 색: 팔 아래쪽(지역 z < below)을 부드럽게 바꾼다
+    fn = (lambda co, a=COLORS[A['color']], b=COLORS[tip['color']], lo=tip['below']: lerp(a, b, smooth(lo + 0.2, lo - 0.1, co.z))) if tip else None
+    part.ellipsoid(sh + Vector(A['offset']) * Vector((side, 1, 1)), A['radius'], A['color'], rot=rot, seg=(12, 8), colorfn=fn)
     arms.append(part)
 
 L = S['legs']
@@ -206,8 +295,8 @@ legs = []
 for side, name in ((1, 'leg_l'), (-1, 'leg_r')):
     hip = Vector(L['hip']) * Vector((side, 1, 1))
     part = Part(name, hip)
-    part.ellipsoid(hip + Vector(L['offset']), L['radius'], L['color'], seg=(10, 6))
-    part.ellipsoid(hip + Vector(L['foot']['offset']), L['foot']['radius'], L['foot']['color'], seg=(10, 6))
+    part.ellipsoid(hip + Vector(L['offset']), L['radius'], L['color'], seg=(12, 8))
+    part.ellipsoid(hip + Vector(L['foot']['offset']), L['foot']['radius'], L['foot']['color'], seg=(12, 7))
     legs.append(part)
 
 T = S['tail']
@@ -338,15 +427,15 @@ def setup_render():
     scene.world = world
     world.use_nodes = True
     bg = next(n for n in world.node_tree.nodes if n.type == 'BACKGROUND')
-    bg.inputs['Color'].default_value = linear('#fbe7d2')
-    bg.inputs['Strength'].default_value = 0.7
+    bg.inputs['Color'].default_value = linear('#fde9d6')
+    bg.inputs['Strength'].default_value = 0.85
     # 바닥(그림자 받기)
     bpy.ops.mesh.primitive_plane_add(size=40)
     floor = bpy.context.object
     fm = bpy.data.materials.new('floor')
     fm.use_nodes = True
     fb = next(n for n in fm.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
-    fb.inputs['Base Color'].default_value = linear('#f6dcc2')
+    fb.inputs['Base Color'].default_value = linear('#f8e0c8')
     fb.inputs['Roughness'].default_value = 1
     floor.data.materials.append(fm)
 
@@ -360,9 +449,10 @@ def setup_render():
         o.location = loc
         o.rotation_euler = (Vector((0, 0, 0.5)) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
 
-    light('key', 'AREA', (-2.0, -2.2, 2.6), 90, (1.0, 0.93, 0.84), 2.0)
-    light('rim', 'AREA', (2.2, 2.0, 1.8), 70, (0.78, 0.86, 1.0), 1.5)
-    light('fill', 'AREA', (2.4, -1.8, 0.9), 20, (1.0, 0.96, 0.92), 2.5)
+    # 시안처럼 크고 부드러운 따뜻한 주광, 차가운 테두리 빛, 약한 채움 빛
+    light('key', 'AREA', (-2.2, -2.4, 2.6), 120, (1.0, 0.9, 0.78), 4.0)
+    light('rim', 'AREA', (2.0, 2.2, 1.9), 70, (0.8, 0.87, 1.0), 2.0)
+    light('fill', 'AREA', (2.6, -2.0, 1.0), 35, (1.0, 0.94, 0.88), 4.0)
     cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam'))
     scene.collection.objects.link(cam)
     cam.data.lens = 85
@@ -383,9 +473,9 @@ cam = setup_render() if render_dir else None
 if render_dir:
     os.makedirs(render_dir, exist_ok=True)
     rest_pose()
-    shoot(cam, '1-front', 0)
+    shoot(cam, '1-front', 0, pitch=6)
     shoot(cam, '2-three-quarter', 35)
-    shoot(cam, '3-side', 90)
+    shoot(cam, '3-side', 90, pitch=6)
 
 # 동작마다 부위별 동작(action)을 만들어 같은 이름의 NLA 트랙에 넣는다.
 for ci, (clip, gen) in enumerate(CLIPS.items()):
@@ -398,7 +488,7 @@ for ci, (clip, gen) in enumerate(CLIPS.items()):
         o = OBJ[name]
         act = o.animation_data.action
         act.name = f'{clip}_{name}'
-    if render_dir:
+    if render_dir and '--quick' not in argv:  # --quick: 모양만 빨리 볼 때는 동작 장면을 렌더하지 않는다
         scene.frame_set(SHOW[clip])
         shoot(cam, f'{4 + ci}-{clip}', 30, target_z=0.68 if clip == 'jump' else 0.5)
     for name in ANIMATED:
