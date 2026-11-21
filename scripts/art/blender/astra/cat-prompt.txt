@@ -1,0 +1,17 @@
+You are an expert technical 3D artist. Write ONE self-contained Python script for Blender 5.2 (bpy, run headless with `blender -b --python script.py`) that procedurally models a cute game character and exports it.
+
+Target: the ORANGE TABBY CAT in the attached concept sheet (top row, first character; also the walking/waving orange cat in the second row). Match its look as closely as possible: chibi 2-2.5 heads tall, big round slightly wide head (round from the side too, not flat), large glossy dark-brown eyes set at mid-face looking forward with two white highlights, big round cream muzzle covering the lower third of the face, small pink nose, smiling open mouth (dark inside, pink tongue), puffy cheeks, thick triangular ears with large pink insides, three short thick darker stripes on the forehead and two on each cheek side, cream belly patch, short round arms clearly visible at the sides with cream paws, short legs with flat round cream feet, curled tail with darker ring stripes. Soft short-fur (flocked) look approximated with materials only (rough surface, soft sheen/fresnel rim, subtle vertex-color gradients) — no hair particles, no image textures.
+
+Hard constraints (a real-time WebGL game will show 35 of these at once on school tablets):
+- Total triangles <= 6000 after export. Keep GLB around 300 KB or less. No image textures; vertex colors and/or simple Principled BSDF materials only.
+- No armature/skinning. Build separate part objects (body, head, ears, arms, legs/feet, tail, facial features may be joined into head) parented in a hierarchy, and animate OBJECT transforms with keyframes.
+- Four looping actions exported as separate glTF animations named exactly: idle (2 s, gentle breathing/sway), walk (1 s, waddle with body bounce, legs and arms swing), jump (~1.25 s, crouch-jump-land), wave (~1.3 s, one arm raised to the side waving — the head is big, so raise the arm sideways so it is not hidden). Make every clip loop seamlessly. Use NLA tracks or the glTF exporter option so each action exports as its own animation.
+- Scale/orientation: total height 1.0 Blender unit, feet on the ground (lowest point at Z=0), character faces -Y in Blender so that after glTF export (+Y up) it faces +Z. Origin between the feet.
+- Start from an empty scene (delete default objects). Clean up: apply modifiers before export, shade smooth where appropriate.
+- Export glTF binary to the path in the environment variable OUT_GLB with animations, vertex colors, and materials.
+- Then render check images with EEVEE (or Cycles at low samples if EEVEE is unavailable — wrap engine assignment in try/except TypeError) at 640x640 into the folder in environment variable OUT_DIR: front.png, threequarter.png, side.png (rest pose) and idle.png, walk.png, jump.png, wave.png (a representative frame of each action). Warm soft lighting, plain warm light background.
+- Read paths only from those environment variables. Do not access the network, do not run other programs, do not write anywhere else.
+- Look up shader nodes by type, not by name (e.g. next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')). Do not hardcode enum identifiers that might not exist; guard them.
+- Print the final triangle count.
+
+Return only the complete script in one ```python code block.
