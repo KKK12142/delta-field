@@ -171,7 +171,7 @@ export class Emotes3D {
     private readonly sfx: Sfx = defaultSfx,
   ) {
     for (const e of EMOTES) iconImage(e.icon);
-    this.bar = new EmoteBar(sfx, (id) => this.send(id));
+    this.bar = new EmoteBar(sfx, (id) => this.send(id), net.role === 'teacher');
     window.addEventListener('keydown', this.onKey);
     net.room.onMessage('emote', (m: EmoteBroadcast) => this.receive(m));
     // 서버는 받겠다고 알린 화면에만 이모트를 보낸다(2D 화면·봇에는 보내지 않음). 다시 붙어도 같은 접속 id라 이어진다.
@@ -224,6 +224,7 @@ export class Emotes3D {
 
   /** 매 프레임: 말풍선 자리·투명도와 몸으로 하는 동작. 시간이 지난 말풍선은 지운다. */
   update(now = performance.now()) {
+    this.placeBar();
     for (const [id, b] of this.bubbles) {
       const showMs = this.holdMs || emoteUi.showMs;
       const age = now - b.since;
@@ -245,6 +246,17 @@ export class Emotes3D {
       b.sprite.visible = !this.hushed(id) && ch.shownOpacity > 0;
       if (b.moved === ch) this.pose(ch, b.emote, age);
     }
+  }
+
+  /**
+   * 단추 줄의 자리: 선생님 골든벨 화면이면 선생님 창(.df-gb-panel) 맨 아래(경기장을 가리지 않게), 아니면 화면 아래 왼쪽.
+   * 맵을 옮기면 선생님 창이 줄과 함께 지워지므로 매 프레임 확인해 다시 붙인다.
+   */
+  private placeBar() {
+    const node = this.bar.node;
+    const panel = this.net.role === 'teacher' && this.mapOf() === 'goldenbell' ? document.querySelector('#ui .df-gb-panel') : null;
+    const parent = panel ?? document.getElementById('ui');
+    if (parent && node.parentElement !== parent) parent.append(node);
   }
 
   /** 몸으로 흉내 내는 동작: 숙이기(앞으로 기울였다 돌아옴), 흔들기(좌우), 들썩이기(위아래) */
@@ -308,6 +320,11 @@ export class Emotes3D {
         this.holdMs = ms;
       },
       sounds: () => ({ enabled: this.sfx.enabled, started: this.sfx.started, played: [...this.sfx.played], requested: [...this.sfx.requested] }),
+      /** 확인용: 울린·울리려 한 소리 목록을 비운다 */
+      soundsReset: () => {
+        this.sfx.played.length = 0;
+        this.sfx.requested.length = 0;
+      },
     });
   }
 }

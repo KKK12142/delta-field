@@ -14,6 +14,12 @@
   max-width: calc(100vw - 2 * var(--df-margin));
   flex-wrap: wrap;
 }
+/* 선생님 골든벨 화면: 선생님 창 맨 아래에 둔다(emotes3d.ts placeBar) */
+.df-gb-panel > .df-fx-bar {
+  position: static;
+  margin-top: auto;
+  max-width: none;
+}
 .df-fx-sound.is-off {
   color: var(--df-text-muted);
 }

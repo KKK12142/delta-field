@@ -126,6 +126,8 @@ async function closeMini() {
   await clickText(teacher, '.df-hud button', '미니게임 그만두기');
   await until(async () => /미니게임 그만두기/.test((await teacher.dialogText()) ?? ''), 2000);
   const text = (await teacher.dialogText()) ?? '';
+  // 대화상자는 뜬 뒤 0.2초 동안 코드로 누른 click을 받지 않는다(src/ui/dialog.ts OPEN_GUARD_MS).
+  await wait(300);
   await clickText(teacher, '.df-dialog .df-button', '그만두기');
   await until(async () => (await miniOf(a)).phase === '' && (await miniOf(teacher)).phase === '', 4000);
   await until(async () => (await buttons()).includes('미니게임 시작'), 2000);
@@ -135,7 +137,13 @@ const near = (p, q, d = 0.1) => Math.abs(p.col - q.col) < d && Math.abs(p.row - 
 /** 결과 창 "내 등수 N위 · 점수"에서 점수 글 */
 const myLine = async (pg) => /내 등수 (\d+)위 · ([\d.]+)/.exec((await pg.dialogText()) ?? '');
 
+/** 그 화면이 울리려 한 효과음 이름(src/audio/miniSounds.ts). 헤드리스라 소리는 듣지 않고 부른 것만 본다. */
+const sounds = (pg) => pg.js(`__df.sounds().requested`);
+const soundsReset = (pg) => pg.js(`__df.soundsReset()`);
+const has = (list, ...names) => names.every((n) => list.includes(n));
+
 // ---- 보물찾기 ----
+for (const pg of [a, b]) await soundsReset(pg);
 await a.js(`__df.teleport(11.5, 8.5)`);
 await b.js(`__df.teleport(12.5, 8.5)`);
 await wait(500);
@@ -154,6 +162,9 @@ const countDrawn = await d3(a);
 check('보물찾기 3D: 세는 동안 보물 30개를 그림(보통 상자 25·금 보석 5)', countDrawn.boxes === 25 && countDrawn.gems === 5, `${countDrawn.boxes}+${countDrawn.gems}`);
 await untilPhase(a, 'play', 6);
 await wait(300);
+const startSounds = await sounds(a);
+check('효과음: 세기 3·2·1마다 삐(countBeep), 시작에 출발 소리(miniStart)',
+  startSounds.filter((n) => n === 'countBeep').length >= 2 && startSounds.includes('miniStart') && startSounds.indexOf('countBeep') < startSounds.indexOf('miniStart'), startSounds.join(','));
 /** 서버 보물 수(보통, 금). 봇도 보물을 주우므로 같은 때의 서버 상태와 견준다. */
 const serverTreasures = () => {
   const list = [...helper.state.mini.treasures.values()];
@@ -207,11 +218,14 @@ const sameAsServer = await until(async () => {
   const st3 = serverTreasures();
   return drawnA.boxes === st3.boxes && drawnA.gems === st3.gems;
 }, 2000, 50);
+check('효과음: A가 금 보물을 주우면 금 줍기(pickGold), B가 보통 보물을 주우면 줍기(pick)',
+  (await sounds(a)).includes('pickGold') && (await sounds(b)).includes('pick') && !(await sounds(b)).includes('pickGold'), `A ${(await sounds(a)).join(',')} | B ${(await sounds(b)).join(',')}`);
 check('보물찾기: 보통 보물은 서버 1점, 그린 보물 수 = 남은 서버 보물 수',
   server('삼디나')?.miniScore === 1 && sameAsServer, `서버 남음 ${helper.state.mini.treasures.size}, A ${drawnA.boxes + drawnA.gems}`);
 const trDone = await untilPhase(a, 'result', 30);
 await wait(600);
 const trLine = await myLine(a);
+check('효과음: 결과 창이 뜨면 팡파르(fanfare)', (await sounds(a)).includes('fanfare'), (await sounds(a)).slice(-3).join(','));
 check('보물찾기 결과 창: 내 점수가 서버 점수와 같음', trDone && /보물찾기 결과/.test((await a.dialogText()) ?? '') && Number(trLine?.[2]) === server('삼디가')?.miniScore,
   fmt(await a.dialogText()));
 check('보물찾기: 끝나면 시작 전 자리로 돌아감(A·B), 문은 다시 잠김',
@@ -265,6 +279,7 @@ const look = await teacher.js(`__df.looks().others['삼디가']?.alpha`);
 check('공 피하기: 공에 맞으면 서버 탈락, 구경 줄(19.5행)로 옮김, 흐리게(선생님·내 화면), 걷지 못함',
   out && Math.abs(aSpot.row - 19.5) < 0.1 && Math.abs(look - 0.4) < 0.01 && Math.abs((await a.js(`__df.looks().me.alpha`)) - 0.4) < 0.01 && (await d3(a)).frozen,
   `공 ${JSON.stringify(hitTry)}, 자리 ${aSpot.col.toFixed(1)},${aSpot.row.toFixed(2)}, 선생님 화면 투명도 ${look}`);
+check('효과음: 공에 맞으면 맞음(hit)', (await sounds(a)).includes('hit'), (await sounds(a)).slice(-4).join(','));
 await a.press('ArrowDown', 400);
 check('공 피하기: 구경하는 학생은 움직이지 않음', near(await a.js(`__df.pos()`), aSpot, 0.01));
 await wait(300);
@@ -285,6 +300,7 @@ await untilPhase(a, 'play', 6);
 check('줄다리기: 3D 화면 위에 화면 전체 창(두 반 상징, 당기기 단추)',
   (await a.js(`!!document.querySelector('.df-tug .df-tug-pull') && document.querySelectorAll('.df-tug-emblem').length === 2`)) && (await d3(b)).tug,
   `${fmt(tg.confirmText)} | 선생님 창 ${fmt(await teacher.dialogText())} | ${JSON.stringify(await miniOf(a))}`);
+await soundsReset(a);
 const before = await a.js(`__df.pos()`);
 await a.press('ArrowRight', 400);
 check('줄다리기: 걷지 않음', near(await a.js(`__df.pos()`), before, 0.01));
@@ -294,7 +310,22 @@ for (let i = 0; i < 8; i++) {
 }
 await a.press('Space');
 await wait(400);
+{
+  const st = await a.js(`__df.sounds()`);
+  const asked = st.requested.filter((n) => n === 'tug').length;
+  const played = st.played.filter((n) => n === 'tug').length;
+  check('효과음: 줄다리기는 누를 때마다 당기기 소리(tug)를 부름(9번)', asked === 9 && played <= asked, `부름 ${asked}, 울림 ${played}, 오디오 ${st.started ? '켜짐' : '꺼짐'}`);
+}
 check('줄다리기: 단추·스페이스바로 당긴 수가 서버에 셈(9번)', server('삼디가')?.miniScore === 9 && (await miniOf(a)).score === 9, `서버 ${server('삼디가')?.miniScore}`);
+// 너무 잦지 않게: 한순간에 세 번 당기면 소리는 부르지만 tug 간격(sfx.json 0.18초) 안이라 한 번만 울린다(오디오가 꺼져 있으면 0번).
+await soundsReset(a);
+await a.js(`(() => { for (let i = 0; i < 3; i++) document.querySelector('.df-tug-pull').click(); })()`);
+{
+  const st = await a.js(`__df.sounds()`);
+  const asked = st.requested.filter((n) => n === 'tug').length;
+  const played = st.played.filter((n) => n === 'tug').length;
+  check('효과음: 한순간에 세 번 당기면 당기기 소리는 한 번만 울림', asked === 3 && played <= 1 && (!st.started || played === 1), `부름 ${asked}, 울림 ${played}, 오디오 ${st.started ? '켜짐' : '꺼짐'}`);
+}
 await a.shot('tug', 'tug');
 const tgDone = await untilPhase(a, 'result', 20);
 await wait(600);

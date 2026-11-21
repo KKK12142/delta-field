@@ -29,21 +29,28 @@ export function gbSounds(prev: GbSnapshot | null, next: GbSnapshot): SoundName[]
 export interface MiniSnapshot {
   kind: string;
   phase: string;
+  /** 남은 시간(초): 세는 중이면 3·2·1 */
+  timeLeft: number;
+  /** 내 점수(선생님은 0) */
   score: number;
+  /** 공 피하기에서 내가 맞아 탈락함 */
   out: boolean;
 }
 
-export function miniSounds(prev: MiniSnapshot | null, next: MiniSnapshot): SoundName[] {
+/**
+ * 미니게임 상태 변화 → 소리. 세기 3·2·1마다 삐, 시작(play)에 출발 소리, 보물찾기에서 내 점수가 오르면 줍기
+ * (한 번에 goldPoints 넘게 오르면 금 보물), 공에 맞으면 맞음, 결과 창이 뜨면 팡파르.
+ * 줄다리기 당기기는 점수(서버가 센 수)가 아니라 누를 때 화면이 바로 울린다(MiniSounds.pulled). 공 피하기 점수(버틴 시간)는 소리 없음.
+ */
+export function miniSounds(prev: MiniSnapshot | null, next: MiniSnapshot, goldPoints: number): SoundName[] {
   if (!prev) return [];
   const out: SoundName[] = [];
-  if ((next.phase === 'count' || next.phase === 'play') && prev.phase !== 'count' && prev.phase !== 'play') out.push('miniStart');
-  if (next.phase === 'play' && next.score > prev.score) {
-    // 보물찾기는 주운 점수, 줄다리기는 누른 수가 오른다(공 피하기의 점수는 버틴 시간이라 소리를 내지 않는다).
-    if (next.kind === 'treasure') out.push('pick');
-    else if (next.kind === 'tug') out.push('pop');
+  if (next.phase === 'count' && next.timeLeft > 0 && (prev.phase !== 'count' || prev.timeLeft !== next.timeLeft)) out.push('countBeep');
+  if (next.phase === 'play' && prev.phase !== 'play') out.push('miniStart');
+  if (next.phase === 'play' && prev.phase === 'play' && next.kind === 'treasure' && next.score > prev.score) {
+    out.push(next.score - prev.score >= goldPoints ? 'pickGold' : 'pick');
   }
   if (next.out && !prev.out) out.push('hit');
   if (next.phase === 'result' && prev.phase !== 'result') out.push('fanfare');
   return out;
 }
-
