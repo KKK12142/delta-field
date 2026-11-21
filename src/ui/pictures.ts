@@ -12,6 +12,11 @@ const OBJECTS = names(import.meta.glob('/public/sprites/objects/*.png'), 'object
 const FACES = names(import.meta.glob('/public/sprites/faces/*.png'), 'faces');
 const sprite = (dir: string, name: string) => `${import.meta.env.BASE_URL}sprites/${dir}/${name}.png`;
 
+/** 캐릭터 시트 주소(public/ 아래). 첫 화면의 캐릭터 고르기와 Phaser 아바타(src/scenes/avatar.ts)가 쓴다. */
+export function characterSheet(id: string) {
+  return sprite('characters', id);
+}
+
 /** 캐릭터 얼굴(public/sprites/faces/<캐릭터>.png, 30×26을 2배. 크기는 theme uiSize.face*). character가 비면 빈 얼굴 칸 */
 export function face(character: string, className = '') {
   const node = el('span', `df-face ${className}`.trim());

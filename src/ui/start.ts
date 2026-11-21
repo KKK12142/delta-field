@@ -2,9 +2,8 @@ import { CLASS_GROUPS, CODE_LENGTH, MAX_NICKNAME, PIN_LENGTH, RejectCode, cleanP
 import characters from '../data/characters.json';
 import { closeRoom, listRooms, type Entry } from '../net/connection';
 import { Dialog } from './dialog';
-import { characterSheet } from '../scenes/avatar';
 import { el, uiRoot } from './dom';
-import { emblem, uiIcon } from './pictures';
+import { characterSheet, emblem, uiIcon } from './pictures';
 import { accessQr } from './qr';
 
 /** 이 기기에서 마지막으로 고른 캐릭터를 기억해 두는 곳(다음에 들어올 때 미리 골라 둔다) */

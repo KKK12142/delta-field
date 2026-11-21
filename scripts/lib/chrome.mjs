@@ -131,6 +131,8 @@ export async function launchChrome(outDir, port = Number(process.env.DF_CHROME_P
         const frame = () => { n++; const t = performance.now() - t0; if (t < ${ms}) requestAnimationFrame(frame); else done(n / (t / 1000)); };
         requestAnimationFrame(frame);
       })`),
+      /** CDP 명령을 이 창에 바로 보낸다(예: Emulation.setCPUThrottlingRate). */
+      send: (method, params = {}) => page.send(method, params),
       close: () => browser.send('Target.closeTarget', { targetId }),
     };
     return p;
