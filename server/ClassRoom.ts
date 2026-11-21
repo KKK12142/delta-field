@@ -51,6 +51,10 @@ import { EscapeGame } from './EscapeGame.ts';
 import { loadRoom, partOf } from '../src/data/room.ts';
 import { listEscapeFiles, loadEscapeSet } from './escape.ts';
 import { MiniGames } from './MiniGame.ts';
+import { EmoteRelay } from './emotes.ts';
+import { QuickQuestions } from './quickQuestions.ts';
+import type { EmoteMessage } from '../shared/emotes.ts';
+import type { QuickReply } from '../shared/quickQuestions.ts';
 import { BLOCKED_TEXT, PEER_HEADER, checkTeacherAttempt, clientIp, hasTeacherPassword, teacherPasswordMatches } from './password.ts';
 import type { EscapeFileInfo, HintCard, MissionAnswerMessage, MissionAnswerReply, MissionPressReply, MissionView } from '../shared/escape.ts';
 
@@ -141,6 +145,9 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   readonly openedAt = Date.now();
   private readonly escape = new EscapeGame(this.state);
   private readonly mini = new MiniGames(this.state, this.clock);
+  /** 이모트 전달(server/emotes.ts), 선생님이 바로 낸 문제(server/quickQuestions.ts) */
+  private readonly emotes = new EmoteRelay(this.state, () => this.clients);
+  private readonly quick = new QuickQuestions();
 
   /**
    * 방 만들기·들어가기(matchmake) 때 먼저 불린다. 선생님(비밀번호를 넣음)이면 같은 IP의 잦은 실패를 막고 비밀번호를 본다.
@@ -268,6 +275,14 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     this.onMessage('gbEnd', (client: Client) => this.gbEnd(client));
     this.onMessage('gbSubmit', (client: Client, message: GbSubmitMessage) => this.gbSubmit(client, message));
     this.onMessage('gbAccept', (client: Client, message: GbAcceptMessage) => this.gbAccept(client, message));
+    this.onMessage('emote', (client: Client, message: EmoteMessage) => void this.emotes.handle(client, message));
+    this.onMessage('emoteListen', (client: Client) => this.emotes.listen(client.sessionId));
+    this.onMessage('gbQuickSet', (client: Client, message: unknown): QuickReply => {
+      if (!this.isTeacher(client)) return refuse('선생님만 문제를 낼 수 있습니다.');
+      const r = this.quick.store(message);
+      return typeof r === 'string' ? refuse(r) : { error: null, count: r.count };
+    });
+    this.onMessage('gbQuickAdd', (client: Client, message: { question?: unknown }) => this.gbQuickAdd(client, message));
 
     console.log(`방 ${this.roomId}을 만들었습니다.`);
   }
@@ -471,6 +486,7 @@ export class ClassRoom extends Room<{ state: ClassState }> {
   onLeave(client: Client) {
     this.reconnections.delete(client.sessionId);
     this.resumed.delete(client.sessionId);
+    this.emotes.forget(client.sessionId);
     const player = this.state.players.get(client.sessionId);
     // 이어 하기: 나간 사람의 기록을 닉네임으로 남겨 둔다(방이 살아 있는 동안).
     if (player) {
@@ -554,6 +570,8 @@ export class ClassRoom extends Room<{ state: ClassState }> {
 
   /** 문제 파일을 읽는다. 읽지 못하면 까닭을 글로 돌려준다. */
   private readSet(file: unknown): QuestionSet | string {
+    const quick = this.quick.read(file);
+    if (quick !== undefined) return quick;
     try {
       return loadQuestionSet(typeof file === 'string' ? file : '');
     } catch (e) {
@@ -711,6 +729,23 @@ export class ClassRoom extends Room<{ state: ClassState }> {
     gb.answer = q.type === 'short' ? answerDisplay(q.answers) : q.answer;
     gb.explain = q.explain;
     gb.phase = 'reveal';
+  }
+
+  /**
+   * 즉석 문제(선생님 창에서 바로 하나 더): 지금 문제 바로 뒤에 끼워 넣는다. 첫 문제 전·정답 공개 뒤면 바로 그 문제를 시작하고,
+   * 푸는 중이면 다음 문제로 둔다(그 문제가 끝나고 다음을 누르면 나온다).
+   */
+  private gbQuickAdd(client: Client, message: { question?: unknown }): QuickReply {
+    if (!this.isTeacher(client)) return refuse('선생님만 문제를 낼 수 있습니다.');
+    const gb = this.state.goldenbell;
+    if (!this.questions || (gb.phase !== 'ready' && gb.phase !== 'question' && gb.phase !== 'reveal')) return refuse('골든벨 문제를 내는 중에만 즉석 문제를 낼 수 있습니다.');
+    const q = this.quick.one(message?.question);
+    if (typeof q === 'string') return refuse(q);
+    this.questions.questions.splice(gb.index + 1, 0, q);
+    gb.total = this.questions.questions.length;
+    if (gb.phase === 'question') return { error: null, started: false };
+    const started = this.gbNext(client);
+    return { error: started.error, started: started.error === null };
   }
 
   /** 학생이 단답형 답을 낸다. 제한 시간 안에는 다시 낼 수 있고, 마지막에 낸 답으로 채점한다. */

@@ -400,6 +400,8 @@ export class GbPanel {
   private readonly resetTotal = el('button', 'df-button df-button-small df-gb-reset', '합계 처음으로');
   /** 전체 공지(학교 맵의 선생님 단추와 같음) */
   private readonly announce = el('button', 'df-button df-button-small df-gb-announce', '전체 공지');
+  /** 즉석 문제(선생님 창에서 하나 더, src/ui/quickQuestions.ts). handlers.quick이 없으면 감춘다. */
+  private readonly quick = el('button', 'df-button df-button-small df-gb-quick', '즉석 문제');
   /** 단답형 정답 공개 뒤 낸 답 묶음 */
   private readonly answers = el('ul', 'df-gb-answers df-cctv-list');
   /** 학생 현황(시작 전·푸는 중·정답 공개 때) */
@@ -413,6 +415,7 @@ export class GbPanel {
     close: () => void;
     resetTotal: () => void;
     announce: () => void;
+    quick?: () => void;
   }) {
     this.onAccept = handlers.accept;
     const head = el('div', 'df-cctv-title');
@@ -437,13 +440,20 @@ export class GbPanel {
       this.announce.blur();
       handlers.announce();
     });
+    this.quick.hidden = !handlers.quick;
+    this.quick.addEventListener('click', () => {
+      this.quick.blur();
+      handlers.quick?.();
+    });
+    const tools = el('div', 'df-row df-row-split');
+    tools.append(this.announce, this.quick);
     const row = el('div', 'df-row df-row-split');
     row.append(this.end, this.close, this.next);
     this.node.setAttribute('aria-label', '골든벨 진행');
     this.answers.hidden = true;
     this.podium.hidden = true;
     this.board.hidden = true;
-    this.node.append(head, this.counts, row, this.announce, this.answers, this.board, this.podium, this.ranking, this.totalsTitle, this.totals, this.classes, this.resetTotal);
+    this.node.append(head, this.counts, row, tools, this.answers, this.board, this.podium, this.ranking, this.totalsTitle, this.totals, this.classes, this.resetTotal);
     uiRoot().append(this.node);
   }
 

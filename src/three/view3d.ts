@@ -20,6 +20,8 @@ import { GoldenBellMode } from './goldenbell3d';
 import type { MapMode, TileRect } from './mode';
 import { MapRules, type ObjectLook } from './rules';
 import { SchoolMode } from './school3d';
+import { Emotes3D } from './emotes3d';
+import { startGameSounds } from '../audio/gameSounds';
 import { World } from './world';
 
 /** 방향키·WASD(KeyboardEvent.code) → (dx, dy) */
@@ -94,6 +96,8 @@ class View3D {
   /** 확인용: 최근 프레임마다 tick이 쓴 시간(ms, 메인 스레드. 그리기 명령을 보내는 데까지) */
   private readonly work = new Float32Array(120);
   private readonly info: HTMLElement | null;
+  /** 이모트(emotes3d.ts). 효과음은 startGameSounds가 서버 상태를 보고 울린다. */
+  private readonly emotes: Emotes3D;
 
   constructor(
     private readonly net: Net,
@@ -146,6 +150,8 @@ class View3D {
     this.fit();
     this.exposeDevHooks();
     this.exposeModeHooks();
+    this.emotes = new Emotes3D(net, (id) => (id === net.sessionId ? this.me : (this.remotes.get(id)?.ch ?? null)), () => this.mapId);
+    startGameSounds(net);
     this.renderer.setAnimationLoop((t) => this.tick(t));
   }
 
@@ -220,6 +226,7 @@ class View3D {
     this.me.update(dt);
     this.frameCamera();
     this.follow(dt);
+    this.emotes.update();
     this.renderer.render(this.scene, this.camera);
     this.seeThrough.update(this.overview ? [] : [this.mySpot()]);
     this.countFps(time);

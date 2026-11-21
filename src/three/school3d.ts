@@ -5,6 +5,8 @@ import { GATHER_SECONDS } from '../../shared/protocol.ts';
 import type { Player } from '../../shared/schema.ts';
 import { formatDuration } from '../game/state';
 import { askAnnounce } from '../ui/announce';
+import { openQuickSet } from '../ui/quickQuestions';
+import { QUICK_FILE } from '../../shared/quickQuestions.ts';
 import { Hud } from '../ui/hud';
 import type { Character } from './characters';
 import type { MapMode, ModeContext } from './mode';
@@ -103,17 +105,22 @@ export class SchoolMode implements MapMode {
     this.busy = true;
     try {
       const files = await net.gbFiles();
-      if (!files.length) {
-        await dialog.message('강당으로 모으기', '문제 파일이 없습니다. 서버의 goldenbell 폴더에 .yaml 파일을 넣습니다.');
-        return;
-      }
+      // 맨 위는 바로 내기(선생님 창에서 쓰거나 붙여 넣은 문제, src/ui/quickQuestions.ts)
       const picked = await dialog.choose(
         '강당으로 모으기',
-        '골든벨 문제 파일을 고릅니다.',
-        files.map((f) => ({ label: f.error ? f.file : `${f.title} (${f.count}문제)`, detail: f.error ?? f.file, disabled: f.error !== null })),
+        files.length ? '골든벨 문제 파일을 고르거나 바로 냅니다.' : '문제 파일이 없습니다(서버의 goldenbell 폴더). 바로 내기로 문제를 써서 낼 수 있습니다.',
+        [
+          { label: '바로 내기(직접 쓰기·붙여넣기)', detail: '이 창에서 문제를 쓰거나 여러 줄을 붙여 넣습니다.' },
+          ...files.map((f) => ({ label: f.error ? f.file : `${f.title} (${f.count}문제)`, detail: f.error ?? f.file, disabled: f.error !== null })),
+        ],
       );
       if (picked === null) return;
-      const file = files[picked];
+      let file: { file: string; title: string };
+      if (picked === 0) {
+        const quick = await openQuickSet(net);
+        if (!quick) return;
+        file = { file: QUICK_FILE, title: `${quick.title} (${quick.count}문제)` };
+      } else file = files[picked - 1];
       const when = await dialog.choose(
         '강당으로 모으기',
         `${file.title}: 언제 모을지 고릅니다. 남은 시간이 모든 학생 화면에 보이고, 0이 되면 모두 강당(골든벨 맵)으로 옮겨 갑니다.`,

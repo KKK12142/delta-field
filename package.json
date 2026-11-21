@@ -19,6 +19,8 @@
     "loadtest": "node scripts/loadtest.mjs",
     "loadtest:3d": "node scripts/loadtest3d.mjs",
     "playtest:gb3d": "node scripts/goldenbell3d.mjs",
+    "playtest:fx3d": "node scripts/feature3d.mjs",
+    "test:unit": "node --test 'tests/unit/**/*.test.mjs'",
     "bots": "node scripts/bots.mjs",
     "art:gen": "node --env-file-if-exists=$HOME/.config/delta-field/baze.env scripts/art/generate.mjs",
     "art:fit": "node scripts/art/fit.mjs",

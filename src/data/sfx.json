@@ -1,0 +1,67 @@
+{
+  "_comment": "효과음(src/audio/sfx.ts): 소리 파일 없이 WebAudio로 합성한다. volume은 전체 크기(0~1). 소리마다 tones(음 하나: wave 파형 sine·square·triangle·sawtooth, f 시작 Hz, f2 끝 Hz(없으면 그대로), t 시작 초, d 길이 초, v 크기 0~1)와 gap(같은 소리를 다시 울리지 않는 ms).",
+  "volume": 0.5,
+  "sounds": {
+    "question": { "gap": 200, "tones": [
+      { "wave": "square", "f": 523, "t": 0, "d": 0.1, "v": 0.18 },
+      { "wave": "square", "f": 784, "t": 0.11, "d": 0.18, "v": 0.18 }
+    ] },
+    "tick": { "gap": 300, "tones": [
+      { "wave": "square", "f": 1046, "t": 0, "d": 0.05, "v": 0.16 }
+    ] },
+    "correct": { "gap": 300, "tones": [
+      { "wave": "triangle", "f": 659, "t": 0, "d": 0.09, "v": 0.35 },
+      { "wave": "triangle", "f": 880, "t": 0.09, "d": 0.09, "v": 0.35 },
+      { "wave": "triangle", "f": 1319, "t": 0.18, "d": 0.26, "v": 0.35 }
+    ] },
+    "wrong": { "gap": 300, "tones": [
+      { "wave": "sawtooth", "f": 233, "f2": 155, "t": 0, "d": 0.38, "v": 0.18 }
+    ] },
+    "out": { "gap": 300, "tones": [
+      { "wave": "square", "f": 392, "t": 0, "d": 0.14, "v": 0.16 },
+      { "wave": "square", "f": 330, "t": 0.15, "d": 0.14, "v": 0.16 },
+      { "wave": "square", "f": 262, "t": 0.3, "d": 0.14, "v": 0.16 },
+      { "wave": "sawtooth", "f": 196, "f2": 98, "t": 0.45, "d": 0.5, "v": 0.16 }
+    ] },
+    "revive": { "gap": 300, "tones": [
+      { "wave": "triangle", "f": 523, "t": 0, "d": 0.08, "v": 0.35 },
+      { "wave": "triangle", "f": 659, "t": 0.08, "d": 0.08, "v": 0.35 },
+      { "wave": "triangle", "f": 784, "t": 0.16, "d": 0.08, "v": 0.35 },
+      { "wave": "triangle", "f": 1047, "t": 0.24, "d": 0.3, "v": 0.35 }
+    ] },
+    "reveal": { "gap": 300, "tones": [
+      { "wave": "triangle", "f": 784, "t": 0, "d": 0.12, "v": 0.25 },
+      { "wave": "triangle", "f": 1047, "t": 0.12, "d": 0.2, "v": 0.25 }
+    ] },
+    "fanfare": { "gap": 1000, "tones": [
+      { "wave": "square", "f": 523, "t": 0, "d": 0.11, "v": 0.14 },
+      { "wave": "square", "f": 523, "t": 0.13, "d": 0.11, "v": 0.14 },
+      { "wave": "square", "f": 523, "t": 0.26, "d": 0.11, "v": 0.14 },
+      { "wave": "square", "f": 784, "t": 0.4, "d": 0.5, "v": 0.14 },
+      { "wave": "triangle", "f": 659, "t": 0.4, "d": 0.5, "v": 0.25 },
+      { "wave": "square", "f": 698, "t": 0.95, "d": 0.11, "v": 0.14 },
+      { "wave": "square", "f": 784, "t": 1.08, "d": 0.11, "v": 0.14 },
+      { "wave": "square", "f": 1047, "t": 1.22, "d": 0.7, "v": 0.14 },
+      { "wave": "triangle", "f": 784, "t": 1.22, "d": 0.7, "v": 0.25 }
+    ] },
+    "notice": { "gap": 500, "tones": [
+      { "wave": "sine", "f": 880, "t": 0, "d": 0.16, "v": 0.4 },
+      { "wave": "sine", "f": 1175, "t": 0.17, "d": 0.32, "v": 0.4 }
+    ] },
+    "pop": { "gap": 120, "tones": [
+      { "wave": "sine", "f": 620, "f2": 1240, "t": 0, "d": 0.07, "v": 0.35 }
+    ] },
+    "miniStart": { "gap": 500, "tones": [
+      { "wave": "square", "f": 440, "t": 0, "d": 0.12, "v": 0.16 },
+      { "wave": "square", "f": 440, "t": 0.2, "d": 0.12, "v": 0.16 },
+      { "wave": "square", "f": 880, "t": 0.4, "d": 0.3, "v": 0.16 }
+    ] },
+    "pick": { "gap": 60, "tones": [
+      { "wave": "square", "f": 988, "t": 0, "d": 0.05, "v": 0.14 },
+      { "wave": "square", "f": 1319, "t": 0.05, "d": 0.12, "v": 0.14 }
+    ] },
+    "hit": { "gap": 300, "tones": [
+      { "wave": "sawtooth", "f": 180, "f2": 70, "t": 0, "d": 0.28, "v": 0.22 }
+    ] }
+  }
+}
