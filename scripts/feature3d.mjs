@@ -9,6 +9,7 @@
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { Bot, runBots } from './lib/bots.mjs';
 import { launchChrome, wait } from './lib/chrome.mjs';
+import arena from '../src/data/goldenbell.json' with { type: 'json' };
 
 const [baseUrl = 'http://localhost:5173/', gameUrl = 'http://localhost:2567'] = process.argv.slice(2);
 const password = process.env.DF_TEACHER_PASSWORD;
@@ -114,6 +115,8 @@ const stopBots = runBots(live);
 // ---- 이모트 단추 줄 ----
 const bar = await a.js(`(() => { const bar = document.querySelector('.df-fx-bar'); return bar ? { emotes: bar.querySelectorAll('.df-fx-emote').length, sound: bar.querySelector('.df-fx-sound')?.textContent, fold: !bar.querySelector('.df-fx-fold').hidden } : null; })()`);
 check('학생 3D: 아래 왼쪽에 소리 단추와 이모트 8개(PC는 접지 않음)', bar?.emotes === 8 && bar.sound === '소리 켬' && bar.fold === false, JSON.stringify(bar));
+const tBar = await teacher.js(`(() => { const bar = document.querySelector('.df-fx-bar'); return { fold: !bar.querySelector('.df-fx-fold').hidden, list: !bar.querySelector('.df-fx-emotes').hidden }; })()`);
+check('선생님 3D: 이모트는 "이모트" 단추 하나로 접혀 있음(소리 단추와 함께)', tBar.fold && !tBar.list, JSON.stringify(tBar));
 check('2D(?view=2d)에는 이모트 줄이 없음', (await c.js(`document.querySelector('.df-fx-bar') === null`)) === true);
 
 // ---- 공지 소리 ----
@@ -220,12 +223,31 @@ await wait(500);
 const g0 = { total: await teacher.js(`__df.gb().total`), title: await teacher.js(`document.querySelector('.df-gb-panel')?.textContent ?? ''`) };
 check('바로 낸 문제로 골든벨 시작(4문제, 제목)', allIn && g0.total === 4 && g0.title.includes('확인용 바로 내기'), JSON.stringify({ total: g0.total, title: g0.title.slice(0, 40) }));
 
+// 선생님 골든벨 화면: 이모트 줄이 선생님 창 맨 아래로 옮겨 경기장을 가리지 않는다.
+const tPlace = await teacher.js(`(() => {
+  const bar = document.querySelector('.df-fx-bar');
+  const panel = document.querySelector('.df-gb-panel');
+  const r = bar.getBoundingClientRect();
+  const p = panel.getBoundingClientRect();
+  const corners = __df.camera().corners;
+  const overlap = corners.some((c) => c.x >= r.left && c.x <= r.right && c.y >= r.top && c.y <= r.bottom);
+  return { inPanel: bar.parentElement === panel, left: Math.round(r.left), panelLeft: Math.round(p.left), bottom: Math.round(r.bottom), panelBottom: Math.round(p.bottom), overlap };
+})()`);
+check('선생님 골든벨: 이모트 줄이 선생님 창 맨 아래(경기장 밖)', tPlace.inPanel && tPlace.left >= tPlace.panelLeft && tPlace.bottom <= tPlace.panelBottom && !tPlace.overlap, JSON.stringify(tPlace));
+await teacher.js(`document.querySelector('.df-gb-panel .df-fx-fold').click()`);
+await wait(300);
+await shot(teacher, 'emote-teacher-panel');
+await teacher.js(`document.querySelector('.df-gb-panel .df-fx-fold').click()`);
+const aPlace = await a.js(`document.querySelector('.df-fx-bar').parentElement.id`);
+check('학생 골든벨 화면의 이모트 줄은 그대로(아래 왼쪽)', aPlace === 'ui', aPlace);
+
 // 학생은 문제를 보낼 수 없다(봇 연결로 직접 요청).
 const studentReply = await live[0].room.request('gbQuickSet', { title: 'x', questions: [{ type: 'ox', question: 'q', answer: 'O', seconds: 5 }] });
 const studentAdd = await live[0].room.request('gbQuickAdd', { question: { type: 'ox', question: 'q', answer: 'O', seconds: 5 } });
 check('학생은 바로 내기·즉석 문제를 보낼 수 없음', !!studentReply.error && !!studentAdd.error, `${studentReply.error} / ${studentAdd.error}`);
 
-const ZONE_AT = { O: [3, 12], X: [16, 12], 1: [3, 6.5], 2: [16, 6.5], 3: [3, 12.5], 4: [16, 12.5] };
+// 답 구역 가운데(골든벨 맵 데이터에서 읽는다. 맵을 바꿔도 맞게)
+const ZONE_AT = Object.fromEntries([...arena.zones.ox, ...arena.zones.choice].map((z) => [z.label, [z.col + z.w / 2, z.row + z.h / 2]]));
 const next = () => teacher.js(`document.querySelector('.df-gb-panel .df-gb-next')?.click()`);
 const phase = (pg) => pg.js(`__df.gb().phase`);
 const stand = (pg, z) => pg.js(`__df.teleport(${ZONE_AT[z][0]}, ${ZONE_AT[z][1]})`);
@@ -313,6 +335,8 @@ await teacher.js(`(() => { const b = [...document.querySelectorAll('.df-gb-panel
 await wait(400);
 await clickText(teacher, '.df-dialog .df-button', '끝내기');
 check('골든벨 끝내기', await until(async () => (await a.js(`__df.map()`)) === 'school', 6000));
+await wait(500);
+check('학교 맵으로 돌아오면 선생님 이모트 줄도 화면 아래 왼쪽으로', (await teacher.js(`document.querySelector('.df-fx-bar')?.parentElement?.id`)) === 'ui');
 
 stopBots();
 await Promise.allSettled(live.map((bot) => bot.room.leave()));

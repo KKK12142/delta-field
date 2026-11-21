@@ -38,6 +38,7 @@ import {
   type MiniKind,
 } from '../../shared/minigame.ts';
 import { CLASS_GROUPS, classGroupName } from '../../shared/protocol.ts';
+import { MiniSounds } from '../audio/miniSounds';
 import type { Player } from '../../shared/schema.ts';
 import type { Net } from '../net/connection';
 import { alpha, mini3d, size } from '../theme';
@@ -107,6 +108,8 @@ const UP = new Vector3(0, 1, 0);
 
 export class MiniGame3D {
   private readonly hud = new MiniHud();
+  /** 효과음(세기·시작·줍기·맞음·당기기·결과, src/audio/miniSounds.ts) */
+  private readonly sounds: MiniSounds;
   private tug: TugPanel | null = null;
   private readonly group = new Group();
   private readonly disposables: { dispose(): void }[] = [];
@@ -144,6 +147,7 @@ export class MiniGame3D {
   };
 
   constructor(private readonly host: Mini3DHost) {
+    this.sounds = new MiniSounds(host.net);
     const n = TREASURE_COUNT + GOLD_COUNT;
     const box = new BoxGeometry(mini3d.treasureSize, mini3d.treasureSize * 0.8, mini3d.treasureSize * 0.8);
     const gem = new OctahedronGeometry(mini3d.goldSize).scale(0.8, 1.1, 0.8);
@@ -247,6 +251,7 @@ export class MiniGame3D {
   update(time: number) {
     const m = this.mini;
     if (!m) return;
+    this.sounds.update();
     const key = m.kind ? `${m.kind}|${m.seed}` : '';
     if (key !== this.shown) this.begin(key);
     else if (!key) this.idle = this.host.pos();
@@ -420,6 +425,7 @@ export class MiniGame3D {
     const me = this.host.net.me();
     if (this.mini.kind !== 'tug' || this.mini.phase !== 'play' || !this.student || !me?.classGroup) return;
     this.host.net.miniTug();
+    this.sounds.pulled();
   }
 
   private updateTug() {

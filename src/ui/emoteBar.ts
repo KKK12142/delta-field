@@ -1,4 +1,5 @@
-// 화면 아래 왼쪽 단추 줄: 소리 켜기/끄기와 이모트 8가지(키보드 1~8). 휴대폰은 이모트를 "이모트" 단추 하나로 접어 두고 누르면 편다.
+// 화면 아래 왼쪽 단추 줄: 소리 켜기/끄기와 이모트 8가지(키보드 1~8). 휴대폰과 선생님 화면은 이모트를 "이모트" 단추 하나로 접어 두고 누르면 편다.
+// 선생님 골든벨 화면에서는 emotes3d.ts가 이 줄을 선생님 창 아래로 옮긴다(경기장을 가리지 않게).
 // 이모트를 보내는 일과 말풍선은 src/three/emotes3d.ts가 맡는다. 겉모양은 src/ui/feature.css.
 import { EMOTES, EMOTE_COOLDOWN_MS } from '../../shared/emotes.ts';
 import type { Sfx } from '../audio/sfx';
@@ -8,7 +9,7 @@ import { uiIcon } from './pictures';
 import './feature.css';
 
 export class EmoteBar {
-  private readonly node = el('div', 'df-fx-bar');
+  readonly node = el('div', 'df-fx-bar');
   private readonly sound = el('button', 'df-button df-button-small df-button-light df-fx-sound');
   private readonly fold = el('button', 'df-button df-button-small df-button-light df-fx-fold', '이모트');
   private readonly list = el('div', 'df-fx-emotes');
@@ -20,10 +21,11 @@ export class EmoteBar {
   private readonly offSound: () => void;
   private readonly onResize = () => this.layout();
 
-  /** onEmote: 이모트 단추를 눌렀을 때(이모트 id) */
+  /** onEmote: 이모트 단추를 눌렀을 때(이모트 id). folded면 화면 크기와 상관없이 접어 둔다(선생님, 이모트를 거의 쓰지 않음). */
   constructor(
     private readonly sfx: Sfx,
     onEmote: (id: string) => void,
+    private readonly folded = false,
   ) {
     watchPhone();
     this.node.setAttribute('aria-label', '소리와 이모트');
@@ -69,7 +71,7 @@ export class EmoteBar {
     this.node.classList.add('is-cooling');
     clearTimeout(this.coolTimer);
     this.coolTimer = setTimeout(() => this.node.classList.remove('is-cooling'), EMOTE_COOLDOWN_MS);
-    if (isPhone() && this.open) {
+    if (this.compact() && this.open) {
       this.open = false;
       this.layout();
     }
@@ -95,10 +97,15 @@ export class EmoteBar {
     this.sound.classList.toggle('is-off', !on);
   }
 
+  /** 이모트를 접어 둘지(휴대폰·선생님) */
+  private compact() {
+    return this.folded || isPhone();
+  }
+
   private layout() {
-    const phone = isPhone();
-    this.fold.hidden = !phone;
-    this.list.hidden = phone && !this.open;
+    const compact = this.compact();
+    this.fold.hidden = !compact;
+    this.list.hidden = compact && !this.open;
     this.fold.setAttribute('aria-expanded', String(this.open));
     this.fold.textContent = this.open ? '이모트 닫기' : '이모트';
   }

@@ -34,9 +34,9 @@ export class Sfx {
   private on = readEnabled();
   private readonly lastAt = new Map<string, number>();
   private readonly listeners = new Set<(on: boolean) => void>();
-  /** 확인용: 울린 소리 이름(최근 50개). 소리를 끈 동안·오디오가 아직 없을 때는 넣지 않는다. */
+  /** 확인용: 울린 소리 이름(최근 300개). 소리를 끈 동안·오디오가 아직 없을 때는 넣지 않는다. */
   readonly played: string[] = [];
-  /** 확인용: 울리려 했던 소리 이름(최근 50개, 꺼짐·오디오 없음과 상관없이) */
+  /** 확인용: 울리려 했던 소리 이름(최근 300개, 꺼짐·오디오 없음과 상관없이) */
   readonly requested: string[] = [];
 
   constructor() {
@@ -121,7 +121,7 @@ export class Sfx {
 
 function push(list: string[], name: string) {
   list.push(name);
-  if (list.length > 50) list.shift();
+  if (list.length > 300) list.shift();
 }
 
 /** 화면 전체가 함께 쓰는 효과음 */

@@ -8,6 +8,7 @@ import { EMOTES, EMOTE_COOLDOWN_MS, EMOTE_PER_MINUTE } from '../../../shared/emo
 import { QUICK_FILE, QUICK_MAX_QUESTIONS, checkQuickSet, parsePaste, splitAnswers, splitChoices, toPasteLine } from '../../../shared/quickQuestions.ts';
 import { matchAnswer } from '../../../shared/goldenbell.ts';
 import { gbSounds, miniSounds } from '../../../src/audio/soundRules.ts';
+import { GOLD_POINTS } from '../../../shared/minigame.ts';
 
 // ---- 이모트 서버 ----
 
@@ -158,13 +159,19 @@ test('효과음: 골든벨 문제 시작·째깍·결과·팡파르', () => {
   assert.deepEqual(gbSounds(gb({ phase: 'reveal', index: 0 }), gb({ phase: 'question', index: 1, timeLeft: 3 })), ['question'], '새 문제는 째깍보다 시작 소리');
 });
 
-const mini = (o) => ({ kind: 'treasure', phase: '', score: 0, out: false, ...o });
-test('효과음: 미니게임', () => {
-  assert.deepEqual(miniSounds(mini({}), mini({ phase: 'count' })), ['miniStart']);
-  assert.deepEqual(miniSounds(mini({ phase: 'count' }), mini({ phase: 'play' })), []);
-  assert.deepEqual(miniSounds(mini({ phase: 'play' }), mini({ phase: 'play', score: 3 })), ['pick']);
-  assert.deepEqual(miniSounds(mini({ kind: 'dodge', phase: 'play', score: 1 }), mini({ kind: 'dodge', phase: 'play', score: 2 })), []);
-  assert.deepEqual(miniSounds(mini({ kind: 'dodge', phase: 'play' }), mini({ kind: 'dodge', phase: 'play', out: true })), ['hit']);
-  assert.deepEqual(miniSounds(mini({ kind: 'tug', phase: 'play' }), mini({ kind: 'tug', phase: 'play', score: 1 })), ['pop']);
-  assert.deepEqual(miniSounds(mini({ phase: 'play' }), mini({ phase: 'result' })), ['fanfare']);
+const mini = (o) => ({ kind: 'treasure', phase: '', timeLeft: 0, score: 0, out: false, ...o });
+test('효과음: 미니게임(세기·시작·줍기·금·맞음·결과)', () => {
+  const G = GOLD_POINTS;
+  assert.deepEqual(miniSounds(null, mini({ phase: 'count', timeLeft: 3 }), G), [], '처음 본 상태는 울리지 않는다');
+  assert.deepEqual(miniSounds(mini({}), mini({ phase: 'count', timeLeft: 3 }), G), ['countBeep']);
+  assert.deepEqual(miniSounds(mini({ phase: 'count', timeLeft: 3 }), mini({ phase: 'count', timeLeft: 3 }), G), [], '같은 초는 한 번');
+  assert.deepEqual(miniSounds(mini({ phase: 'count', timeLeft: 3 }), mini({ phase: 'count', timeLeft: 2 }), G), ['countBeep']);
+  assert.deepEqual(miniSounds(mini({ phase: 'count', timeLeft: 1 }), mini({ phase: 'play', timeLeft: 20 }), G), ['miniStart']);
+  assert.deepEqual(miniSounds(mini({ phase: 'play' }), mini({ phase: 'play', score: 1 }), G), ['pick']);
+  assert.deepEqual(miniSounds(mini({ phase: 'play', score: 1 }), mini({ phase: 'play', score: 1 + G }), G), ['pickGold']);
+  assert.deepEqual(miniSounds(mini({ phase: 'count', timeLeft: 1, score: 5 }), mini({ phase: 'play', score: 0 }), G), ['miniStart'], '새 판의 점수 초기화는 줍기가 아니다');
+  assert.deepEqual(miniSounds(mini({ kind: 'dodge', phase: 'play', score: 1 }), mini({ kind: 'dodge', phase: 'play', score: 2 }), G), [], '공 피하기 버틴 시간은 소리 없음');
+  assert.deepEqual(miniSounds(mini({ kind: 'dodge', phase: 'play' }), mini({ kind: 'dodge', phase: 'play', out: true }), G), ['hit']);
+  assert.deepEqual(miniSounds(mini({ kind: 'tug', phase: 'play' }), mini({ kind: 'tug', phase: 'play', score: 1 }), G), [], '줄다리기는 누를 때 화면이 울린다(pulled)');
+  assert.deepEqual(miniSounds(mini({ phase: 'play' }), mini({ phase: 'result' }), G), ['fanfare']);
 });
