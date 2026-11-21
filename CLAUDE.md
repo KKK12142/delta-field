@@ -51,7 +51,7 @@ Every task follows: **Question -> Options -> Decision -> Draft -> Approval**
 
 See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for full protocol and examples.
 
-### CCGS와 delta-field 규칙이 겹칠 때(2026-11-21 대장 정리, 교사 확인 전)
+### CCGS와 delta-field 규칙이 겹칠 때(2026-11-21 대장 정리, 교사 확인)
 - 교사는 대장하고만 대화한다(아래 "여러 세션으로 일할 때"). 대장이 Orca로 보낸 작업 지시서의 범위 안에서는 지시서가 곧 교사 승인이다.
   담당은 지시서 밖의 파일을 고치거나 지시서에 없는 결정을 할 때만 대장에게 ask로 묻는다("May I write"를 대장에게 묻는 것으로 본다).
 - 커밋: 지금까지의 교사 결정(확인을 통과하면 대장이 커밋하고 푸시, 담당은 자기 브랜치에 커밋만)을 그대로 쓴다. CCGS의 "No commits without user instruction"보다 앞선다.
