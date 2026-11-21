@@ -104,6 +104,8 @@ elsewhere in the repo, so they are restated here rather than lost:
   공유 중인 서버가 5173, 2567을 쓰고 있으면 DF_WEB_PORT, DF_PORT로 다른 포트에 켠다. 골든벨 확인용 문제는 DF_GOLDENBELL_DIR=scripts/playtest-goldenbell, 방탈출 확인용 자료는 DF_ESCAPE_DIR=scripts/playtest-escape(README)),
   pnpm loadtest(같은 준비로 학생 35명 접속 시험), pnpm loadtest:3d(3D 화면 확인과 35명 fps 측정), pnpm bots <방 코드>(선생님 방에 봇만 넣기. 교사가 요청할 때 공유 중인 서버에도 쓴다)
 - 선생님 비밀번호: 저장소 맨 위 .env의 DF_TEACHER_PASSWORD. 교사가 직접 만든다. 저장소에 올리지 않고 내용을 출력하지 않는다.
+- Blender 5.2.4 LTS(~/opt, 2026-11-21 교사 허락): 명령 `blender`(헤드리스 -b 가능), 창은 `blender-gui`(WSLg Wayland에서 꺼져 X11로 띄움).
+  Blender MCP(mcp-for-blender, 이 프로젝트 local 설정, 사용 통계 끔): Blender 창이 떠 있어야 하고 애드온이 9876 포트에서 기다린다. MCP 도구는 Claude Code를 다시 켠 뒤 생긴다.
 - 그림 생성 키: ~/.config/delta-field/baze.env의 BAZE_API_KEY(저장소 밖, chmod 600). 교사가 직접 넣는다. pnpm art:gen만 읽고 내용을 출력하지 않는다.
 - 공유: pnpm share / pnpm share:off / pnpm share:status. 화면·게임 서버를 켜고 윈도우 Tailscale serve로 Tailscale 망(교사의 맥·태블릿)에만 내어 준다.
   교사가 요청하면 언제든 켜고 끈다(교사 허락). 스크립트는 scripts/share.sh, 서버 기록은 .run/.
